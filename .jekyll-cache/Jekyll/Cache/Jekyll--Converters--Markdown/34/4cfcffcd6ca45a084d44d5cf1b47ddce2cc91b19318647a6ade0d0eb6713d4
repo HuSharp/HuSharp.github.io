@@ -1,0 +1,15 @@
+I"|<ul id="markdown-toc">
+  <li><a href="#一mbr主引导记录的编写" id="markdown-toc-一mbr主引导记录的编写">一、MBR主引导记录的编写</a></li>
+</ul>
+<h2 id="一mbr主引导记录的编写">一、MBR主引导记录的编写</h2>
+
+<p>第一条指令：f000:fff0</p>
+
+<p>第二条指令：jmpf 0xf000:e05b ——BIOS开始地方</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20200724223912682.png" alt="image-20200724223912682" /></p>
+
+<p>mbr：512字节，结尾为0x55,0xaa，放在0盘0道1扇区（即磁盘第一个扇区）</p>
+
+<p>7c00h的由来：32kb减去分配1kb给512字节的mbr</p>
+:ET

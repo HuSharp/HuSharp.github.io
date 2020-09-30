@@ -1,0 +1,210 @@
+---
+layout: post
+title:  "《程序员代码面试指南》（二）数组和矩阵"
+date:   2020-07-22 11:21:00 +0800
+categories:  算法&DS
+tags: 算法  数据结构
+author: Hu#
+typora-root-url: ..
+---
+
+* content
+{:toc}
+## 二、数组和矩阵问题
+
+### 1、转圈打印矩阵
+
+【题目】
+给定一个整型矩阵matrix，请按照转圈的方式打印它。
+例如：
+
+```
+1  2  3  4 
+5  6  7  8 
+9  10  11  12 
+13 14  15  16
+```
+
+打印结果为：1，2，3，4，8，12，16，15，14，13，9，5，6，7，11，10
+
+【要求】
+额外空间复杂度为O（1）。
+
+【解答】
+
+介绍一种矩阵处理思想：
+
+**矩阵分圈处理**。在矩阵中用左上角的坐标（tR，tC）和右下角的坐标（dR，dC）就可以表示一个子矩阵，比如，题目中的矩阵，当（tR，tC）=（0，0）、（dR，dC）=（3，3）时，表示的子矩阵就是整个矩阵，那么这个子矩阵最外层的部分如下：
+
+```
+1  2  3  4 
+5        8 
+9        12 
+13 14 15 16
+```
+
+将矩阵按照层次转圈打印，如最外圈就是 从 1 开始顺时针到 5，此时进入内部圈，按照相同方法进行打印。
+
+值得注意的是：
+
+1. 进入内层圈是 左下角++ 右上角--，直到 左下角超过右上角 终止。
+
+   ```
+   while(topR <= botR && topC <= botC) {
+   			printEdge(matrix, topR++, topC++, botR--, botC--);
+   		}
+   ```
+
+2. 最后一步可为一行或者一列
+
+   ```
+   	if(topR == botR) {// 表示为在一行
+   		for (int i = topC; i <= botC; i++) {
+   			System.out.print(matrix[topR][i] + " ");
+   		}
+   	}else if(topC == botC) {// 表示为在一列
+   		for (int i = topR; i <= botR; i++) {
+   			System.out.print(matrix[i][topC] + " ");
+   		}
+   	}else {// 至此说明可以画出一个矩形 按照上右下左打出
+   		...
+   	}
+   ```
+
+
+
+
+
+### 2、将正方形顺时针旋转 90度
+
+【题目】
+给定一个 NXN 的矩阵matrix，把这个矩阵调整成顺时针转动90°后的形式。
+例如：
+
+```
+1  2  3  4 
+5  6  7  8 
+9  10  11  12 
+13 14  15  16
+```
+
+顺时针转动90°后为：
+
+```
+13  9  5  1
+14  10 6  2
+15  1  17 3
+16  12 8  4
+```
+
+【要求】
+额外空间复杂度为O（1）。
+
+【解答】
+
+这里仍使用分圈处理的方式。
+
+对于每一圈，比如外圈采用顺（逆）时针交换位置的方式
+
+<img src="/assets/blog_image/2020-07-20-Coder-MianShi2/QQ图片20200723093107.jpg" alt="QQ图片20200723093107" style="zoom: 67%;" />
+
+只需要使用一个变量进行暂存即可；
+
+```
+int times = botC - topC;
+		int temp = 0;
+		for (int i = 0; i != times; i++) {
+			temp = matrix[topR][topC+i];//将第一个点存好
+			matrix[topR][topC+i] = matrix[botR-i][topC];// 4 -> 1
+			matrix[botR-i][topC] = matrix[botR][botC-i];// 3 -> 4
+			matrix[botR][botC-i] = matrix[topR+i][botC];// 2 -> 3
+			matrix[topR+i][botC] = temp;
+		}
+```
+
+且对于一行或者一列，其中间必然为中心点，按照上述函数进行交换即可。
+
+
+
+
+
+### 3、“之”字形打印矩阵
+
+【题目】 给定一个矩阵matrix，按照“之”字形的方式打印这
+个矩阵，例如：
+
+```
+1  2  3  4 
+5  6  7  8 
+9  10  11  12 
+```
+
+“之”字形打印的结果为：1，2，5，9，6，3，4，7，10，11，8，12
+【要求】 额外空间复杂度为O(1)。
+
+【解答】
+
+![QQ图片20200724070951](/assets/blog_image/2020-07-20-Coder-MianShi2/QQ图片20200724070951.jpg)
+
+安放两个指针，A向右运动，到界后向下；B向下运动，到界后向右。并每次调节打印方向。
+
+```
+public static void printDiagonal(int[][] matrix, int eastUpR, int eastUpC, 
+									int westBotR, int westBotC, boolean up) {
+		if(up) {//说明自下向上
+			while(westBotR != eastUpR-1) {
+				System.out.print(matrix[westBotR--][westBotC++] + " ");
+			}
+		}else {// 自上而下
+			while(eastUpR != westBotR+1) {
+				System.out.print(matrix[eastUpR++][eastUpC--] + " ");
+			}
+		}
+	}
+```
+
+
+
+
+
+### 4、在行列都排好序的矩阵中找数
+
+【题目】
+给定一个有NxM的整型矩阵matrix和一个整数K，matrix的每一行和每一列都是排好序的。实现一个函数，判断K是否在matrix中。
+例如：
+
+```
+0 1 2 5
+2 3 4 7
+4 4 4 8
+5 7 7 9
+```
+
+如果K为7，返回true；如果K为6，返回false。
+
+【要求】
+时间复杂度为O（N+M），额外空间复杂度为O（1）。
+
+【解答】
+
+从右上到左下（也可以从左下开始，即逆过程）。从最后 1 列第 1 个开始，K < cur 就向左（必然不在下方），K > cur 就向下。
+
+![QQ图片20200724073622](/assets/blog_image/2020-07-20-Coder-MianShi2/QQ图片20200724073622.jpg)
+
+```
+// 从右上到左下
+		while(eastUpR != matrix.length || eastUpC != -1) {
+			if(matrix[eastUpR][eastUpC] == value) {
+				System.out.println(eastUpR + " " + eastUpC);
+				return true;
+			}
+			else if (matrix[eastUpR][eastUpC] > value) {
+				eastUpC--;
+			}else {
+				eastUpR++;
+			}
+		}
+```
+
+
+

@@ -1,0 +1,764 @@
+I"ܟ<ul id="markdown-toc">
+  <li><a href="#一py基础" id="markdown-toc-一py基础">一、Py基础</a>    <ul>
+      <li><a href="#各个内置函数" id="markdown-toc-各个内置函数">各个内置函数</a>        <ul>
+          <li><a href="#1input函数得到的是str-需要用int函数进行转换" id="markdown-toc-1input函数得到的是str-需要用int函数进行转换">1.input函数得到的是str ，需要用int()函数进行转换</a></li>
+          <li><a href="#2range函数" id="markdown-toc-2range函数">2.<code class="language-plaintext highlighter-rouge">range()</code>函数</a></li>
+        </ul>
+      </li>
+      <li><a href="#1用r表示内部的字符串默认不转义" id="markdown-toc-1用r表示内部的字符串默认不转义">1.用<code class="language-plaintext highlighter-rouge">r''</code>表示<code class="language-plaintext highlighter-rouge">''</code>内部的字符串默认不转义</a></li>
+      <li><a href="#2在计算机内存中统一使用unicode编码当需要保存到硬盘或者需要传输的时候就转换为utf-8编码" id="markdown-toc-2在计算机内存中统一使用unicode编码当需要保存到硬盘或者需要传输的时候就转换为utf-8编码">2、在计算机内存中，统一使用Unicode编码，当需要保存到硬盘或者需要传输的时候，就转换为UTF-8编码。</a></li>
+      <li><a href="#3列表和元组" id="markdown-toc-3列表和元组">3、列表和元组</a></li>
+      <li><a href="#4if-else-elif" id="markdown-toc-4if-else-elif">4、if else elif</a></li>
+      <li><a href="#5for--while" id="markdown-toc-5for--while">5、for &amp; while</a></li>
+      <li><a href="#6字典-dict--set" id="markdown-toc-6字典-dict--set">6、字典 dict &amp; set</a>        <ul>
+          <li><a href="#1dict" id="markdown-toc-1dict">1、dict</a></li>
+          <li><a href="#2set" id="markdown-toc-2set">2、set</a></li>
+        </ul>
+      </li>
+      <li><a href="#7函数" id="markdown-toc-7函数">7、函数</a>        <ul>
+          <li><a href="#1一个注意点" id="markdown-toc-1一个注意点">1.一个注意点：</a></li>
+          <li><a href="#2定义可变参数---关键字参数-" id="markdown-toc-2定义可变参数---关键字参数-">2.定义可变参数 * &amp; 关键字参数 **</a></li>
+          <li><a href="#3使用任意数量的关键字实参" id="markdown-toc-3使用任意数量的关键字实参">3.使用任意数量的关键字实参</a></li>
+        </ul>
+      </li>
+      <li><a href="#8高级特性" id="markdown-toc-8高级特性">8、高级特性</a>        <ul>
+          <li><a href="#1切片" id="markdown-toc-1切片">1.切片</a></li>
+          <li><a href="#2迭代" id="markdown-toc-2迭代">2.迭代</a></li>
+          <li><a href="#3列表生成器" id="markdown-toc-3列表生成器">3.列表生成器</a></li>
+          <li><a href="#4生成器" id="markdown-toc-4生成器">4、生成器</a></li>
+          <li><a href="#5迭代器" id="markdown-toc-5迭代器">5、迭代器</a></li>
+        </ul>
+      </li>
+      <li><a href="#9使用模块" id="markdown-toc-9使用模块">9、使用模块</a>        <ul>
+          <li><a href="#变量函数作用域" id="markdown-toc-变量函数作用域">变量函数作用域：</a></li>
+        </ul>
+      </li>
+      <li><a href="#10面向对象编程" id="markdown-toc-10面向对象编程">10、面向对象编程</a>        <ul>
+          <li><a href="#1类和实例" id="markdown-toc-1类和实例">1.类和实例</a></li>
+          <li><a href="#2继承多态" id="markdown-toc-2继承多态">2.继承、多态</a></li>
+          <li><a href="#3获取对象信息" id="markdown-toc-3获取对象信息">3.获取对象信息</a></li>
+          <li><a href="#4类属性" id="markdown-toc-4类属性">4.类属性</a></li>
+        </ul>
+      </li>
+      <li><a href="#11异常处理" id="markdown-toc-11异常处理">11、异常处理</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>主要参考廖雪峰老师网站，过一遍py</p>
+
+<h2 id="一py基础">一、Py基础</h2>
+
+<p>py输出不换行   print(key, end=” “) end表示字符间的字符</p>
+
+<h3 id="各个内置函数">各个内置函数</h3>
+
+<h4 id="1input函数得到的是str-需要用int函数进行转换">1.input函数得到的是str ，需要用int()函数进行转换</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>age = int(input('birth:'))
+</code></pre></div></div>
+
+<h4 id="2range函数">2.<code class="language-plaintext highlighter-rouge">range()</code>函数</h4>
+
+<p>可以生成一个整数序列，再通过<code class="language-plaintext highlighter-rouge">list()</code>函数可以转换为list。比如<code class="language-plaintext highlighter-rouge">range(5)</code>生成的序列是从0开始小于5的整数</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; list(range(5))
+[0, 1, 2, 3, 4]
+</code></pre></div></div>
+
+<p>3.</p>
+
+<h3 id="1用r表示内部的字符串默认不转义">1.用<code class="language-plaintext highlighter-rouge">r''</code>表示<code class="language-plaintext highlighter-rouge">''</code>内部的字符串默认不转义</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="k">print</span><span class="p">(</span><span class="s">'</span><span class="se">\\\t\\</span><span class="s">'</span><span class="p">)</span>
+\       \
+<span class="o">&gt;&gt;&gt;</span> <span class="k">print</span><span class="p">(</span><span class="s">r'\\\t\\'</span><span class="p">)</span>
+\\\<span class="n">t</span>\\
+</code></pre></div></div>
+
+<h3 id="2在计算机内存中统一使用unicode编码当需要保存到硬盘或者需要传输的时候就转换为utf-8编码">2、在计算机内存中，统一使用Unicode编码，当需要保存到硬盘或者需要传输的时候，就转换为UTF-8编码。</h3>
+
+<p><img src="https://www.liaoxuefeng.com/files/attachments/923923787018816/0" alt="rw-file-utf-8" /></p>
+
+<p>对于单个字符的编码，Python提供了<code class="language-plaintext highlighter-rouge">ord()</code>函数获取字符的整数表示，<code class="language-plaintext highlighter-rouge">chr()</code>函数把编码转换为对应的字符：</p>
+
+<h3 id="3列表和元组">3、列表和元组</h3>
+
+<p><strong>列表</strong>：list。list是一种有序的集合，可以随时添加和删除其中的元素。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classmates = ['Michael', 'Bob', 'Tracy']
+</code></pre></div></div>
+
+<p>用<code class="language-plaintext highlighter-rouge">-1</code>做索引，直接获取最后一个元素  a[0]</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>append 追加到末尾，
+insert 到指定位置 S.insert(1, 'b') ，
+要删除list末尾的元素，用pop()方法：
+要删除指定位置的元素，用pop(i)方法，其中i是索引位置：
+要把某个元素替换成别的元素，可以直接赋值给对应的索引位置： S[1] = 
+sort() 进行排序改变
+reverse()函数进行倒向打印
+len()确定长度
+</code></pre></div></div>
+
+<p><strong>元组</strong>：tuple ，tuple一旦初始化就不能修改,因为tuple不可变，所以代码更安全。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>classmates = ('Michael', 'Bob', 'Tracy')
+</code></pre></div></div>
+
+<p>注意：只有1个元素的tuple定义时必须加一个逗号<code class="language-plaintext highlighter-rouge">,</code>，来消除歧义</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>比如：t = (1)  由于可能歧义表示为数字里的小括号
+所以 要想表示元组，必须为 t = (1,)
+</code></pre></div></div>
+
+<p>uple所谓的“不变”是说，tuple的每个元素，指向永远不变。即引用对象不变。</p>
+
+<p>但是若引用的为列表，列表中的数据可以改变。</p>
+
+<h3 id="4if-else-elif">4、if else elif</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if con : 记得打冒号
+elif是else if的缩写
+</code></pre></div></div>
+
+<h3 id="5for--while">5、for &amp; while</h3>
+
+<p><code class="language-plaintext highlighter-rouge">for x in ...</code>循环就是把每个元素代入变量<code class="language-plaintext highlighter-rouge">x</code>，然后执行缩进块的语句。</p>
+
+<p><code class="language-plaintext highlighter-rouge">while n &gt; 0:</code></p>
+
+<p>break &amp; continue 用法一样</p>
+
+<h3 id="6字典-dict--set">6、字典 dict &amp; set</h3>
+
+<h4 id="1dict">1、dict</h4>
+
+<p>在其他语言中也称为map，用键-值（key-value）存储，具有极快的查找速度。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; d = {'Michael': 95, 'Bob': 75, 'Tracy': 85}
+&gt;&gt;&gt; d['Michael']
+95
+
+</code></pre></div></div>
+
+<p>把数据放入dict的方法，除了初始化时指定外，还可以通过key放入：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; d['Adam'] = 67
+</code></pre></div></div>
+
+<p>避免key不存在的错误，有两种办法，一是通过<code class="language-plaintext highlighter-rouge">in</code>判断key是否存在</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 'Thomas' in d
+False
+</code></pre></div></div>
+
+<p>通过dict提供的<code class="language-plaintext highlighter-rouge">get()</code>方法，如果key不存在，可以返回<code class="language-plaintext highlighter-rouge">None</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; print(d.get('sa')) 
+None
+</code></pre></div></div>
+
+<p>要删除一个key，用<code class="language-plaintext highlighter-rouge">pop(key)</code>方法，对应的value也会从dict中删除：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; d.pop('Bob')
+</code></pre></div></div>
+
+<h4 id="2set">2、set</h4>
+
+<p>set和dict类似，也是一组key的集合，但不存储value。即类似HashMap和HashSet</p>
+
+<p>通过<code class="language-plaintext highlighter-rouge">add(key)</code>方法可以添加元素到set中，通过<code class="language-plaintext highlighter-rouge">remove(key)</code>方法可以删除元素</p>
+
+<p>set可以看成数学意义上的无序和无重复元素的集合，因此，两个set可以做数学意义上的交集、并集等操作：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; s1 = set([1, 2, 3])
+&gt;&gt;&gt; s2 = set([2, 3, 4])
+&gt;&gt;&gt; s1 &amp; s2
+{2, 3}
+&gt;&gt;&gt; s1 | s2
+{1, 2, 3, 4}
+</code></pre></div></div>
+
+<h3 id="7函数">7、函数</h3>
+
+<p>1.函数名其实就是指向一个函数对象的引用，完全可以把函数名赋给一个变量，相当于给这个函数起了一个“别名”：</p>
+
+<p><img src="../assets/blog_image/2020-08-08-Py-Learn/image-20200810232048660.png" alt="image-20200810232048660" /></p>
+
+<p>2.空函数</p>
+
+<p>如果想定义一个什么事也不做的空函数，可以用<code class="language-plaintext highlighter-rouge">pass</code>语句：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def nop():
+    pass
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">pass</code>语句什么都不做，那有什么用？实际上<code class="language-plaintext highlighter-rouge">pass</code>可以用来作为占位符，比如现在还没想好怎么写函数的代码，就可以先放一个<code class="language-plaintext highlighter-rouge">pass</code>，让代码能运行起来。</p>
+
+<p><strong><code class="language-plaintext highlighter-rouge">pass</code>还可以用在其他语句里</strong>，比如：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if age &gt;= 18:
+    pass
+</code></pre></div></div>
+
+<p>缺少了<code class="language-plaintext highlighter-rouge">pass</code>，代码运行就会有语法错误。</p>
+
+<p>3.多参数返回</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import math
+
+def move(x, y, step, angle=0):
+    nx = x + step * math.cos(angle)
+    ny = y - step * math.sin(angle)
+    return nx, ny
+
+r = move(100, 100, 60, math.pi / 6)
+print(r)
+</code></pre></div></div>
+
+<blockquote>
+  <p>输出结果：(151.96152422706632, 70.0)</p>
+</blockquote>
+
+<p>即输出为元组！</p>
+
+<p>4.函数的参数</p>
+
+<p>这个时候，默认参数就排上用场了。由于我们经常计算x2，所以，完全可以把第二个参数n的默认值设定为2：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def power(x, n=2):
+</code></pre></div></div>
+
+<p>当我们调用<code class="language-plaintext highlighter-rouge">power(5)</code>时，相当于调用<code class="language-plaintext highlighter-rouge">power(5, 2)</code></p>
+
+<p>一是必选参数在前，默认参数在后，否则Python的解释器会报错。很容易理解，否则就不知道填入的参数是哪一个</p>
+
+<h4 id="1一个注意点">1.一个注意点：</h4>
+
+<p>先定义一个函数，传入一个list，添加一个<code class="language-plaintext highlighter-rouge">END</code>再返回：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def add_end(L=[]):
+    L.append('END')
+    return L
+</code></pre></div></div>
+
+<p>当你正常调用时，结果似乎不错：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; add_end([1, 2, 3])
+[1, 2, 3, 'END']
+&gt;&gt;&gt; add_end(['x', 'y', 'z'])
+['x', 'y', 'z', 'END']
+</code></pre></div></div>
+
+<p>当你使用默认参数调用时，一开始结果也是对的：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; add_end()
+['END']
+</code></pre></div></div>
+
+<p>但是，再次调用<code class="language-plaintext highlighter-rouge">add_end()</code>时，结果就不对了：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; add_end()
+['END', 'END']
+&gt;&gt;&gt; add_end()
+['END', 'END', 'END']
+</code></pre></div></div>
+
+<p>很多初学者很疑惑，默认参数是<code class="language-plaintext highlighter-rouge">[]</code>，但是函数似乎每次都“记住了”上次添加了<code class="language-plaintext highlighter-rouge">'END'</code>后的list。</p>
+
+<p>原因解释如下：</p>
+
+<p>Python函数在定义的时候，默认参数<code class="language-plaintext highlighter-rouge">L</code>的值就被计算出来了，即<code class="language-plaintext highlighter-rouge">[]</code>，因为默认参数<code class="language-plaintext highlighter-rouge">L</code>也是一个变量，它指向对象<code class="language-plaintext highlighter-rouge">[]</code>，每次调用该函数，如果改变了<code class="language-plaintext highlighter-rouge">L</code>的内容，则下次调用时，默认参数的内容就变了，不再是函数定义时的<code class="language-plaintext highlighter-rouge">[]</code>了。</p>
+
+<p><strong>—————-定义默认参数要牢记一点：默认参数必须指向不变对象！—————-</strong></p>
+
+<p>要修改上面的例子，我们可以用<code class="language-plaintext highlighter-rouge">None</code>这个不变对象来实现：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def add_end(L=None):
+    if L is None:
+        L = []
+    L.append('END')
+    return L
+</code></pre></div></div>
+
+<h4 id="2定义可变参数---关键字参数-">2.定义可变参数 * &amp; 关键字参数 **</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def calc(*numbers):
+    sum = 0
+    for n in numbers:
+        sum = sum + n * n
+    return sum
+</code></pre></div></div>
+
+<p>定义可变参数和定义一个list或tuple参数相比，仅仅在参数前面加了一个<code class="language-plaintext highlighter-rouge">*</code>号。在函数内部，参数<code class="language-plaintext highlighter-rouge">numbers</code>接收到的是一个tuple，因此，函数代码完全不变。但是，调用该函数时，可以传入任意个参数，包括0个参数：</p>
+
+<p>可变参数类似指针，输入参数时也是指针形式</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; calc(1, 2)
+5
+&gt;&gt;&gt; calc()
+0
+</code></pre></div></div>
+
+<p>对于list 或者 tuple</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; nums = [1, 2, 3]
+&gt;&gt;&gt; calc(*nums)
+14
+</code></pre></div></div>
+
+<p><strong>可变参数允许你传入0个或任意个参数，这些可变参数在函数调用时自动组装为一个tuple。</strong></p>
+
+<p><strong>而关键字参数允许你传入0个或任意个含参数名的参数，这些关键字参数在函数内部自动组装为一个dict。</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def a(x, y):
+    print(x + y)
+
+a(x='sa',y='cc')
+a(y='sa',x='cc')
+
+输出：
+sacc
+ccsa
+</code></pre></div></div>
+
+<p>因此关键字参数的传递必须是 a=b 的格式,  也可以先组装出一个dict，然后，把该dict转换为关键字参数传进去：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def person(name, age, **kw):
+    print('name:', name, 'age:', age, 'other:', kw)
+    
+&gt;&gt;&gt; extra = {'city': 'Beijing', 'job': 'Engineer'}
+&gt;&gt;&gt; person('Jack', 24, **extra)
+name: Jack age: 24 other: {'city': 'Beijing', 'job': 'Engineer'}
+</code></pre></div></div>
+
+<h4 id="3使用任意数量的关键字实参">3.使用任意数量的关键字实参</h4>
+
+<p>形参**user_info中的两个星号让Python创建一个名为user_info的空字典，并将收到的所有名称—值对都封装到这个字典中。在这个函数中，可以像访问其他字典那样访问user_info中的名称—值对。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def build_pro(first, last, **user_info):
+    profile = {}
+    profile['first'] = first
+    profile['last'] = last
+    for key, value in user_info.items():
+        profile[key] = value
+    
+    return profile
+
+user_profile = build_pro('albert', 'einstein',
+                             location='princeton',
+                             field='physics')
+print(user_profile)
+
+输出：
+{'first': 'albert', 'last': 'einstein', 'location': 'princeton', 'field': 'physics'}
+</code></pre></div></div>
+
+<h3 id="8高级特性">8、高级特性</h3>
+
+<h4 id="1切片">1.切片</h4>
+
+<p>L可为元组 、列表、字符串</p>
+
+<p><code class="language-plaintext highlighter-rouge">L[0:3]</code>表示，从索引<code class="language-plaintext highlighter-rouge">0</code>开始取，直到索引<code class="language-plaintext highlighter-rouge">3</code>为止，但不包括索引<code class="language-plaintext highlighter-rouge">3</code>。即索引<code class="language-plaintext highlighter-rouge">0</code>，<code class="language-plaintext highlighter-rouge">1</code>，<code class="language-plaintext highlighter-rouge">2</code>，正好是3个元素。<code class="language-plaintext highlighter-rouge">L[0:3] == L[:3]</code> 表示取到前三个</p>
+
+<p>前10个数，每两个取一个：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; L[:10:2]
+[0, 2, 4, 6, 8]
+&gt;&gt;&gt; 'ABCDEFG'[::2]
+'ACEG
+</code></pre></div></div>
+
+<p>类似的，既然Python支持<code class="language-plaintext highlighter-rouge">L[-1]</code>取倒数第一个元素，那么它同样支持<strong>倒数切片</strong>，试试：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; 'abcdefg'[-1:]
+'g'
+&gt;&gt;&gt; 'abcdefg'[-5:] 
+'cdefg'
+&gt;&gt;&gt; 'asdfghjkl'[:-1] 
+'asdfghjk'
+</code></pre></div></div>
+
+<p>记住倒数第一个元素的索引是<code class="language-plaintext highlighter-rouge">-1</code>。</p>
+
+<h4 id="2迭代">2.迭代</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; d = {'a': 1, 'b': 2, 'c': 3}
+&gt;&gt;&gt; for key in d:
+...     print(key)
+...
+a
+c
+b
+</code></pre></div></div>
+
+<p>因为dict的存储不是按照list的方式顺序排列，所以，迭代出的结果顺序很可能不一样。</p>
+
+<p>默认情况下，dict迭代的是key。如果要迭代value，可以用<code class="language-plaintext highlighter-rouge">for value in d.values()</code>，如果要同时迭代key和value，可以用<code class="language-plaintext highlighter-rouge">for k, v in d.items()</code>。</p>
+
+<p>所以，当我们使用<code class="language-plaintext highlighter-rouge">for</code>循环时，只要作用于一个可迭代对象，<code class="language-plaintext highlighter-rouge">for</code>循环就可以正常运行，而我们不太关心该对象究竟是list还是其他数据类型。</p>
+
+<p>那么，如何判断一个对象是可迭代对象呢？方法是通过collections模块的Iterable类型判断：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; from collections import Iterable
+&gt;&gt;&gt; isinstance('abc', Iterable) # str是否可迭代
+True
+&gt;&gt;&gt; isinstance([1,2,3], Iterable) # list是否可迭代
+True
+&gt;&gt;&gt; isinstance(123, Iterable) # 整数是否可迭代
+False
+</code></pre></div></div>
+
+<p>如果要对list实现类似<strong>Java那样的下标循环怎么办</strong>？Python内置的<code class="language-plaintext highlighter-rouge">enumerate</code>函数可以把一个list变成索引-元素对，这样就可以在<code class="language-plaintext highlighter-rouge">for</code>循环中同时迭代索引和元素本身：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; for i, value in enumerate(['A', 'B', 'C']):
+...     print(i, value)
+...
+0 A
+1 B
+2 C
+</code></pre></div></div>
+
+<h4 id="3列表生成器">3.列表生成器</h4>
+
+<p>写列表生成式时，把要生成的元素<code class="language-plaintext highlighter-rouge">x * x</code>放到前面，后面跟<code class="language-plaintext highlighter-rouge">for</code>循环，就可以把list创建出来，十分有用，多写几次，很快就可以熟悉这种语法。</p>
+
+<p>for循环后面还可以加上if判断，这样我们就可以筛选出仅偶数的平方：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; [x * x for x in range(1, 11) if x % 2 == 0]
+[4, 16, 36, 64, 100]
+</code></pre></div></div>
+
+<p>还可以使用两层循环，可以生成全排列：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; [m + n for m in 'ABC' for n in 'XYZ']
+['AX', 'AY', 'AZ', 'BX', 'BY', 'BZ', 'CX', 'CY', 'CZ']
+</code></pre></div></div>
+
+<h4 id="4生成器">4、生成器</h4>
+
+<p>如果列表元素可以按照某种算法推算出来，那我们是否可以在循环的过程中不断推算出后续的元素呢？这样就不必创建完整的list，从而节省大量的空间。在Python中，这种一边循环一边计算的机制，称为生成器：generator。</p>
+
+<p>要创建一个generator，有很多种方法。第一种方法很简单，只要把一个列表生成式的<code class="language-plaintext highlighter-rouge">[]</code>改成<code class="language-plaintext highlighter-rouge">()</code>，就创建了一个generator：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; g = (x * x for x in range(10))
+&gt;&gt;&gt; g
+&lt;generator object &lt;genexpr&gt; at 0x00000206185D3318&gt;
+
+通过for循环来迭代输出它。
+</code></pre></div></div>
+
+<p>​	generator和函数的执行流程不一样。在每次调用<code class="language-plaintext highlighter-rouge">next()</code>的时候执行，遇到<code class="language-plaintext highlighter-rouge">yield</code>语句返回，再次执行时从上次返回的<code class="language-plaintext highlighter-rouge">yield</code>语句处继续执行。</p>
+
+<p>举个简单的例子，定义一个generator，依次返回数字1，3，5：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def odd():
+    print('step 1')
+    yield 1
+    print('step 2')
+    yield(3)
+    print('step 3')
+    yield(5)
+</code></pre></div></div>
+
+<p>调用该generator时，首先要生成一个generator对象，然后用<code class="language-plaintext highlighter-rouge">next()</code>函数不断获得下一个返回值：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; o = odd()
+&gt;&gt;&gt; next(o)
+step 1
+1
+&gt;&gt;&gt; next(o)
+step 2
+3
+&gt;&gt;&gt; next(o)
+step 3
+5
+&gt;&gt;&gt; next(o)
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+StopIteration
+</code></pre></div></div>
+
+<h4 id="5迭代器">5、迭代器</h4>
+
+<p>我们已经知道，可以直接作用于<code class="language-plaintext highlighter-rouge">for</code>循环的数据类型有以下几种：</p>
+
+<p>一类是集合数据类型，如<code class="language-plaintext highlighter-rouge">list</code>、<code class="language-plaintext highlighter-rouge">tuple</code>、<code class="language-plaintext highlighter-rouge">dict</code>、<code class="language-plaintext highlighter-rouge">set</code>、<code class="language-plaintext highlighter-rouge">str</code>等；</p>
+
+<p>一类是<code class="language-plaintext highlighter-rouge">generator</code>，包括生成器和带<code class="language-plaintext highlighter-rouge">yield</code>的generator function。</p>
+
+<p>这些可以直接作用于<code class="language-plaintext highlighter-rouge">for</code>循环的对象统称为可迭代对象：<code class="language-plaintext highlighter-rouge">Iterable</code>。</p>
+
+<p>可以使用<code class="language-plaintext highlighter-rouge">isinstance()</code>判断一个对象是否是<code class="language-plaintext highlighter-rouge">Iterable</code>对象：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; from collections.abc import Iterable
+&gt;&gt;&gt; isinstance([], Iterable)
+True
+&gt;&gt;&gt; isinstance({}, Iterable)
+True
+&gt;&gt;&gt; isinstance('abc', Iterable)
+True
+&gt;&gt;&gt; isinstance((x for x in range(10)), Iterable)
+True
+&gt;&gt;&gt; isinstance(100, Iterable)
+False
+</code></pre></div></div>
+
+<p>凡是可作用于<code class="language-plaintext highlighter-rouge">for</code>循环的对象都是<code class="language-plaintext highlighter-rouge">Iterable</code>类型；</p>
+
+<p>凡是可作用于<code class="language-plaintext highlighter-rouge">next()</code>函数的对象都是<code class="language-plaintext highlighter-rouge">Iterator</code>类型，它们表示一个惰性计算的序列；</p>
+
+<p>集合数据类型如<code class="language-plaintext highlighter-rouge">list</code>、<code class="language-plaintext highlighter-rouge">dict</code>、<code class="language-plaintext highlighter-rouge">str</code>等是<code class="language-plaintext highlighter-rouge">Iterable</code>但不是<code class="language-plaintext highlighter-rouge">Iterator</code>，不过可以通过<code class="language-plaintext highlighter-rouge">iter()</code>函数获得一个<code class="language-plaintext highlighter-rouge">Iterator</code>对象。</p>
+
+<p>Python的<code class="language-plaintext highlighter-rouge">for</code>循环本质上就是通过不断调用<code class="language-plaintext highlighter-rouge">next()</code>函数实现的，例如：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for x in [1, 2, 3, 4, 5]:
+    pass
+</code></pre></div></div>
+
+<p>实际上完全等价于：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 首先获得Iterator对象:
+it = iter([1, 2, 3, 4, 5])
+# 循环:
+while True:
+    try:
+        # 获得下一个值:
+        x = next(it)
+    except StopIteration:
+        # 遇到StopIteration就退出循环
+        break
+</code></pre></div></div>
+
+<h3 id="9使用模块">9、使用模块</h3>
+
+<p>使用<code class="language-plaintext highlighter-rouge">sys</code>模块的第一步，就是导入该模块：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import sys
+</code></pre></div></div>
+
+<p>导入<code class="language-plaintext highlighter-rouge">sys</code>模块后，我们就有了变量<code class="language-plaintext highlighter-rouge">sys</code>指向该模块，利用<code class="language-plaintext highlighter-rouge">sys</code>这个变量，就可以访问<code class="language-plaintext highlighter-rouge">sys</code>模块的所有功能。</p>
+
+<p>现在写入一个 test.py 文件后，便可以 import 该模块</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; import test
+&gt;&gt;&gt; test.test()
+Hello, world!
+</code></pre></div></div>
+
+<p>在一个模块中，我们可能会定义很多函数和变量，但有的函数和变量我们希望给别人使用，有的函数和变量我们希望仅仅在模块内部使用。在Python中，是通过<code class="language-plaintext highlighter-rouge">_</code>前缀来实现的。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from triangles import trian as tr
+从 triangles 模块中 引入 trian 函数 将其重命名为 tr
+导入类 也是同样形式
+导入多个时 用逗号隔开  from triangles import trian, cos, sin
+</code></pre></div></div>
+
+<p>导入模块中的所有函数</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from triangles import *
+此时调用函数时 不用 模块名.方法 直接方法即可
+</code></pre></div></div>
+
+<h4 id="变量函数作用域">变量函数作用域：</h4>
+
+<p>正常的函数和变量名是公开的（public），可以被直接引用，比如：<code class="language-plaintext highlighter-rouge">abc</code>，<code class="language-plaintext highlighter-rouge">x123</code>，<code class="language-plaintext highlighter-rouge">PI</code>等；</p>
+
+<p>类似<code class="language-plaintext highlighter-rouge">_xxx</code>和<code class="language-plaintext highlighter-rouge">__xxx</code>这样的函数或变量就是非公开的（private），不应该被直接引用，比如<code class="language-plaintext highlighter-rouge">_abc</code>，<code class="language-plaintext highlighter-rouge">__abc</code>等；</p>
+
+<h3 id="10面向对象编程">10、面向对象编程</h3>
+
+<h4 id="1类和实例">1.类和实例</h4>
+
+<p>类的初始化函数 <code class="language-plaintext highlighter-rouge">__init__</code>，前后分别有两个下划线！！！</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class Student(object):
+
+    def __init__(self, name, score):
+        self.name = name
+        self.score = score
+</code></pre></div></div>
+
+<p>和普通的函数相比，在类中定义的函数只有一点不同，就是第一个参数永远是实例变量<code class="language-plaintext highlighter-rouge">self</code>.</p>
+
+<p><strong>和静态语言不同，Python允许对实例变量绑定任何数据，也就是说，对于两个实例变量，虽然它们都是同一个类的不同实例，但拥有的变量名称都可能不同：</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; bart = Student('Bart Simpson', 59)
+&gt;&gt;&gt; lisa = Student('Lisa Simpson', 87)
+&gt;&gt;&gt; bart.age = 8
+&gt;&gt;&gt; bart.age
+8
+&gt;&gt;&gt; lisa.age
+Traceback (most recent call last):
+  File "&lt;stdin&gt;", line 1, in &lt;module&gt;
+AttributeError: 'Student' object has no attribute 'age'
+
+</code></pre></div></div>
+
+<p>私有变量：如果要让内部属性不被外部访问，可以把属性的名称前加上两个下划线<code class="language-plaintext highlighter-rouge">__</code>，在Python中，实例的变量名如果以<code class="language-plaintext highlighter-rouge">__</code>开头，就变成了一个私有变量（private）</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    def __init__(self, name, score):
+        self.__name = name
+        self.__score = score
+</code></pre></div></div>
+
+<h4 id="2继承多态">2.继承、多态</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class Animal(object):
+    def run(self):
+        print("animal is running")
+        
+class Cat(Animal):
+	pass
+</code></pre></div></div>
+
+<p>可用 isinstance</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; isinstance(b, Animal)
+True
+</code></pre></div></div>
+
+<p>对于 py 这种动态语言 传入类型不一定必须要为Animal的子类，只要有 run 函数即可</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def run_t(animal):
+    animal.run()
+    animal.run()
+</code></pre></div></div>
+
+<h4 id="3获取对象信息">3.获取对象信息</h4>
+
+<p>配合<code class="language-plaintext highlighter-rouge">getattr()</code>、<code class="language-plaintext highlighter-rouge">setattr()</code>以及<code class="language-plaintext highlighter-rouge">hasattr()</code>，我们可以直接操作一个对象的状态：</p>
+
+<p>私有变量也会显示不存在</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; hasattr(obj, 'x') # 有属性'x'吗？
+True
+&gt;&gt;&gt; obj.x
+9
+&gt;&gt;&gt; hasattr(obj, 'y') # 有属性'y'吗？
+False
+&gt;&gt;&gt; setattr(obj, 'y', 19) # 设置一个属性'y'
+&gt;&gt;&gt; hasattr(obj, 'y') # 有属性'y'吗？
+True
+&gt;&gt;&gt; getattr(obj, 'y') # 获取属性'y'
+19
+&gt;&gt;&gt; obj.y # 获取属性'y'
+19
+</code></pre></div></div>
+
+<h4 id="4类属性">4.类属性</h4>
+
+<p>​	<strong>实例对象可以在之后绑定新属性和新方法</strong></p>
+
+<p>​	当我们定义了一个类属性后，这个属性虽然归类所有，但类的所有实例都可以访问到。来测试一下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt;&gt;&gt; class Student(object):
+...     name = 'Student'
+...
+&gt;&gt;&gt; s = Student() # 创建实例s
+&gt;&gt;&gt; print(s.name) # 打印name属性，因为实例并没有name属性，所以会继续查找class的name属性
+Student
+&gt;&gt;&gt; print(Student.name) # 打印类的name属性
+Student
+&gt;&gt;&gt; s.name = 'Michael' # 给实例绑定name属性
+&gt;&gt;&gt; print(s.name) # 由于实例属性优先级比类属性高，因此，它会屏蔽掉类的name属性
+Michael
+&gt;&gt;&gt; print(Student.name) # 但是类属性并未消失，用Student.name仍然可以访问
+Student
+&gt;&gt;&gt; del s.name # 如果删除实例的name属性
+&gt;&gt;&gt; print(s.name) # 再次调用s.name，由于实例的name属性没有找到，类的name属性就显示出来了
+Student
+</code></pre></div></div>
+
+<p>​	从上面的例子可以看出，在编写程序的时候，千万不要对实例属性和类属性使用相同的名字，因为相同名称的实例属性将屏蔽掉类属性，但是当你删除实例属性后，再使用相同的名称，访问到的将是类属性。</p>
+
+<p>​	<strong>当然，也可以限制属性</strong>比如只允许添加属性：只允许对Student实例添加<code class="language-plaintext highlighter-rouge">name</code>和<code class="language-plaintext highlighter-rouge">age</code>属性。</p>
+
+<p>​	为了达到限制的目的，Python允许在定义class的时候，定义一个特殊的<code class="language-plaintext highlighter-rouge">__slots__</code>变量，来限制该class实例能添加的属性：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class Student(object):
+    __slots__ = ('name', 'age') # 用tuple定义允许绑定的属性名称
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">	__slots__</code>定义的属性仅对当前类实例起作用，对继承的子类是不起作用的：</p>
+
+<h3 id="11异常处理">11、异常处理</h3>
+
+<p>Python所有的错误都是从<code class="language-plaintext highlighter-rouge">BaseException</code>类派生的，常见的错误类型和继承关系看这里：</p>
+
+<p>https://docs.python.org/3/library/exceptions.html#exception-hierarchy</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>try:
+    pass
+except ZeroDivisionError as e:
+	pass
+finally:
+	pass
+</code></pre></div></div>
+
+<p>​	使用<code class="language-plaintext highlighter-rouge">try...except</code>捕获错误还有一个巨大的好处，就是可以跨越多层调用，比如函数<code class="language-plaintext highlighter-rouge">main()</code>调用<code class="language-plaintext highlighter-rouge">bar()</code>，<code class="language-plaintext highlighter-rouge">bar()</code>调用<code class="language-plaintext highlighter-rouge">foo()</code>，结果<code class="language-plaintext highlighter-rouge">foo()</code>出错了，这时，只要<code class="language-plaintext highlighter-rouge">main()</code>捕获到了，就可以处理：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def foo(s):
+    return 10 / int(s)
+
+def bar(s):
+    return foo(s) * 2
+
+def main():
+    try:
+        bar('0')
+    except Exception as e:
+        print('Error:', e)
+    finally:
+        print('finally...')
+</code></pre></div></div>
+
+<p>​	也就是说，不需要在每个可能出错的地方去捕获错误，只要在合适的层次去捕获错误就可以了。这样一来，就大大减少了写<code class="language-plaintext highlighter-rouge">try...except...finally</code>的麻烦。</p>
+
+<p>12、文件处理</p>
+
+<p>read</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>filename = './project/a.txt'
+
+with open(filename) as file_pro:
+    contents = file_pro.read()
+    print(contents)
+</code></pre></div></div>
+
+<p>write  ‘w’每次都是重新写入</p>
+
+<p>write  ‘a’ 表示附加写入</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>filename = './project/a.txt'
+a = 'aa'
+with open(filename, 'w') as file_pro:
+	file_pro.write(a+'\n')		#表示换行
+</code></pre></div></div>
+
+<p>写入json文件 json.dump</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import json
+
+numbers = [2, 3, 5, 7, 11]
+
+filename = 'a.json'
+with open(filename, 'w') as file_pro:
+    json.dump(numbers, file_pro)
+</code></pre></div></div>
+
+<p>导出json文件到内存 json.load</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import json
+
+filename = 'a.json'
+
+with open(filename) as file_p:
+    numbers = json.load(file_p)
+
+print(numbers)
+</code></pre></div></div>
+
+:ET

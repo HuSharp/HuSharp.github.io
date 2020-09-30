@@ -1,0 +1,89 @@
+I"<ul id="markdown-toc">
+  <li><a href="#背景" id="markdown-toc-背景">背景</a></li>
+  <li><a href="#环境" id="markdown-toc-环境">环境</a></li>
+  <li><a href="#ubuntu配置" id="markdown-toc-ubuntu配置">Ubuntu配置</a></li>
+  <li><a href="#virtualbox配置" id="markdown-toc-virtualbox配置">VirtualBox配置</a></li>
+  <li><a href="#网络通信" id="markdown-toc-网络通信">网络通信</a></li>
+  <li><a href="#最终展示" id="markdown-toc-最终展示">最终展示</a></li>
+  <li><a href="#一个问题关于-登录root会显示如下情况" id="markdown-toc-一个问题关于-登录root会显示如下情况">一个问题：关于 登录root会显示如下情况</a>    <ul>
+      <li><a href="#登录root展示" id="markdown-toc-登录root展示">登录root展示：</a></li>
+    </ul>
+  </li>
+</ul>
+<h2 id="背景">背景</h2>
+
+<p>前提概要：由于琢磨老久的VBox下的Ubuntu32位不能安装增强功能，但又不想在vscode下代码提示下快乐code，于是决定整一个WinScp进行文件传输。</p>
+
+<h2 id="环境">环境</h2>
+
+<p>PC：windows
+ PC软件：WinSCP
+ 虚拟机：Ubuntu</p>
+
+<h2 id="ubuntu配置">Ubuntu配置</h2>
+
+<p>首先确认虚拟机的ssh服务是否已经开启</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ps -e | grep ssh
+</code></pre></div></div>
+
+<p>如果只有ssh-agent那ssh-server还没有启动，需要/etc/init.d/ssh start，如果看到sshd那说明ssh-server已经启动了，如果启动不成功说明需要安装ssh服务：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo apt-get install sshd 或
+sudo apt-get install openssh-server
+</code></pre></div></div>
+
+<p>安装后启动成功就可以了</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>service sshd start 或
+/etc/init.d/ssh start
+</code></pre></div></div>
+
+<h2 id="virtualbox配置">VirtualBox配置</h2>
+
+<p>网卡个数需要关闭正在运行的Ubuntu才能设置
+网卡1设置网络地址转换（默认）（在此模式下与PC同DNS）</p>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213323731.png" alt="image-20200722213323731" /></p>
+
+<p>网卡2设置仅主机（Host-Only）网络</p>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213408301.png" alt="image-20200722213408301" /></p>
+
+<h2 id="网络通信">网络通信</h2>
+
+<p>配置好后启动Ubuntu，终端输入：Ifconfig查看网络地址，第二个，也就是Host-Only中的ip地址，我们在PC端去ping</p>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213525532.png" alt="image-20200722213525532" /></p>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213537106.png" alt="image-20200722213537106" /></p>
+
+<p>填写好对应信息</p>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213637696.png" alt="image-20200722213637696" /></p>
+
+<h2 id="最终展示">最终展示</h2>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213655639.png" alt="image-20200722213655639" /></p>
+
+<h2 id="一个问题关于-登录root会显示如下情况">一个问题：关于 登录root会显示如下情况</h2>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213856746.png" alt="image-20200722213856746" /></p>
+
+<p><strong>1.需要修改ssh配置文件</strong>：vim etc/ssh/sshd_config</p>
+
+<p>在#PermitRootLogin without-password 此行下新增一行：</p>
+
+<p>PermitRootLogin yes</p>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722213454406.png" alt="image-20200722213454406" /></p>
+
+<p>2.重启ssh</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>service ssh restart
+</code></pre></div></div>
+
+<h3 id="登录root展示">登录root展示：</h3>
+
+<p><img src="/assets/blog_image/2020-07-22-Use-WinScp/image-20200722214003520.png" alt="image-20200722214003520" /></p>
+:ET
