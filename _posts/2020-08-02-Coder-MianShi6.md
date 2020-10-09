@@ -276,6 +276,29 @@ b.c<c.b => b * m（C）+ c < c * k（b）+b 不等式2
 
   ![image-20201008220953746](/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201008220953746.png)
 
+
+
+### KMP应用
+
+1、京东原题
+
+给定一个原始串 str ，要在后面加上一些字符，使形成的新字符中出现两次 str。
+
+```
+1. str:aaaa	-->后面加一个 a 即可
+2. str:aab  --> aabaab
+```
+
+思路：
+
+采用 next 数组，找最后一个字符的 next 值， 然后加上 next 值以后的字符。
+
+![image-20201009105622034](/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201009105622034.png)
+
+
+
+
+
 ### Manacher 算法
 
 回文半径数组， 右边界，index， 回文中心 
@@ -325,6 +348,8 @@ b.c<c.b => b * m（C）+ c < c * k（b）+b 不等式2
 ![image-20200813104729106](/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813104729106.png)
 
 由于R只会向右或停止，不会回退，因此从 R 变化的角度来看，时间复杂度为 O(n),
+
+
 
 
 
