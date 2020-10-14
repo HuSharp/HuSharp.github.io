@@ -280,7 +280,7 @@ typora-root-url: ..
 #### 1.序列化
 
 ​	首先假设序列化的结果字符串为str，初始时str = "”。先序遍历二叉树，如果遇到null节点，就在 str 的末尾加上“#！”，“#” 表示这个节点为空，节点值不存在，“！”表示一个值的结束；如果遇到不为空的节点，假设节点值为3，就在 str 的末尾加上“3！”。比如左图所示的二叉树。
-根据上文的描述，先序遍历序列化，最后的结果字符串str为：1213!#!#!#!.。
+根据上文的描述，先序遍历序列化，最后的结果字符串str为：12!3!#!#!#!.。
 
 ![image-20200729083924358](/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200729083924358.png)
 
@@ -333,6 +333,42 @@ typora-root-url: ..
 		return head;
 	}
 ```
+
+递归对当前节点的左子树和右子树进行重构即可。
+
+
+
+#### 3.层次序列化 （按照队列实现）
+
+```
+    // 层次序列化 用队列即可
+    public static String serializeByLevelOrder(Node[] nodes, int root) {
+
+        int n = nodes.length;
+        if (n < 1) {
+            return "#!";
+        }
+        String res = "";
+        Node head = nodes[root];
+        Queue<Node> queue = new LinkedList<>();
+
+        queue.offer(head);
+        while(!queue.isEmpty()) {
+            Node cur = queue.poll();
+            if(cur != null) {
+                res += (cur.value+"!");
+                queue.offer(cur.left);
+                queue.offer(cur.right);
+            } else {
+                res += "#!";
+            }
+        }
+
+        return res;
+    }
+```
+
+
 
 #### 结果展示
 

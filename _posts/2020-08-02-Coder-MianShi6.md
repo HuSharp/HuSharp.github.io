@@ -280,7 +280,7 @@ b.c<c.b => b * m（C）+ c < c * k（b）+b 不等式2
 
 ### KMP应用
 
-1、京东原题
+#### 1、最小出现两次 ShortestHaveTwice 
 
 给定一个原始串 str ，要在后面加上一些字符，使形成的新字符中出现两次 str。
 
@@ -294,6 +294,20 @@ b.c<c.b => b * m（C）+ c < c * k（b）+b 不等式2
 采用 next 数组，找最后一个字符的 next 值， 然后加上 next 值以后的字符。
 
 ![image-20201009105622034](/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201009105622034.png)
+
+
+
+
+
+2、判断子树包含
+
+给定两棵树，Tree1 与 Tree2 ，判断 Tree2 是否为 Tree1 的子树。
+
+【解答】
+
+1.首先进行序列化
+
+
 
 
 
