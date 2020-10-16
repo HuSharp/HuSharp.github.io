@@ -239,3 +239,6 @@ C4 = G4 + P4*C3
 
 ![image-20201014223905904](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201014223905904.png)
 
+
+
+![v2-801bb6008e475f4e2a7fd3280c0e04a9_720w](/assets/blog_image/2020-10-05-hust-cpu-study_2/v2-801bb6008e475f4e2a7fd3280c0e04a9_720w.jpg)

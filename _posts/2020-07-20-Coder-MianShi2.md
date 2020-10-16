@@ -208,3 +208,77 @@ public static void printDiagonal(int[][] matrix, int eastUpR, int eastUpC,
 
 
 
+### 5、数组的 partition 问题
+
+【题目】
+
+  给定一个有序数组arr，调整arr使得这个数组的左半部分[1,n+12][1, \frac{n+1}{2}][1,2n+1]没有重复元素且升序，而不用保证右部分是否有序 
+
+  例如，arr = [1, 2, 2, 2, 3, 3, 4, 5, 6, 6, 7, 7, 8, 8, 8, 9]，调整之后arr=[1, 2, 3, 4, 5, 6, 7, 8, 9, .....]。 
+
+https://www.nowcoder.com/practice/0d65e18ca5784ae68577d9591df23033?tpId=101&&tqId=33105&rp=1&ru=/ta/programmer-code-interview-guide&qru=/ta/programmer-code-interview-guide/question-ranking
+
+   [要求]  
+
+   时间复杂度为O(n)，空间复杂度为O(1)
+
+输入描述:
+
+```
+第一行一个整数N。表示数组长度。
+接下来一行N个整数，表示数组内元素
+```
+
+输出描述:
+
+```
+输出N个整数为答案数组
+```
+
+【示例】
+
+输入
+
+```
+16
+1 2 2 2 3 3 4 5 6 6 7 7 8 8 8 9
+```
+
+输出
+
+```
+1 2 3 4 5 6 7 8 9 6 2 7 2 8 8 3
+```
+
+【解析】
+
+采用荷兰国旗问题思路。只不过只考虑左侧 left 排序。
+
+1. 生成变量 small，含义是在 arr[0.small] 上都是无重复元素且升序的。也就是说，small 是这个区域最后的位置，初始时 small0，这个区域记为A。
+2. 生成变量 big ，利用big 做从左到右的遍历，在 arr[small + l.]上是不保证没有重复元素且升序的区域， big 是这个区域最后的位置，初始时 =1，这个区域记为B。
+
+3. big 向右移动（++）。因为数组整体有序，所以如果 arr[ big ] != arr[small]，说明当前数arr[ big ] 应该加入到 A 区域里，所以交换 arr[small+1] 和 arr[ big ]，此时A的区域增加一个数（small++）：如果arr[ big ] = arr[small]，说明当前数ar[ big ]的值之前已经加入到A区域，此时不用再加入。
+4. 重复步骤3，直到所有的数遍历完。
+
+```
+    public static void leftUnique(int[] arr) {
+        int small = 0;
+        int big = 1;
+
+        while(big != arr.length) {
+            if(arr[small] != arr[big]) {
+                swap(arr, ++small, big++);
+            } else {
+                big++;
+            }
+        }
+    }
+```
+
+
+
+变式
+
+参考荷兰国旗问题
+
+http://husharp.today/2020/07/18/Coder-MianShi0/
