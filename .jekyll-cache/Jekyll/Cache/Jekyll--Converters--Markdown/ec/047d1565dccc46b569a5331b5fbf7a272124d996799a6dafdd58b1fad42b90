@@ -1,0 +1,58 @@
+I"G<ul id="markdown-toc">
+  <li><a href="#排序大汇总" id="markdown-toc-排序大汇总">排序大汇总</a>    <ul>
+      <li><a href="#一基于比较的排序" id="markdown-toc-一基于比较的排序">一、基于比较的排序</a>        <ul>
+          <li><a href="#1冒泡排序" id="markdown-toc-1冒泡排序">1、冒泡排序</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="排序大汇总">排序大汇总</h1>
+
+<p><img src="/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200904210328226.png" alt="image-20200904210328226" /></p>
+
+<h2 id="一基于比较的排序">一、基于比较的排序</h2>
+
+<h3 id="1冒泡排序">1、冒泡排序</h3>
+
+<p>时间复杂度O(N^2)，额外空间复杂度O(1)</p>
+
+<p>冒泡排序只会操作相邻的两个数据。每次冒泡操作都会对相邻的两个元素进行比较，看是否满足大小关系要求。如果不满足就让它俩互换。一次冒泡会让至少一个元素移动到它应该在的位置，重复 n 次，就完成了 n 个数据的排序工作。</p>
+
+<p><img src="/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200901093823865.png" alt="image-20200901093823865" /></p>
+
+<p>还可以进行优化：。当某次冒泡操作已经没有数据交换时，说明已经达到完全有序，不用再继续执行后续的冒泡操作。我这里还有另外一个例子，这里面给 6 个元素排序，只需要 4 次冒泡操作就可以了。</p>
+
+<p><img src="/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200901094002382.png" alt="image-20200901094002382" /></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	public static void bubbleSort(int[] arr) {
+		if (arr == null || arr.length &lt; 2) {
+			return;
+		}
+		boolean flag = false;// 标志此时是否还有排序
+		for (int end = arr.length - 1; end &gt; 0; end--) {
+			flag = false;
+			for (int i = 0; i &lt; end; i++)
+				if (arr[i] &gt; arr[i + 1]) {
+					swap(arr, i, i + 1);
+					flag = true;
+				}
+			if (!flag)
+				break;
+		}
+	}
+</code></pre></div></div>
+
+<p><strong>第一，冒泡排序是原地排序算法吗？</strong></p>
+
+<p>冒泡的过程只涉及相邻数据的交换操作，只需要常量级的临时空间，所以它的空间复杂度为 O(1)，是一个原地排序算法。</p>
+
+<p><strong>第二，冒泡排序是稳定的排序算法吗？</strong></p>
+
+<p>在冒泡排序中，只有交换才可以改变两个元素的前后顺序。为了保证冒泡排序算法的稳定性，<strong>当有相邻的两个元素大小相等的时候，我们不做交换</strong>，相同大小的数据在排序前后不会改变顺序，所以冒泡排序是稳定的排序算法。</p>
+
+<p><strong>第三，冒泡排序的时间复杂度是多少？</strong></p>
+
+<p>最好情况下，要排序的数据已经是有序的了，我们只需要进行一次冒泡操作，就可以结束了，所以最好情况时间复杂度是 O(n)。而最坏的情况是，要排序的数据刚好是倒序排列的，我们需要进行 n 次冒泡操作，所以最坏情况时间复杂度为 O(n2)。</p>
+:ET

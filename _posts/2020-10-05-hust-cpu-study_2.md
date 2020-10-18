@@ -8,7 +8,7 @@ author: Hu#
 typora-root-url: ..
 ---
 
-* toc
+* TOC
 {:toc}
 
 
