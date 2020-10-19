@@ -190,39 +190,147 @@ L 与 R 一直前进直到 arr.length 因此时间复杂度为 O(n)
 
 
 
+### 3、单调栈结构
+
+【题目】
+
+  给定一个不含有重复值的数组 arr，找到每一个 i 位置左边和右边离 i 位置最近且值比 arr[i] 小的位置。返回所有位置相应的信息。 -1 表示没有。
+
+**输入**
+
+```
+7
+3 4 1 5 6 2 7
+```
+
+**输出**
+
+```
+-1 2
+0 2
+-1 -1
+2 5
+3 5
+2 -1
+5 -1
+```
+
+【分析】
+
+#### 1、没有重复元素（低级）
+
+经典解即为遍历找左边的最小值，右边的最小值，为O(n^2)
+
+现讨论 O(N) 解法。
+
+​	准备一个栈，记为 stack ，栈中放的元素是数组的位置，开始时 stack 为空。如果找到每一个i 位置左边和右边离 i 位置最近且值比 arr[i] 小的位置，那么需要让 **stack 从栈顶到栈底**的位置所代表的值是**严格递减**的。
+​	下面用例子来展示单调栈的使用和求解流程
+
+- 初始时 arr = { 3,4,1,5,6,2,7,7}。stack 从栈顶到栈底为：{}；
+
+- 遍历到 arr[0] = 3，发现 **栈为空**，就直接放入 0 位置。从栈顶到栈底为：{ 0位置(值是3)};
+
+- 遍历到 arr[1] = 4，发现直接放入 1 位置，不会破坏 stack 从栈顶到栈底的位置所代表的值是严格递减的，那么直接放入
+
+- 遍历到 arr[2] = 1，发现直接放入 2位置（值是1），会破坏从栈顶到栈底的位置所代表的值是严格递减的，所以从 stack 栈顶开始弹出位置。如果 x 位置被弹出，在栈中位于 x 位量下面的位置，就是 x 位置左边离位置最近且值比 arr[x] 小的位置; 当前由于小于 x 的位置值而将 x 弹出的位置，就是 x 位置右边离位置最近且值比 arr[x] 小的位置。同理继续上述过程，直至到达遍历末尾。
+
+  ![image-20201019151927924](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201019151927924.png)
+
+- 当遍历阶段结束后，即栈中还有值时，进行 pop 操作。每一个 pop 出的值 x ， x 位置右边满足条件位置 填上 -1 （表示已经没有，其右边都比它大），左边填上栈中其下面的位置。
+- 直到栈中只剩下最后一个值，那么其左右都为 -1。
 
 
 
+**现在证明在单调栈中，为何可以弹出时进行判断。**
+
+​	假设 stack 当前栈顶位置是 x ，值是 5；x下面是 i 位置，值是 1。当前遍历到 j 位置，值是4。如下图所示，请注意整个数组中是没有重复值的。
+
+![image-20201019152836005](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201019152836005.png)
+
+​	当前来到 j 位置，但是 x 位置已经在栈中，所以 x 位置肯定在 j 位置的左边：····5（x 位置）····· 1（j 位置）。如果在 5 和 1 之间存在小于 5 的数，那么没等遍历到当前的 1，x位置（值是 5 ）就已经被弹出了，轮不到当前位置的 1 来让 x 位置的5弹出，所以 5 和 1 之间的数要么没有，要么是比 5 大，所以x 位置右边离位置最近且值比 arr[x] 小的位置一定为 当前的 j 位置所对应的 1。
+
+​	同理，下面为 i 位置的对应的值 1 也满足 x 的左边条件。
+
+因此：每个元素进栈一次，出栈一次，时间复杂度为 O(N)。
+
+**注意：**以上为低级版本，即输入数组中没有重复元素。
+
+```java
+        public static int[][] getNearLessNoRepeat(int[] arr) {
+            int[][] res = new int[arr.length][2];// 结果返回数组
+    
+            Stack<Integer> stack = new Stack<>();
+            for (int i = 0; i < arr.length; i++) {
+                while (!stack.isEmpty() && arr[stack.peek()] > arr[i]) {
+                    int cur = stack.pop();
+                    int leftLessIndex = stack.isEmpty() ? -1 : stack.peek();
+                    res[cur][0] = leftLessIndex;
+                    res[cur][1] = i;
+                }
+                stack.push(i);
+            }
+    
+            // 至此已经遍历完毕，进行栈中弹出
+            while (!stack.isEmpty()) {
+                int cur = stack.pop();
+                int leftLessIndex = stack.isEmpty() ? -1 : stack.peek();
+                res[cur][0] = leftLessIndex;
+                res[cur][1] = -1;
+            }
+    
+            return res;
+        }
+```
 
 
 
+#### 2、有重复元素（进阶）
 
+将栈中存放思路稍微改一下
 
+将遇到栈中的相等值时，一起存储（采用链表结构即可）。
 
+![image-20201019155739768](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201019155739768.png)
 
+为什么可以遇到？因为若上面是比 3 大的值，遇到 3 会弹出，直至遇到相等的 3。
 
+```java
+    public static int[][] getNearLessRepeat(int[] arr) {
+        int[][] res = new int[arr.length][2];// 结果返回数组
 
+        Stack<List<Integer>> stack = new Stack<>();
+        for (int i = 0; i < arr.length; i++) {
+            while (!stack.isEmpty() && arr[stack.peek().get(0)] > arr[i]) {
+                List<Integer> curPop = stack.pop();
+                int leftLessIndex = stack.isEmpty() ? -1 : stack.peek().get(stack.peek().size() - 1);
+                for (Integer cur : curPop) {
+                    res[cur][0] = leftLessIndex;
+                    res[cur][1] = i;
+                }
+            }
+            // 现在讨论入栈
+            if(!stack.isEmpty() && arr[stack.peek().get(0)] == arr[i]) {//说明之前就已经存在
+                stack.peek().add(Integer.valueOf(i));
+            } else { // 之前不存在
+                List<Integer> pushList = new ArrayList<>();
+                pushList.add(Integer.valueOf(i));
+                stack.push(pushList);
+            }
+        }
 
+        // 至此已经遍历完毕，进行栈中弹出
+        while (!stack.isEmpty()) {
+            List<Integer> curPop = stack.pop();
+            int leftLessIndex = stack.isEmpty() ? -1 : stack.peek().get(stack.peek().size() - 1);
+            for (Integer cur : curPop) {
+                res[cur][0] = leftLessIndex;
+                res[cur][1] = -1;
+            }
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return res;
+    }
+```
 
 
 
