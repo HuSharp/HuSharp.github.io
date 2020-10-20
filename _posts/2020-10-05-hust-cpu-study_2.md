@@ -379,6 +379,8 @@ ALU 功能
 
 原理
 
+![image-20201020223010992](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020223010992.png)
+
 提示：无符号1位乘法自动运算可分解为如下步骤。
 
 1. 初始化时寄存器、X、Y值全为0，电路默认状态就是0；
@@ -441,15 +443,39 @@ ALU 功能
 
 首先探讨补码的一位乘
 
+![image-20201020223010992](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020223010992.png)
+
 1、X 乘上 正数
 
 ![image-20201019174715802](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019174715802.png)
 
+由于 Y 为正，所以 [Y]补 = Y
+
 2、X 乘上 负数
 
-![image-20201019174747286](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019174747286.png)
+![image-20201020221531307](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020221531307.png)
 
-![image-20201019174755272](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019174755272.png)
+![image-20201020221751091](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020221751091.png)
+
+​									现在思考这样一个定理： 一个数向左移动一位后（2倍）  --  自身  =  自身
+
+​														引入一位 Yn+1，**那么 Yn+1 初始值设为 0**。可以得到下面式子转换。
+
+![image-20201020222123786](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020222123786.png)
+
+<img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020221736106.png" alt="image-20201020221736106" style="zoom:80%;" />
+
+​											现在将  2位  看作一个整体，即 YnYn+1、Yn-1Yn、... 1 2。
+
+​											即   Yn+1-Yn -->  Yn  、Yn-Yn-1 --> Yn-1 ...... 那么可以得到以下式子：
+
+<img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020222333818.png" alt="image-20201020222333818" style="zoom:80%;" />
+
+​									再由于 当 Y 为 正数 时，符号位则为 0，即可以代入下图 Y0，然后将两个情况统一。
+
+![image-20201020223924682](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020223924682.png)
+
+​								**因此 这也可以解释为什么Booth里末两位为 10 时，要加[-X]补。 为什么 Y(n+1) - Yn = 1 (末两位01)的时候 要加[X]补。**
 
 易知以下推导公式（ booth 一位乘法）
 
@@ -461,11 +487,14 @@ ALU 功能
 
 ​	补码1位乘法的硬件逻辑结构如上图所示，图中寄存器 R0 存放部分积 ∑ ，寄存器 R1 存放乘数 Yn 以及扩展位 Yn+1（初始值为零），YnYn+1 为判断位(**最低两位**)；寄存器R2：存放被乘数X的补码；加法器实现部分积的累加，运算逻辑为 <img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019175758692.png" alt="image-20201019175758692" style="zoom: 80%;" />。其中，一个操作数为  ∑ ，另一个操作数由判断位 YnYn+1 对多路选择器进行选择控制； 控制电路负责移位控制和循环计数。受时钟驱动，每运算一次，加法器运算结果与寄存器 R1 的值一起算术右移 1 位后产生的新值载入 R0 和 R1 寄存器中，当运算结束时，乘积的高 n 位数据在 R0 中，低 n 位在 R1 中， R1 中原来的乘数在右移过程中逐位移出寄存器。
 
+- 乘数 x 取双符号位参与运算，部分积的初始值为0；
+- 乘数 y 取单符号位参与运算。
+
 ![image-20201019180208264](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019180208264.png)
 
 注意事项如下：
 
-1、Yn 初始值为 0 。
+1、Yn+1 初始值为 0 。
 
 ![image-20201019225303449](/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019225303449.png)
 
