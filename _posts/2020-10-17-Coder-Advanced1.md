@@ -12,6 +12,8 @@ typora-root-url: ..
 {:toc}
 
 
+## 一、单调栈思想及其应用
+
 ### 1、生成窗口最大值数组
 
 【题目】
@@ -401,6 +403,341 @@ public class Node{
 
      证明完毕。
      
+
+
+
+
+
+### 5、求最大矩阵的大小
+
+【题目】
+
+​	给定一个整型矩阵 map，其中的值只有 0 和 1 两种，求其中全是 1 的所有矩形区域中，最大的矩形区域里 1 的数量。
+
+例如：
+
+```
+1   1   1   0
+其中，最大的矩形区域有 3 个 1 ，所以返回 3。
+再如：
+1   0   1   1
+1   1   1   1
+1   1   1   0
+其中，最大的矩形区域有6个1，所以返回6。
+```
+
+【分析】
+
+#### 1、前置背景
+
+首先考虑一个变式：**直方图中最大矩形面积的求解**
+
+也是类似单调栈的思路
+
+现如下图的一个直方图，竖轴表示直方图高度，横轴表示数组小标。
+
+![image-20201023123136276](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201023123136276.png)
+
+现进行步骤讨论：（利用一个从底到顶大小由小到大排列的栈）
+
+1.入栈 0-> 4 ，现要入栈 1->3 时发现不满足，因此弹出结算。由下图可知：此时由 0->4 的高度可取得的最大矩形为 1 * 4 = 4。（值得注意的是，此时矩形底边长度的判断取决于和迫使其 pop 出元素的距离）。即此时为 (1 - (-1) - 1)
+
+![image-20201023123234330](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201023123234330.png)
+
+2.现在入栈 1->3 .同理易知 由 1->3 的高度可取得的最大矩形为 2 * 3 = 6
+
+![image-20201023123621482](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201023123621482.png)
+
+3.现在依次入栈 2、 3、4，发现都能入栈。因此最后一个也已经入栈。现在开始对栈内元素进行判断：首先弹出 4->6，同理易知 由 4->6 的高度可取得的最大矩形为 1 * 6 = 6
+
+![image-20201023123820930](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201023123820930.png)
+
+4.弹出 3->5，同理易知 由 3->5 的高度可取得的最大矩形为 2 * 5 = 10
+
+![image-20201023123900653](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201023123900653.png)
+
+5.最后弹出 2->2，同理易知 由 2->2 的高度可取得的最大矩形为 5 * 2 = 10
+
+![image-20201023124113583](/assets/blog_image/2020-10-17-Coder-Advanced1/image-20201023124113583.png)
+
+最后取的最大值为10.
+
+上述代码实现为
+
+```
+    public static int maxRecFromBottom(int[] height) {
+        if(height == null || height.length == 0) {
+            return 0;
+        }
+
+        int maxArea = 0;
+        // 栈需要从小到大进行排列
+        Stack<Integer> stack = new Stack<>();
+        // 首先对每个点进行入栈
+        for (int i = 0; i < height.length; i++) {
+            while(stack.isEmpty() || height[stack.peek()] > height[i]) {
+                int cur = stack.pop();// 进行清算
+                // 计算该点的 最大矩形
+                int left = stack.isEmpty()? -1 : stack.peek();
+                int curArea = (i - left - 1) * height[cur];
+                maxArea = Math.max(maxArea, curArea);
+            }
+            // 至此当前点开始入栈
+            stack.push(i);
+        }
+
+        // 至此全部点都已经入栈，进行栈内数据判断
+        while (!stack.isEmpty()) {
+            int cur = stack.pop();
+            int left = stack.isEmpty()? -1 : stack.peek();
+            int curArea = (height.length - left - 1) * height[cur];
+            maxArea = Math.max(maxArea, curArea);
+        }
+
+        return maxArea;
+    }
+```
+
+
+
+#### 2、回到原题
+
+现在再考虑原题，将以上思路代入即可。
+
+现在若矩阵为下所示
+
+```
+1   0   1   1
+1   1   1   1
+1   1   1   0
+```
+
+那么将矩阵类比为直方图。将以每一行为单独考虑，将每一列数值构成的直方图作为该行的值。取max。
+
+即此时为 
+
+```
+0：  1	0	1	1    O(m)
+1：	2	1	2	2	 O(m)
+2：	3  	2  	3  	0	 O(m)
+```
+
+每一行为 O(m）， 因此最后和为 O(m * n)。
+
+```
+    public static int maxRecSize(int[][] map) {
+        if(map == null || map.length == 0 || map[0].length == 0) {
+            return 0;
+        }
+
+        int maxArea = 0;
+        int[] height = new int[map[0].length];// 对每一行进行高度判断
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[0].length; j++) {
+                height[j] = map[i][j] == 0? 0 : height[j]+1;
+            }
+            // 每一行进行判断
+            maxArea = Math.max(maxRecFromBottom(height), maxArea);
+        }
+        return maxArea;
+    }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
