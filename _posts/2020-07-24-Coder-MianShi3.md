@@ -25,11 +25,11 @@ typora-root-url: ..
 
 1. **单向链表**
 
-   共需要三个指针进行swap：cur（head），pre，next
+   共需要三个指针进行 swap：cur（head），pre，next
 
-   1. 先保存cur的next到next指针
-   2. 将cur的next指向pre（pre初始为null）
-   3. pre指向当前指针，head指向next指针（移到下一个）
+   1. 先保存 cur 的 next 到 next 指针
+   2. 将 cur 的 next 指向 pre（pre初始为null）
+   3. pre 指向当前指针，head 指向 next 指针（移到下一个）
 
    ```
    public static Node reverseList(Node head) {
