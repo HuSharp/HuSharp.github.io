@@ -10,6 +10,9 @@ typora-root-url: ..
 
 * content
 {:toc}
+
+
+
 ##  三、Morris 遍历
 
 ### 1、Morris 遍历的基本概念
@@ -103,7 +106,7 @@ Morris 的本质和递归版本大致相当，忽略掉第三次回到该节点
 
 对于 cur 可以到达两次的节点，cur 第一次到达时打印，第二次不打印
 
-```
+```java
     // 先序实现
     public static void morrisPreprint(Node head) {
       	...
@@ -140,7 +143,7 @@ Morris 的本质和递归版本大致相当，忽略掉第三次回到该节点
 
 对于 cur 可以到达两次的节点，cur 第一次到达时不打印，第二次到达打印
 
-```
+```java
     // 中序
     public static void morrisInprint(Node head) {
 		...
@@ -188,7 +191,7 @@ Morris 的本质和递归版本大致相当，忽略掉第三次回到该节点
 
   <img src="/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028132502444.png" alt="image-20201028132502444" style="zoom:67%;" />
 
-```
+```java
 // 后序打印
     public static void morrisPosPrint(Node head) {
         if(head == null){
@@ -230,7 +233,7 @@ Morris 的本质和递归版本大致相当，忽略掉第三次回到该节点
 
 ![image-20201028134238108](/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028134238108.png)
 
-```
+```java
     // 逆序打印该点的右边界
     public static void reversePrintEdge(Node head) {
         Node tail = reverse(head);// 得到尾指针，即为 最右点
@@ -248,7 +251,7 @@ Morris 的本质和递归版本大致相当，忽略掉第三次回到该节点
 
 ![image-20201028134254291](/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028134254291.png)
 
-```
+```java
     public static Node reverse(Node from) {
         Node pre = null;
         Node next = null;

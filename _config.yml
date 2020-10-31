@@ -6,7 +6,7 @@
 # 'jekyll serve'. If you change this file, please restart the server process.
 
 # Site settings
-title: Hu#的碎碎念树洞
+title: Hu#的技术探寻之路
 brief-intro: A coder
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://husharp.github.io" # the base hostname & protocol for your site
@@ -68,7 +68,7 @@ category_dir: category/
 tag_dir: tag/
 
 # excerpt
-excerpt_separator: "\n\n\n\n"
+excerpt_separator: "\n\n\n"
 
 # paginate
 plugins: [jekyll-paginate]
