@@ -10,6 +10,16 @@ typora-root-url: ..
 
 * content
 {:toc}
+
+
+《Sklearn 与 TensorFlow 机器学习实用指南第二版》作者：[（法）Aurélien Géron）]
+
+豆瓣 https://book.douban.com/subject/35218199/
+
+译文 https://hands1ml.apachecn.org/#/
+
+
+
 ## 一、机器学习概论
 
 ### [机器学习系统的类型]

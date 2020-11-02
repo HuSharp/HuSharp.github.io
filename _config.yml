@@ -68,7 +68,7 @@ category_dir: category/
 tag_dir: tag/
 
 # excerpt
-excerpt_separator: "\n\n\n"
+excerpt_separator: "\n\n\n\n"
 
 # paginate
 plugins: [jekyll-paginate]
