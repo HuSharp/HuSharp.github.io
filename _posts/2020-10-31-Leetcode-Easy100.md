@@ -582,7 +582,7 @@ class Solution {
 
 
 
-### 10、实现 [strStr()](https://baike.baidu.com/item/strstr/811469) 函数。
+### 10、No.28 实现 [strStr()](https://baike.baidu.com/item/strstr/811469) 函数。
 
 给定一个 haystack 字符串和一个 needle 字符串，在 haystack 字符串中找出 needle 字符串出现的第一个位置 (从0开始)。如果不存在，则返回 **-1**。
 
@@ -608,3 +608,157 @@ class Solution {
 
 KMP解法，详情见之前写下的 blog ——  [字符串问题](http://husharp.today/2020/08/02/Coder-MianShi6/)
 
+
+
+### 11、No.35 搜索插入位置
+
+就是二分查找 ...没啥好说的。
+
+
+
+### 12、No.38 外观数列
+
+给定一个正整数 `n` ，输出外观数列的第 `n` 项。
+
+「外观数列」是一个整数序列，从数字 1 开始，序列中的每一项都是对前一项的描述。
+
+你可以将其视作是由递归公式定义的数字字符串序列：
+
+- `countAndSay(1) = "1"`
+- `countAndSay(n)` 是对 `countAndSay(n-1)` 的描述，然后转换成另一个数字字符串。
+
+前五项如下：
+
+```
+1.     1
+2.     11
+3.     21
+4.     1211
+5.     111221
+第一项是数字 1 
+描述前一项，这个数是 1 即 “ 一 个 1 ”，记作 "11"
+描述前一项，这个数是 11 即 “ 二 个 1 ” ，记作 "21"
+描述前一项，这个数是 21 即 “ 一 个 2 + 一 个 1 ” ，记作 "1211"
+描述前一项，这个数是 1211 即 “ 一 个 1 + 一 个 2 + 二 个 1 ” ，记作 "111221"
+```
+
+要 **描述** 一个数字字符串，首先要将字符串分割为 **最小** 数量的组，每个组都由连续的最多 **相同字符** 组成。然后对于每个组，先描述字符的数量，然后描述字符，形成一个描述组。要将描述转换为数字字符串，先将每组中的字符数量用数字替换，再将所有描述组连接起来。
+
+【解析】
+
+**法一、采用双指针 + 递归**。由于每次结果来源于上一次，明显可以采用递归。
+
+双指针指的是：（类似 No.26 删除重复元素），将 left 指向每次不等的第一个数， pos 按顺序遍历每一个，值得注意的是：每次遇到新的数时，需要将 left 指向该新数。且上一个数重复次数，即为当前left  和 之前 left 的距离。
+
+```java
+        for (int left = 0; left < sc.length; left++) {
+            if(sc[pos] != sc[left]) {
+                str +=  String.valueOf(left - pos) +  String.valueOf(sc[pos]);
+                pos = left;// 现在指向下一个不等的数
+            }// 相等 则向前
+        } 
+```
+
+且由于最后一组相等的数据还没有加起来，所以需要单独加起来。
+
+**法二、迭代版本**
+
+首先定义
+
+- 变量 pre 记录前一项，初始化为空字符串；
+- 定义变量 cur 记录当前项，初始化为 '1'（第一项为 1）；
+
+定义双指针 start， end 均指向序列项的头部，这里用于统计元素出现的次数；
+由于给定的  n ≥ 1 ，这里由第 2 项开始逐项对前一项进行描述（注意，要将 cur 赋值给 pre，并初始化 cur 为空字符串，重新拼接得到当前项）：
+
+- 从左往右遍历 pre，当元素相同时，移动 end 指针，直至元素不相同时，那么此时 end-start 就是相同元素的个数，而 start 指针指向的元素就是重复的元素，进行拼接，cur += str(end-start)+pre[start]。
+- 此时要让 start 指向 end 所在的位置，开始记录下个元素出现的次数；
+- 重复上面的步骤，直至 end 指针到达序列项尾部，便可得到当前项。
+
+逐项对前面一项描述开始时，都应该重置 start、end 指针指向序列项头部，同时应将 cur 赋值给 pre，初始化 cur，也就是前面注意部分所说的内容（可结合代码理解）。然后，再次重复第三个步骤。
+
+
+
+代码实现如下
+
+递归版本
+
+```java
+    public String countAndSay(int n) {
+        if(n == 1) {
+            return "1";
+        }
+
+        String str = countAndSay(n-1);
+        char[] sc = str.toCharArray();// 将上一个函数得到的字符串， 来转换为字符数组
+
+        str = "";// 置为 空
+        
+        // 采用双指针， 当不等时， 便进行加入。
+        int pos = 0;
+        for (int left = 0; left < sc.length; left++) {
+            if(sc[pos] != sc[left]) {
+                str +=  String.valueOf(left - pos) +  String.valueOf(sc[pos]);
+                pos = left;// 现在指向下一个不等的数
+            }// 相等 则向前
+        } 
+        // 再将最后一个加起来
+        str += String.valueOf(sc.length - pos) + String.valueOf(sc[sc.length-1]);
+        
+        return str;
+    }
+```
+
+迭代版本
+
+```java
+    // 迭代版本
+    public String countAndSay(int n) {
+        StringBuffer cur = new StringBuffer("1");// cur 作为当前得到的 str
+        StringBuffer pre = new StringBuffer("1");// pre 作为上一个得到的 str
+    
+        for (int i = 1; i < n; i++) {// 第 0 个为 "1", 所以从第 1 个开始
+            pre = cur;// 先将 pre 赋为 上一个的 cur
+            cur = new StringBuffer();
+
+            int start = 0, end = 0;
+            while(end < pre.length()) {// 遍历每一个
+                while(end < pre.length() && pre.charAt(start) == pre.charAt(end)) {
+                    end++;
+                }
+                cur = cur.append(String.valueOf(end-start)).append(pre.charAt(start));
+                start = end;// 指示新数据
+            }
+        }
+        return cur.toString();
+    }
+```
+
+对比两段代码的循环 如下：
+
+```java
+ /************     1    *************/
+	int pos = 0;
+ 	for (int left = 0; left < sc.length; left++) {
+            if(sc[pos] != sc[left]) {
+                str +=  String.valueOf(left - pos) +  String.valueOf(sc[pos]);
+                pos = left;// 现在指向下一个不等的数
+            }// 相等 则向前
+        } 
+        // 再将最后一个加起来
+	str += String.valueOf(sc.length - pos) + String.valueOf(sc[sc.length-1]);
+  /************     2    *************/
+	int start = 0, end = 0;
+	while(end < pre.length()) {// 遍历每一个
+		while(end < pre.length() && pre.charAt(start) == pre.charAt(end)) {
+			end++;
+        }
+		cur = cur.append(Integer.toString(end-start)).append(pre.charAt(start));
+		start = end;// 指示新数据
+		}
+	}
+```
+
+第一个需要加上最后一个， 第二个不需要。
+
+这是由于 法一 采用不等的时候才相加，而 法二是浏览完便相加。若为 1 2 3 4 4 ，那么 最后的 4 4 法一并不会加起来，而法二无论值是多少都会加。
