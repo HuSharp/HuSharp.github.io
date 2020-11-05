@@ -762,3 +762,100 @@ KMP解法，详情见之前写下的 blog ——  [字符串问题](http://husha
 第一个需要加上最后一个， 第二个不需要。
 
 这是由于 法一 采用不等的时候才相加，而 法二是浏览完便相加。若为 1 2 3 4 4 ，那么 最后的 4 4 法一并不会加起来，而法二无论值是多少都会加。
+
+
+
+
+
+### 13、最大子序列和
+
+给定一个整数数组 `nums` ，找到一个具有最大和的连续子数组（子数组最少包含一个元素），返回其最大和。
+
+**示例:**
+
+```
+输入: [-2,1,-3,4,-1,2,1,-5,4]
+输出: 6
+解释: 连续子数组 [4,-1,2,1] 的和最大，为 6。
+```
+
+【分析】
+
+**法一：**
+
+主要参考此 [博客](https://mp.weixin.qq.com/s?__biz=MzAxODQxMDM0Mw==&mid=2247485355&idx=1&sn=17a59704a657b4880dffb54c40ad730e&chksm=9bd7f9a3aca070b53c3f74c9d0a1074ae1e615699fd3b977b8134d486106e62fb28cdf59cb52&scene=178&cur_album_id=1318881141113536512#rd) 。晕 真的惭愧，之前看了九章 DP 算法课，竟然遇到了还是没想法...果然还是当时刷题没跟上啊...哎，加油吧。
+
+之前的思路一般是 dp 方程为：
+
+**`nums[0..i]`中的「最大的子数组和」为`dp[i]`**。如果这样定义的话，整个`nums`数组的「最大子数组和」就是`dp[n-1]`。
+
+那么如何找状态转移方程呢？按照数学归纳法，假设我们知道了`dp[i-1]`，如何推导出`dp[i]`呢？
+
+**实际上是不行的，因为子数组一定是连续的，按照我们当前`dp`数组定义，并不能保证`nums[0..i]`中的最大子数组与`nums[i+1]`是相邻的**，也就没办法从`dp[i]`推导出`dp[i+1]`。
+
+所以并不能得到 dp 的转移方程。
+
+换个思路，**以`nums[i]`为结尾的「最大子数组和」为`dp[i]`**。
+
+那么此时，`dp[i]`有两种「选择」，要么与前面的相邻子数组连接，形成一个和更大的子数组；要么不与前面的子数组连接，自成一派，自己作为一个子数组。二者选 Max。
+
+```
+// 要么自成一派，要么和前面的子数组合并
+dp[i] = Math.max(nums[i], nums[i] + dp[i - 1]);
+```
+
+因此最终代码实现为
+
+```java
+    public int maxSubArray(int[] nums) {
+        if(nums == null || nums.length < 1) {
+            return 0;
+        }
+        // dp[i] 表示 nums[i] 结尾 的最大子数组
+        int[] dp = new int[nums.length];
+
+        // 第一个自然为自身
+        dp[0] = nums[0];
+        for (int i = 1; i < dp.length; i++) {
+            // 要么自成一派， 要么加上前面最大的子数组
+            dp[i] = Math.max(nums[i], dp[i-1] + nums[i]);
+        }
+
+        // 遍历所有 dp
+        int res = Integer.MIN_VALUE; 
+        for (int i = 0; i < dp.length; i++) {
+            res = Math.max(res, dp[i]);
+        }
+        return res;
+    }
+```
+
+**法二：**
+
+思路差不多，对每一个值进行遍历，采用一个 sum 来记录当前值 nums[i] 之前的增益。
+
+- sum > 0 ，那么就会是对 当前值的增益，加上
+- sum < 0 ，那么 sum 对结果无增益效果，需要舍弃，则 sum 直接更新为当前遍历数字
+
+res 通过 Max 来保存每次增益后的最大值。
+
+```java
+    public int maxSubArray(int[] nums) {
+        if(nums == null || nums.length < 1) {
+            return 0;
+        }
+
+        int res = nums[0];// 比较得到最终值
+        int sum = 0;//记录和
+        for (int i = 0; i < nums.length; i++) {
+            if(sum > 0) {
+                sum += nums[i];
+            } else {
+                sum = nums[i];
+            }
+            res = Math.max(res, sum);
+        }
+        return res;
+    }
+```
+
