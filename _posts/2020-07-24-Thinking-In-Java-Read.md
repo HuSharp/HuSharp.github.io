@@ -125,8 +125,6 @@ public class Assigment {
 
 ## 第五章：初始化与清理
 
-
-
 1.this() 调用构造器，但不能调用两个构造器，且 this() 语句必须放在最前面
 
 ```
@@ -137,3 +135,81 @@ public class Assigment {
 ```
 
 2.static 就是没有 this 
+
+3.所有的变量都会在任何方法（包括构造器）被调用之前得到初始化。
+
+4.[执行顺序](https://www.cnblogs.com/timetellu/p/11619158.html)大致分类：
+
+- 1.静态属性，静态方法声明，静态块。
+- 2.动态属性，普通方法声明，构造块。
+- 3.构造方法。
+
+```
+enum A{
+    HAPPY, PPY, AHA,
+}
+
+class B {
+    static {
+        System.out.println("B_static");
+    }
+    public B() {
+        System.out.println("BBB");
+    }
+}
+public class test {
+    static {
+        System.out.println("main_static");
+        System.out.println(A.AHA);
+        new B();
+    }
+    public static void main(String[] args) {
+        System.out.println("main start");
+    }
+}
+```
+
+输出为
+
+```
+main_static
+AHA
+B_static
+BBB
+main start
+```
+
+[一道阿里笔试题的解析](https://blog.csdn.net/hyl713/article/details/11925071)
+
+值得注意的是 **main是否第一句先执行** 
+
+　　Java程序运行时，第一件事情就是试图访问main方法，因为main相等于程序的入口，如果没有main方法，程序将无法启动，main方法更是占一个独立的线程，找到main方法后，是不是就会执行mian方法块里的第一句话呢？
+
+　　答：不是
+
+​		因为main方法虽然是一个特殊的静态方法，但是**还是静态方法**，此时**JVM会加载main方法所在的类，试图找到类中其他静态部分**，即首先会找main方法所在的类。
+
+比如
+
+```java
+public class test {
+    static {
+        System.out.println("静态块");
+    }
+    public test(String str) {
+        System.out.println(str);
+    }
+
+    public static void main(String args[]) {
+        test t = new test("init");
+    }
+}
+```
+
+输出为
+
+```
+静态块
+init
+```
+
