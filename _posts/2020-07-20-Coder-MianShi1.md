@@ -60,7 +60,7 @@ if(help.isEmpty() || pushNum <= help.peek())
 1. add： 加入到 push 栈
 
  	2. poll：将 push 栈中**全部**元素倒入 pop 栈
- 	3. 倒入规则：pop栈不全部为空时，不能倒入； 倒入时要全部倒入
+ 	3. **倒入规则：pop栈不全部为空时，不能倒入； 倒入时要全部倒入**
 
 ![image-20200720143405446](/assets/blog_image/2020-07-20-Coder-MianShi1/image-20200720143405446.png)
 
