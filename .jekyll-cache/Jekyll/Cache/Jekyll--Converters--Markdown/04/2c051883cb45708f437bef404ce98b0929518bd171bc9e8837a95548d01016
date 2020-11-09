@@ -1,0 +1,182 @@
+I"�<ul id="markdown-toc">
+  <li><a href="#git-init" id="markdown-toc-git-init">git init</a></li>
+  <li><a href="#branch" id="markdown-toc-branch">branch</a>    <ul>
+      <li><a href="#插入新工作" id="markdown-toc-插入新工作">插入新工作</a></li>
+    </ul>
+  </li>
+  <li><a href="#合并merge" id="markdown-toc-合并merge">合并Merge</a>    <ul>
+      <li><a href="#fast-forward合并" id="markdown-toc-fast-forward合并">fast-forward合并</a></li>
+      <li><a href="#non-fast-forward提交" id="markdown-toc-non-fast-forward提交">non-fast-forward提交</a>        <ul>
+          <li><a href="#举例说明" id="markdown-toc-举例说明">举例说明</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#git-commit--m" id="markdown-toc-git-commit--m">git commit -m</a></li>
+  <li><a href="#工作区暂存区" id="markdown-toc-工作区暂存区">工作区、暂存区</a></li>
+  <li><a href="#重命名-git-mv" id="markdown-toc-重命名-git-mv">重命名 git mv</a></li>
+  <li><a href="#git-log查看版本演变" id="markdown-toc-git-log查看版本演变">git log查看版本演变</a></li>
+  <li><a href="#git-内部文件" id="markdown-toc-git-内部文件">./git 内部文件</a>    <ul>
+      <li><a href="#commit-tree-blob关系" id="markdown-toc-commit-tree-blob关系">commit tree blob关系</a></li>
+    </ul>
+  </li>
+  <li><a href="#git-diff" id="markdown-toc-git-diff">git diff</a></li>
+  <li><a href="#拉取推送" id="markdown-toc-拉取推送">拉取&amp;推送</a></li>
+  <li><a href="#git协作开发总结" id="markdown-toc-git协作开发总结">Git协作开发总结</a>    <ul>
+      <li><a href="#发生冲突" id="markdown-toc-发生冲突">发生冲突</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="git-init">git init</h3>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706162031095.png" alt="image-20200706162031095" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706164018503.png" alt="/assets/blog_image/2020-08-10-Git-Learn/image-20200706164018503" /></p>
+
+<h3 id="branch">branch</h3>
+
+<p>HEAD表示当前修改位置</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706165648833.png" alt="image-20200706165648833" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170023646.png" alt="image-20200706170023646" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706165851567.png" alt="image-20200706165851567" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170036096.png" alt="image-20200706170036096" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170106769.png" alt="image-20200706170106769" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170224549.png" alt="image-20200706170224549" /></p>
+
+<h4 id="插入新工作">插入新工作</h4>
+
+<p>git stash保存快照</p>
+
+<p>git stash pop恢复到栈顶现场</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170351536.png" alt="image-20200706170351536" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170418770.png" alt="image-20200706170418770" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170504758.png" alt="image-20200706170504758" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170512173.png" alt="image-20200706170512173" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170548735.png" alt="image-20200706170548735" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706170639052.png" alt="image-20200706170639052" /></p>
+
+<p>如图更改之后若转到其他分支，会显示error</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706210358893.png" alt="image-20200706210358893" /></p>
+
+<p>进行入栈</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706210515933.png" alt="image-20200706210515933" /></p>
+
+<h3 id="合并merge">合并Merge</h3>
+
+<h4 id="fast-forward合并">fast-forward合并</h4>
+
+<p>并没有产生新的提交，只是改变HEAD值</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706174856631.png" alt="image-20200706174856631" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706174903767.png" alt="image-20200706174903767" /></p>
+
+<h4 id="non-fast-forward提交">non-fast-forward提交</h4>
+
+<p>会产生一个新的提交</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706175119251.png" alt="image-20200706175119251" /></p>
+
+<h5 id="举例说明">举例说明</h5>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706175300574.png" alt="image-20200706175300574" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706175315626.png" alt="image-20200706175315626" /></p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706175321337.png" alt="image-20200706175321337" /></p>
+
+<h3 id="git-commit--m">git commit -m</h3>
+
+<p>是提交到仓库中， 需要先加相应文件名</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200705113729916.png" alt="image-20200705113729916" /></p>
+
+<h3 id="工作区暂存区">工作区、暂存区</h3>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200705163928440.png" alt="image-20200705163928440" /></p>
+
+<p>首先将文件复制到自己的工作目录</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200705171823904.png" alt="image-20200705171823904" /></p>
+
+<p>其次通过git add  添加到暂存区</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200705171901956.png" alt="image-20200705171901956" /></p>
+
+<p>git add -u 将缓存区中的一起提交</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200705175237976.png" alt="image-20200705175237976" /></p>
+
+<h3 id="重命名-git-mv">重命名 git mv</h3>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706091137731.png" alt="image-20200706091137731" /></p>
+
+<h3 id="git-log查看版本演变">git log查看版本演变</h3>
+
+<p>1.git log –oneline 大纲查看 （只看当前指向分支）</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706091639905.png" alt="image-20200706091639905" /></p>
+
+<h3 id="git-内部文件">./git 内部文件</h3>
+
+<p>head指向当前目录</p>
+
+<p>config是配置信息</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706114139581.png" alt="image-20200706114139581" /></p>
+
+<h4 id="commit-tree-blob关系">commit tree blob关系</h4>
+
+<p>blob：文件   tree：目录</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706114833795.png" alt="image-20200706114833795" /></p>
+
+<p>git cat-file -p  + 哈希值</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706120043276.png" alt="image-20200706120043276" /></p>
+
+<p>git cat-file -p  t 哈希值——»展示类型</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706152217951.png" alt="image-20200706152217951" /></p>
+
+<h3 id="git-diff">git diff</h3>
+
+<p>比较两个commit</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706165152863.png" alt="image-20200706165152863" /></p>
+
+<p>也可以用HEAD指针，</p>
+
+<p>HEAD^1 / HEAD~1 表示HEAD的父亲</p>
+
+<p>HEAD^1^1 / HEAD~2 表示HEAD的祖父</p>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706165123410.png" alt="image-20200706165123410" /></p>
+
+<h3 id="拉取推送">拉取&amp;推送</h3>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706200730229.png" alt="image-20200706200730229" /></p>
+
+<h3 id="git协作开发总结">Git协作开发总结</h3>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706201600023.png" alt="image-20200706201600023" /></p>
+
+<h4 id="发生冲突">发生冲突</h4>
+
+<p><img src="/assets/blog_image/2020-08-10-Git-Learn/image-20200706204649443.png" alt="image-20200706204649443" /></p>
+:ET

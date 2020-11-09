@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  " 《程序员代码面试指南》（十一）搜索二叉树BST"
+title:  " 《程序员代码面试指南》（十二）搜索二叉树BST"
 date:   2020-10-31 16:41:08 +0800
 categories:  算法&DS
 tags: 算法  数据结构

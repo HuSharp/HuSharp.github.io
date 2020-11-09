@@ -8,14 +8,45 @@ type: page
 
 <!-- <h1>Archive of posts with {{ page.type }} '{{ page.title }}'</h1> -->
 
-
 <div class="page clearfix">
+
     <div class="left">
+
+            <li>
+
         <h1>{{page.title}}</h1>
-        <hr>
+<!-------------------------以下为置顶------------------------------  -->
+<h2 > 置顶文章 </h2>
+  <ul>
+          {% for post in site.posts %}
+            {% if post.stickie == true %}
+              {% unless post.next %}
+            
+            {% else %}
+              {% capture year %}{{ post.date | date: '%Y' }}{% endcapture %}
+              {% capture nyear %}{{ post.next.date | date: '%Y' }}{% endcapture %}
+              {% if year != nyear %}
+                <h2 id="y{{ post.date | date: '%Y' }}">{{ post.date | date: '%Y' }}</h2>
+              {% endif %}
+            
+            {% endunless %}
+
+            <li>
+                <time>
+                {{ post.date | date:"%F" }} {{ post.date | date: "%a" }}.
+                </time>
+                <a class="title" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+
+                {% include category.html %}
+                {% include tag.html %}
+            </li>
+              {% endif %}
+          {% endfor %}
+  </ul>
+<!-------------------------以上为置顶------------------------------  -->
+        <!-- <hr> -->
         <ul>
           {% for post in site.posts %}
-
             {% unless post.next %}
               <h2 id="y{{ post.date | date: '%Y' }}">{{ post.date | date: '%Y' }}</h2>
             {% else %}

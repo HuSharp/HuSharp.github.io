@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "《九章算法》DP专题班（一）"
+title:  " DP专题（一） "
 date:   2020-08-17 7:47:11 +0800
 categories:  算法&DS
 tags: 算法

@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "《程序员代码面试指南》（十）Morris 遍历二叉树：前序、中序、后序"
+title:  "《程序员代码面试指南》（十一）Morris 遍历二叉树：前序、中序、后序"
 date:   2020-10-25 12:52:18 +0800
 categories:  算法&DS
 tags: 算法  数据结构

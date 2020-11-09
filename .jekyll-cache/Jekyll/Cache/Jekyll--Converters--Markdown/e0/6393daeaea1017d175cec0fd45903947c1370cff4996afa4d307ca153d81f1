@@ -1,0 +1,306 @@
+I"Qc<ul id="markdown-toc">
+  <li><a href="#三morris-遍历" id="markdown-toc-三morris-遍历">三、Morris 遍历</a>    <ul>
+      <li><a href="#1morris-遍历的基本概念" id="markdown-toc-1morris-遍历的基本概念">1、Morris 遍历的基本概念</a></li>
+      <li><a href="#2-morris-遍历本质探究" id="markdown-toc-2-morris-遍历本质探究">2. Morris 遍历本质探究。</a></li>
+      <li><a href="#3那么-morris-咋实现呢" id="markdown-toc-3那么-morris-咋实现呢"><strong>3.那么 Morris 咋实现呢？</strong></a>        <ul>
+          <li><a href="#1先序" id="markdown-toc-1先序">1.先序：</a></li>
+          <li><a href="#2中序" id="markdown-toc-2中序">2.中序</a></li>
+          <li><a href="#3后序" id="markdown-toc-3后序">3.后序</a></li>
+        </ul>
+      </li>
+      <li><a href="#3现证明-时间复杂度为-on" id="markdown-toc-3现证明-时间复杂度为-on">3.现证明 时间复杂度为 O(N)</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="三morris-遍历">三、Morris 遍历</h2>
+
+<h3 id="1morris-遍历的基本概念">1、Morris 遍历的基本概念</h3>
+
+<blockquote>
+  <p><strong>Morris 遍历：时间复杂度 O(N)、额外空间复杂度 O(1)，N 为二叉树的节点个数。</strong></p>
+
+  <p><strong>说明：和二叉树的遍历有关的最优解都是 Morris 遍历。</strong></p>
+</blockquote>
+
+<p><strong>分析：</strong></p>
+
+<p>Morris 遍历：对于有左子树的节点 current，会遍历到两次，否则只会遍历到一次。对于有左子树的节点，它会先让左子树的最右节点 mostRight 指向它，从而达到之后能从底层节点返回上层。</p>
+
+<ul>
+  <li>如果 mostRight 的右指针为空，说明是第一次到达 current，然后会让它指向 current；</li>
+  <li>如果 mostRight 的右指针指向 current ，说明这是第二次到达 current，current 的左子树已经遍历完了，该回到 current，开始遍历其右子树了。</li>
+</ul>
+
+<p><img src="/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201025135214030.png" alt="image-20201025135214030" /></p>
+
+<hr />
+
+<p><strong>具体步骤：</strong></p>
+
+<p>1、如果 current 无左子树，current 向右移动【遍历其右子树】【无左子树，current 只会经过一次】；</p>
+
+<p>2、如果 current 有左子树，找到 current 左子树上最右的节点 mostRight：</p>
+
+<ul>
+  <li>若 mostRight 的右指针指向 null【说明这是第一次来到 current 】，让 mostRight 的右指针指向 current 【那么之后就可以通过该指针返回 current 了】，current 向左移动【遍历左子树】；</li>
+  <li>若 mostRight 的右指针指向的是 current 【说明这是第二次来到 current，current 的左子树已经遍历完了】，让 mostRight 的右指针指向空，current 向右移动。</li>
+</ul>
+
+<p>当指向 null 时停止。</p>
+
+<hr />
+
+<h3 id="2-morris-遍历本质探究">2. Morris 遍历本质探究。</h3>
+
+<p>现在需要得到先序、中序、后序的遍历方法，首先进行 Morris 遍历本质探究</p>
+
+<p>1.递归版本本质如下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>public static void preOrderRecur(Node head) {
+	if(head == null)
+		return;
+	1、sysout
+	preOrderRecur(head.left);
+	2、sysout
+	preOrderRecur(head.right);
+	3、sysout
+} 实际是**遍历每个点 3 次。**如上面代码所示的三次。
+</code></pre></div></div>
+
+<ul>
+  <li>且先序则是将打印放在第一次到达</li>
+  <li>中序是第二次到达</li>
+  <li>后序是第三次到达</li>
+</ul>
+
+<p>Morris 的本质和递归版本大致相当，忽略掉第三次回到该节点</p>
+
+<ol>
+  <li>
+    <p>若有左子树，那么 current，会遍历到两次；</p>
+
+    <p>即下方代码的两次</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1、
+preOrderRecur(head.left);
+2、
+preOrderRecur(head.right);
+</code></pre></div>    </div>
+    <p>对于任何一个能够到达两次的节点 Y ，在第一次达到Y之后，cur 都会先去 Y 的左子树转一圈，然后会第二次来到Y，接下来 cur 要么跑到 Y 的右子树上，要么就返回上级。</p>
+  </li>
+  <li>
+    <p>若没有左子树，只会到达一次。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2、
+preOrderRecur(head.right);
+</code></pre></div>    </div>
+
+    <p>对于任何一个只能到达一次的节点 X ，接下来 cur 要么跑到 X 的右子树上，要么就返回上级。</p>
+  </li>
+</ol>
+
+<ul>
+  <li>那么对于任何一个能够到达两次的节点 Y ，是<strong>如何知道此时的 cur 是第一次来到 Y 还是第二次来到 Y 呢</strong>？
+    <ul>
+      <li>如果 Y 的左子树上的最右节点的右指针（mostRight.right）是指向 null 的，那么此时 cur 就是第一次到达 Y ；</li>
+      <li>如果 mostRight.right 是指向 Y 的，那么此时 cur 就是第二次到达 Y。</li>
+      <li>值得注意的是，当第二次到达 Y 点时，Y 的左子树所有节点都已经遍历完毕。</li>
+    </ul>
+  </li>
+</ul>
+
+<p>这就是 Moris 遍历和 Moris 序 的实质。可以根据 Moris序 进一步加工出先序、中序和后序。</p>
+
+<h3 id="3那么-morris-咋实现呢"><strong>3.那么 Morris 咋实现呢？</strong></h3>
+
+<h4 id="1先序">1.先序：</h4>
+
+<p>将打印放在 Morris 遍历中第一次到达即可。</p>
+
+<p>对于 cur 只能到达一次的节点，直接打印即可</p>
+
+<p>对于 cur 可以到达两次的节点，cur 第一次到达时打印，第二次不打印</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// 先序实现</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">morrisPreprint</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+      	<span class="o">...</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">//cur 不为空时，遍历继续</span>
+            <span class="n">mostRight</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">mostRight</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">// 首先找到最右节点</span>
+                <span class="c1">// 至于 后面的判断，是由于第二次遍历到该点时，是指向cur的</span>
+                <span class="k">while</span> <span class="o">(</span><span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="n">cur</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">mostRight</span> <span class="o">=</span> <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="c1">// 至此，mostRight 为左子树中最右节点</span>
+                <span class="k">if</span><span class="o">(</span><span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 此时表示第一次到达该点</span>
+                    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+                    <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="n">cur</span><span class="o">;</span><span class="c1">// 让其指向 cur</span>
+                    <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span><span class="c1">// current 向左移动【遍历左子树】</span>
+                    <span class="k">continue</span><span class="o">;</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span> <span class="c1">// 第二次遍历到，那么再改此点朝向从 cur 到 null</span>
+                    <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">//当前节点没有左子树,那么就只有一次到达该点机会，直接打印即可</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="c1">// 若左孩子为空，直接跳到此处</span>
+            <span class="c1">// 即直接向右孩子移动</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="2中序">2.中序</h4>
+
+<p>对于 cur 只能到达一次的节点，直接打印即可</p>
+
+<p>对于 cur 可以到达两次的节点，cur 第一次到达时不打印，第二次到达打印</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// 中序</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">morrisInprint</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="o">...</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">//cur 不为空时，遍历继续</span>
+            <span class="n">mostRight</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">mostRight</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">// 首先找到最右节点</span>
+                <span class="c1">// 至于 后面的判断，是由于第二次遍历到该点时，是指向cur的</span>
+                <span class="k">while</span> <span class="o">(</span><span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="n">cur</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">mostRight</span> <span class="o">=</span> <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="c1">// 至此，mostRight 为左子树中最右节点</span>
+                <span class="k">if</span><span class="o">(</span><span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// 此时表示第一次到达该点</span>
+                    <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="n">cur</span><span class="o">;</span><span class="c1">// 让其指向 cur</span>
+                    <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span><span class="c1">// current 向左移动【遍历左子树】</span>
+                    <span class="k">continue</span><span class="o">;</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span> <span class="c1">// 第二次遍历到，那么再改此点朝向从 cur 到 null</span>
+                    <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span> 
+            <span class="c1">// 将 Morris 中序放到处理完之后进行打印</span>
+            <span class="c1">// 若有左子树，那么访问完左子树后开始</span>
+            <span class="c1">// 若没有左子树，那么就是直接在右子树之前打印了</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+            <span class="c1">// 若左孩子为空，直接跳到此处</span>
+            <span class="c1">// 即直接向右孩子移动</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="3后序">3.后序</h4>
+
+<p>因为之前递归的实现，是在第三次访问的时候进行 print ，但是 Morris 遍历没有第三次访问。</p>
+
+<p>后序只关心能回到自己两次的节点。</p>
+
+<ul>
+  <li>
+    <p>对于 cur 只能到达一次的节点，直接跳过即可</p>
+  </li>
+  <li>
+    <p>对于 cur 可以到达两次的节点：</p>
+
+    <p>1、第二次遍历到的时候，<strong>逆序打印当前节点左子树的右边界</strong>；</p>
+
+    <p>2、遍历全部完成后，最后<strong>逆序打印整棵树的右边界</strong>。</p>
+
+    <p><img src="/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028132502444.png" alt="image-20201028132502444" style="zoom:67%;" /></p>
+  </li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 后序打印</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">morrisPosPrint</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">){</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">head</span><span class="o">;</span>
+        <span class="c1">// 最右节点</span>
+        <span class="nc">Node</span> <span class="n">mostRight</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        
+        <span class="c1">// 对每个节点进行遍历</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">mostRight</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">mostRight</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span><span class="c1">// 如果存在左子树</span>
+                <span class="c1">// 首先找到最右节点</span>
+                <span class="c1">// 至于第二个判断，是由于第二次遍历会指向 cur </span>
+                <span class="k">while</span><span class="o">(</span><span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="n">cur</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">mostRight</span> <span class="o">=</span> <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="c1">// 至此为左子树最右节点</span>
+                <span class="k">if</span><span class="o">(</span><span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">//表示第一次访问</span>
+                    <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="n">cur</span><span class="o">;</span>
+                    <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span><span class="c1">// 继续向左</span>
+                    <span class="k">continue</span><span class="o">;</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span><span class="c1">//说明是第二次,那么改为指向 null 即可</span>
+                    <span class="n">mostRight</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                    <span class="c1">// 逆序打印 cur 点的左子树右边界</span>
+                    <span class="n">reversePrintEdge</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="c1">// 若左孩子为空</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">;</span><span class="c1">// 那么直接访问该节点的右子树</span>
+        <span class="o">}</span>
+        <span class="c1">// 最后逆序打印整棵树的右边界</span>
+        <span class="n">reversePrintEdge</span><span class="o">(</span><span class="n">head</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>对于其中的 reversePrintEdge 逆序打印该点的右边界函数</p>
+
+<p><img src="/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028134238108.png" alt="image-20201028134238108" /></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// 逆序打印该点的右边界</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">reversePrintEdge</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Node</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">reverse</span><span class="o">(</span><span class="n">head</span><span class="o">);</span><span class="c1">// 得到尾指针，即为 最右点</span>
+        <span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">tail</span><span class="o">;</span><span class="c1">// 将从尾指针开始打印</span>
+        <span class="k">while</span><span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="c1">// 此时再将其反转</span>
+        <span class="n">reverse</span><span class="o">(</span><span class="n">tail</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>类似单链表的逆序，只不过单链表中的节点next，此处为 right 。</p>
+
+<p><img src="/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028134254291.png" alt="image-20201028134254291" /></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">public</span> <span class="kd">static</span> <span class="nc">Node</span> <span class="nf">reverse</span><span class="o">(</span><span class="nc">Node</span> <span class="n">from</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">Node</span> <span class="n">pre</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">Node</span> <span class="n">next</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">while</span><span class="o">(</span><span class="n">from</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 此处from不等于 null，是由于转换为 next 后，最后一个为 null</span>
+            <span class="n">next</span> <span class="o">=</span> <span class="n">from</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+            <span class="n">from</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="n">pre</span><span class="o">;</span>
+            <span class="n">pre</span> <span class="o">=</span> <span class="n">from</span><span class="o">;</span>
+            <span class="n">from</span> <span class="o">=</span> <span class="n">next</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="n">pre</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="3现证明-时间复杂度为-on">3.现证明 时间复杂度为 O(N)</h3>
+
+<p><img src="/assets/blog_image/2020-10-25-Coder-Advanced3_Morris/image-20201028135100883.png" alt="image-20201028135100883" /></p>
+
+<p>由之前过程可知，每次到达一个有左子树的节点，都要遍历这个节点左子树的右边界</p>
+
+<p>根据 Morris 遍历的过程，所有需要遍历的右边界如下：</p>
+
+<ul>
+  <li>到达节点 1 两次，每次遍历其左子树的右边界：2-&gt;5-&gt;11</li>
+  <li>到达节点 2 两次，每次遍历其左子树的右边界：4-&gt;9</li>
+  <li>到达节点 3 两次，每次遍历其左子树的右边界：6-&gt;13</li>
+  <li>到达节点 4 两次，每次遍历其左子树的右边界：8</li>
+  <li>到达节点 5 两次，每次遍历其左子树的右边界：10</li>
+  <li>到达节点 6 两次，每次遍历其左子树的右边界：12</li>
+  <li>到达节点 7 两次，每次遍历其左子树的右边界：14</li>
+  <li>可以看出，所有右边界的所有节点数量为 O(N) ，每条右边界都遍历两次，那么遍历所有节点左子树右边界的总代价为 O(N)。因此，Morris 遍历的时间复杂度还是 O(N)。</li>
+</ul>
+
+<p>至此！Morris 遍历得以完成！二叉树神级方法完成！</p>
+
+:ET

@@ -138,11 +138,11 @@ public class Assigment {
 
 3.所有的变量都会在任何方法（包括构造器）被调用之前得到初始化。
 
-4.[执行顺序(此blog讲的及其透彻)](https://www.cnblogs.com/timetellu/p/11619158.html)大致分类：
+4.[执行顺序(此blog讲的极其透彻)](https://www.cnblogs.com/timetellu/p/11619158.html)大致分类：
 
 　   1、父类的静态变量和静态块赋值（按照声明顺序）
 　　2、自身的静态变量和静态块赋值（按照声明顺序）
-　　3、main方法
+　　3、main 方法
 　　3、父类的成员变量和块赋值（按照声明顺序）
 　　4、父类构造器赋值
 　　5、自身成员变量和块赋值（按照声明顺序）
@@ -192,7 +192,7 @@ main start
 
 　　答：不是
 
-​		因为main方法虽然是一个特殊的静态方法，但是**还是静态方法**，此时**JVM会加载main方法所在的类，试图找到类中其他静态部分**，即首先会找main方法所在的类。
+​		因为main方法虽然是一个特殊的静态方法，但是**还是静态方法**，此时**JVM会加载main方法所在的类，试图找到类中其他静态部分**，即首先会找main方法所在的类中上面的静态方法、静态块。
 
 比如
 
@@ -406,35 +406,171 @@ sb.append("b");
 
 
 
+## 第八章：多 态
+
+### 8.1、向上转型与后期绑定
+
+**后期绑定**，就是在运行时根据对象的类型进行绑定**。**后期绑定也叫做**动态绑定或运行时绑定****。如果一种语言想实现后期绑定，就必须具有某种机制，以便在运行时能判断对象的类型，从而调用恰当的方法。也就是说，编译器一直不知道对象的类型，但是**方法调用机制能找到正确的方法体**，并加以调用。后期绑定机制随编程语言的不同而有所不同，但是只要想一下就会得知，不管怎样都**必须在对象中安置某种“类型信息”**。
+
+代码中的修改不会破坏程序中其他不应受到影响的部分。换句话说，多态是一项“将改变的事物与不变的事物分离”的重要技术。
+
+如下面 demo 可知，基类的 happy （未进行多态方法）仍然可以进行调用。
+
+```java
+class  b{
+    public void draw() {
+        System.out.println("A is drawing");
+    }
+
+    public void happy() {
+        System.out.println("A is happying");
+    }
+}
+
+public class Test_2 extends b{
+    public void draw() {
+        System.out.println("Test2 is drawing");
+    }
+    public static void main(String[] args) {
+        b b = new Test_2();
+        b.draw();
+        b.happy();
+    }
+}
+// Test2 is drawing
+// A is happying
+```
+
+
+
+### 8.2、多态缺陷
+
+`p156`
+ **缺陷1：只有非private方法才可以被覆盖.**
+
+```java
+public class PrivateOverride {
+    private void f() {
+        System.out.println("private f()");
+    }
+
+    public static void main(String[] args) {
+        PrivateOverride po = new Derived();
+        po.f();
+    }
+}
+
+class Derived extends PrivateOverride {
+    public void f() {
+        System.out.println("public f()");
+    }
+}
+
+// private f()
+```
+
+为了清晰起见，派生类中的方法名采用与基类中 **private** 方法名不同的命名。
+
+如果使用了 `@Override` 注解，就能检测出问题：
+
+```java
+public class PrivateOverride2 {
+    private void f() {
+        System.out.println("private f()");
+    }
+
+    public static void main(String[] args) {
+        PrivateOverride2 po = new Derived2();
+        po.f();
+    }
+}
+
+class Derived2 extends PrivateOverride2 {
+    @Override
+    public void f() {
+        System.out.println("public f()");
+    }
+}
+// 报错：must override or implement a supertype method
+```
+
+ **缺陷2：如果一个方法是静态(static)的，它的行为就不具有多态性：**
+
+```java
+public class PrivateOverride2 {
+    public static void f() {
+        System.out.println("private f()");
+    }
+
+    public static void main(String[] args) {
+        PrivateOverride2 po = new Derived2();
+        po.f();
+    }
+}
+
+class Derived2 extends PrivateOverride2 {
+    public static void f() {
+        System.out.println("public f()");
+    }
+}
+// "private f()
+```
 
 
 
 
 
+### 8.3、构造器调用
 
+![image-20201109195747856](/assets/blog_image/2020-07-24-Thinking-In-Java-Read/image-20201109195747856.png)
 
+```java
+// output
+Meal()
+Lunch()
+Bread()
+Cheese()
+Sandwich()
+```
 
+从创建 **Sandwich** 对象的输出中可以看出对象的构造器调用顺序如下：
 
+1. 基类构造器被调用。这个步骤被递归地重复，这样一来类层次的顶级父类会被最先构造，然后是它的派生类，以此类推，直到最底层的派生类。
+2. 按声明顺序初始化成员。
+3. 调用派生类构造器的方法体。
 
+上面代码首先是调用 main 方法，进行 new Sandwich()， 然后对 Sandwich 类进行 init。
 
+### 8.4、向下转型
 
+```java
+class Test_1{
+    public void draw() {
+        System.out.println("Test_1 is drawing");
+    }
+}
 
+public class Test_2 extends b{
+    public void draw() {
+        System.out.println("Test_2 is drawing");
+    }
+    public void happy() {
+        System.out.println("Test_2 is happying");
+    }
+    public static void main(String[] args) {
+        Test_1 tests[] =  {
+            new Test_1(),
+            new Test_2(),
+        };
+        tests[0].draw();
+        // 以下注释代码不能运行
+        ((Test_2)tests[1]).happy();    // true!
+        // ((Test_2)tests[0]).happy();// error!
+    }
+}
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+尝试向下转型：如果转型为正确的类型，就转型成功。否则，就会得到 ClassCastException 异常。
 
 
 
