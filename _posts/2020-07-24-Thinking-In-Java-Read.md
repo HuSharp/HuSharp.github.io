@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "《Java编程思想》读书笔记"
+title:  "《Java编程思想》读书笔记（一）1-10章"
 date:   2020-07-24 14:10:00 +0800
 categories:  Java
 tags: java  编程语言
@@ -14,7 +14,7 @@ typora-root-url: ..
 
 
 
-# 《Java编程思想》读书笔记
+# 《Java编程思想》读书笔记（一）
 
 
 
@@ -706,17 +706,73 @@ Vampire 中使用的语法仅适用于接口继承。通常来说，**extends** 
 
 
 
+## 第十章：内部类
+
+### 10.1、访问权
+
+`p191`
+ 内部类拥有其外围类的所有元素的访问权。
+ 意思是通过内部类能够获得其外部类的内存信息（参数值）。
+ 故不能直接通过创建普通对象的方法创建内部类，必须要通过外部类才能创建。
+
+```java
+public class DotThis {
+    void f() {
+        System.out.println("DotThis.f()");
+    }
+
+    public class Inner {
+        public DotThis outer() {
+            return DotThis.this;
+            // A plain "this" would be Inner's "this"
+        }
+    }
+
+    public Inner inner() {
+        return new Inner();
+    }
+
+    public static void main(String[] args) {
+        DotThis dt = new DotThis();
+        DotThis.Inner dti = dt.inner();
+        dti.outer().f();
+    }
+}
+```
+
+### 10.2、`.this` 与 `.new`
+
+- Java非 static 的普通内部类可应用`.this`返回其外围对象的引用。
+- 外围对象可应用`.new`来生成一个内部类对象。
+
+```java
+public class DotThis{
+    void f(){ System.out.println("DotThis.f()"); }
+    public class Inner{
+        public DotThis outer(){
+            return DotThis.this; // a plain "this" would be Inner's "this"
+        }
+    }
+    public Inner inner(){ return new Inner(); }
+    public static void main(String[] args){
+        DotThis dt = new DotThis();
+        DotThis.Inner dti = dt.inner();
+        dti.outer().f();
+    }
+}
+/*Output:
+* DotThis.f()
+*/
+```
 
 
 
+### 10.3、为什么需要内部类
 
-
-
-
-
-
-
-
+- 内部类继承自某个类或实现某个接口，内部类的代码操作创建它的外围类的对象。所以可以认为内部类提供了某种进入其外围类的窗口。 
+- 内部类实现一个接口与外围类实现这个接口有什么区别呢？答案是：后者不是总能享用到接口带来的方便，有时需要用到接口的实现。所以，使用内部类最吸引人的原因是： 
+     **每个内部类才能独立地继承自一个（接口的）实现，所以无论外围类是否已经继承了某个（接口的）实现，对于内部类都没有影响**。
+- 内部类使得多重继承的解决方案变得完整。接口解决了部分问题，而**内部类有效地实现了“多重继承”**。也就是说，内部类使得 Java 实现继承多个非接口类型（类或抽象类）。
 
 
 
