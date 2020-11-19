@@ -311,7 +311,9 @@ MIPS 的仿存指令属于 I 型指令，访存地址 等于 变址寄存器 $rs
 
 
 
+且打开存储器，发现完成排序
 
+![image-20201116232156005](/assets/blog_image/2020-11-13-hust-cpu-study_4/image-20201116232156005.png)
 
 
 
@@ -333,6 +335,19 @@ http://husharp.today/2020/10/19/hust-cpu-study_3/#2mips-ram%E8%AE%BE%E8%AE%A1
 
 
 
+### 三、MIPS微程序CPU设计
+
+
+
+
+
+
+
+![image-20201118195644099](/assets/blog_image/2020-11-13-hust-cpu-study_4/image-20201118195644099.png)
+
+
+
+![image-20201118195630789](/assets/blog_image/2020-11-13-hust-cpu-study_4/image-20201118195630789.png)
 
 
 
@@ -342,6 +357,7 @@ http://husharp.today/2020/10/19/hust-cpu-study_3/#2mips-ram%E8%AE%BE%E8%AE%A1
 
 
 
+![image-20201118200536417](/assets/blog_image/2020-11-13-hust-cpu-study_4/image-20201118200536417.png)
 
 
 
@@ -349,9 +365,7 @@ http://husharp.today/2020/10/19/hust-cpu-study_3/#2mips-ram%E8%AE%BE%E8%AE%A1
 
 
 
-
-
-
+![image-20201118200046464](/assets/blog_image/2020-11-13-hust-cpu-study_4/image-20201118200046464.png)
 
 
 
