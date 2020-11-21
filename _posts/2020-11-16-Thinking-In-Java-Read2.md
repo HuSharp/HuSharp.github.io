@@ -287,17 +287,101 @@ howdy
 
 
 
+## 第十六章：数 组
+
+### 
 
 
 
+`Arrays.deepToString()`静态方法专门用来打印多维数组。
+
+### 16.2 粗糙数组
+
+粗糙数组是指，多维数组里，同一层次的子数组，长度可以不相同。专业的说：数组中构成的矩阵的每个向量都可以具有任意的长度。C++里应该是没有粗糙数组的。
 
 
 
+```
+public class test {
+    public static void main(String[] args) {
+        int[][] c = new int[][]{
+                {1},
+                {2, 3},
+                {4, 5, 6},
+        };
+    }
+}
+```
 
 
 
+16.1 Arrays 实用功能
+
+java.util.Arrays有一套用于数组的static实用方法。
+
+- equals()：比较两个数组是否相等,两个数组内容相同，且数组大小也相同才返回 true。
+- fill()：用一个值填充整个一维数组。
+- sort()：对数组进行排序, 基本类型用快速排序，针对对象用稳定归并排序。
+- binarySearch()：在排好序中的数组中进行二分查找，找到元素则返回元素的索引，否则返回负数。数组中若包含重复元素，无法确保找到的是哪一个。
+- toString()：产生数组的 String 表示
+- hashCode()：产生数组的散列码
+- asList()：由数组得到一个list, 但是这个 List 的实现类是 java.util.Arrays.ArrayList这个类(而不是java.util.ArrayList)，它的内部保存了数组的引用，修改了数组的值，list的值也会改变。对list做add、remove操作会抛出UnsupportedOperationException异常, 因为它本质还是一个大小不可变的数组。
+   System.arraycopy()：比for循环更高效的数组复制方法，它是浅拷贝，如果复制对象数组，只会复制对象的引用。
+   对于元素不是基本类型的对象，用equals()和sort()方法时，需重写元素的equals()方法和实现Comparable接口。
+
+### 源码剖析
+
+#### 1、System.arraycopy()
+
+由源码易知作用为：
+
+从 src 源数组的 srcPos 位置开始复制 length 个元素过去，复制到 dest 目标数组的 destPos 位置到 destPos + length - 1 位置。
+
+```
+    /* @param      src      the source array.
+     * @param      srcPos   starting position in the source array.
+     * @param      dest     the destination array.
+     * @param      destPos  starting position in the destination data.
+     * @param      length   the number of array elements to be copied.
+     * @throws     IndexOutOfBoundsException  if copying would cause
+     *             access of data outside array bounds.
+     * @throws     ArrayStoreException  if an element in the {@code src}
+     *             array could not be stored into the {@code dest} array
+     *             because of a type mismatch.
+     * @throws     NullPointerException if either {@code src} or
+     *             {@code dest} is {@code null}.
+     */
+    @HotSpotIntrinsicCandidate
+    public static native void arraycopy(Object src,  int  srcPos,
+                                        Object dest, int destPos,
+                                        int length);
+```
+
+​		两个数组的元素类型 component type 必须是相同的确切类型，即使自动拆装箱在这里也不好使，就算一个数组元素类型为 int ，另一个为 Integer ，也会报错 ArrayStoreException 。
+​		另外需要注意，数组的元素类型如果是 reference component type 引用类型，那么复制过去的只是一个引用，即没有发生引用指向的对象的拷贝。
 
 
+
+#### 2、equals
+
+```java
+    public static boolean equals(int[] a, int[] a2) {
+        if (a==a2)
+            return true;
+        if (a==null || a2==null)
+            return false;
+
+        int length = a.length;
+        if (a2.length != length)
+            return false;
+
+        return ArraysSupport.mismatch(a, a2, length) < 0;
+    }
+```
+
+- `if (a==a2) return true;`这里，如果两个引用指向的同一个数组，或者两个引用都为null，那么直接返回true。
+- `if (a==null || a2==null) return false;`如果只是有一个为null，那么返回false。
+- 剩下的逻辑就是依次判断长度，长度一样后，就依次判断各个元素是否一样。
 
 
 

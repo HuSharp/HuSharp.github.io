@@ -82,6 +82,10 @@ type: page
 
 * [JS前端开发群月报 -豪情等人维护](http://www.kancloud.cn/jsfront/month/82796)
 
+* [大牛 linyacool 收集的 Blog ](http://www.linya.pub/)
+
+
+
 ## Books
 
 ### 计算机图形学
