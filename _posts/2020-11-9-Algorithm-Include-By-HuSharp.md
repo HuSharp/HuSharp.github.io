@@ -27,31 +27,31 @@ stickie: true
 
 ## 左神专栏
 
-[《程序员代码面试指南》（零）排序大汇总](http://husharp.today/2020/07/18/Coder-MianShi0/)                     
+[ （零）排序大汇总](http://husharp.today/2020/07/18/Coder-MianShi0/)                     
 
-[《程序员代码面试指南》（一）栈和队列](http://husharp.today/2020/07/20/Coder-MianShi1/)                     
+[ （一）栈和队列](http://husharp.today/2020/07/20/Coder-MianShi1/)                     
 
-[《程序员代码面试指南》（二）数组和矩阵](http://husharp.today/2020/07/22/Coder-MianShi2/)                     
+ （二）数组和矩阵](http://husharp.today/2020/07/22/Coder-MianShi2/)                     
 
-[《程序员代码面试指南》（三）链表问题](http://husharp.today/2020/07/24/Coder-MianShi3/)                     
+ （三）链表问题](http://husharp.today/2020/07/24/Coder-MianShi3/)                     
 
-[《程序员代码面试指南》（四）二叉树问题](http://husharp.today/2020/07/24/Coder-MianShi4/)                     
+ （四）二叉树问题](http://husharp.today/2020/07/24/Coder-MianShi4/)                     
 
-[《程序员代码面试指南》（五）HashMap](http://husharp.today/2020/08/01/Coder-MianShi5/)                     
+ （五）HashMap](http://husharp.today/2020/08/01/Coder-MianShi5/)                     
 
-[《程序员代码面试指南》（六）字符串问题](http://husharp.today/2020/08/02/Coder-MianShi6/)                     
+ （六）字符串问题](http://husharp.today/2020/08/02/Coder-MianShi6/)                     
 
-[《程序员代码面试指南》（七）贪心问题](http://husharp.today/2020/08/12/Coder-MianShi7/)                     
+ （七）贪心问题](http://husharp.today/2020/08/12/Coder-MianShi7/)                     
 
-[《程序员代码面试指南》（八）图问题](http://husharp.today/2020/08/14/Coder-MianShi8/)                     
+ （八）图问题](http://husharp.today/2020/08/14/Coder-MianShi8/)                     
 
-[《程序员代码面试指南》（九）滑动窗口问题](http://husharp.today/2020/10/16/Coder-Advanced1/)                     
+ （九）滑动窗口问题](http://husharp.today/2020/10/16/Coder-Advanced1/)                     
 
-[《程序员代码面试指南》（十）单调栈思想及其应用](http://husharp.today/2020/10/16/Coder-Advanced2_SingleStack/)                 
+ （十）单调栈思想及其应用](http://husharp.today/2020/10/16/Coder-Advanced2_SingleStack/)                 
 
-[《程序员代码面试指南》（十一）Morris 遍历二叉树：前序、中序、后序](http://husharp.today/2020/10/25/Coder-Advanced3_Morris/)                     
+ （十一）Morris 遍历二叉树：前序、中序、后序](http://husharp.today/2020/10/25/Coder-Advanced3_Morris/)                     
 
-[《程序员代码面试指南》（十二）搜索二叉树BST](http://husharp.today/2020/10/31/Coder-Advanced4_BST/)    【待完善....】             
+ （十二）搜索二叉树BST](http://husharp.today/2020/10/31/Coder-Advanced4_BST/)    【待完善....】             
 
 
 

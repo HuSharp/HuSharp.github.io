@@ -289,8 +289,6 @@ howdy
 
 ## 第十六章：数 组
 
-### 
-
 
 
 `Arrays.deepToString()`静态方法专门用来打印多维数组。
@@ -299,9 +297,7 @@ howdy
 
 粗糙数组是指，多维数组里，同一层次的子数组，长度可以不相同。专业的说：数组中构成的矩阵的每个向量都可以具有任意的长度。C++里应该是没有粗糙数组的。
 
-
-
-```
+```java
 public class test {
     public static void main(String[] args) {
         int[][] c = new int[][]{
@@ -315,7 +311,7 @@ public class test {
 
 
 
-16.1 Arrays 实用功能
+### 16.3 Arrays 实用功能
 
 java.util.Arrays有一套用于数组的static实用方法。
 
@@ -329,7 +325,7 @@ java.util.Arrays有一套用于数组的static实用方法。
    System.arraycopy()：比for循环更高效的数组复制方法，它是浅拷贝，如果复制对象数组，只会复制对象的引用。
    对于元素不是基本类型的对象，用equals()和sort()方法时，需重写元素的equals()方法和实现Comparable接口。
 
-### 源码剖析
+### 具体分析
 
 #### 1、System.arraycopy()
 
@@ -387,15 +383,26 @@ java.util.Arrays有一套用于数组的static实用方法。
 
 
 
+#### 3、toString
+
+Arrays提供了一个toString()方法，直接把一个数组，转换为字符串，这样方便观察数组的内容 											
+
+```
+public class HelloWorld {
+    public static void main(String[] args) {
+        int a[] = new int[] { 18, 62, 68, 82, 65, 9 };
+        String content = Arrays.toString(a);
+        System.out.println(content);
+ 
+    }
+}
+```
 
 
 
+#### 4、binarySearch()
 
-
-
-
-
-
+调用二分查找之前，必须保证数组已经有序，不然返回结果未定义。如果 key 在数组有多个，那么不能保证找到的是哪个 key。
 
 
 
