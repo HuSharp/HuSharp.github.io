@@ -17,7 +17,7 @@
       demo_link: 'https://github.com/HuSharp/HuSharp_Os',
       img_link: '',
       code_link: 'https://github.com/HuSharp/HuSharp_Os',
-      title: '类Linux OS',
+      title: '小型类 Linux OS',
       core_tech: 'C & 汇编',
       description: '跟着《操作系统真象还原》在bochs上实现一个简单的操作系统，\n主要内容有：编写 MBR 主引导记录、保护模式实现、中断、内存管理系统、线程、输入输出系统、用户进程、编写硬盘驱动程序、文件系统、系统交互等核心技术。'
     }, {
@@ -32,36 +32,15 @@
       img_link: 'http://ww4.sinaimg.cn/large/7011d6cfjw1f3b9w6xpz5j20ae02pgm3.jpg',
       code_link: 'https://github.com/Gaohaoyang/ife/tree/master/task/task0002/work/Gaohaoyang',
       title: 'MIPS 5 段流水线CPU虚拟平台搭建',
-      core_tech: 'Java',
+      core_tech: '数电、计组',
       description: 'MIPS 5 段流水线CPU虚拟平台搭建.基于JAVA平台的Logisim虚拟仿真软件开展相关实验。\n完成单周期、多周期CPU的搭建\n构建能处理各类冲突的MIPS 5 段流水线CPU，包括中断异常和分支预测'
     }, {
       demo_link: 'http://gaohaoyang.github.io/ife/task/task0002/work/Gaohaoyang/task0002_1.html',
       img_link: 'http://ww3.sinaimg.cn/large/7011d6cfjw1f3b9tmyuh2j20au0aaaar.jpg',
       code_link: 'https://github.com/Gaohaoyang/ife/tree/master/task/task0002/work/Gaohaoyang',
-      title: '处理兴趣爱好列表',
-      core_tech: 'JavaScript',
-      description: '对JavaScript正则表达式和字符串的练习。'
-    }, {
-      demo_link: 'http://gaohaoyang.github.io/ife/task/task0002/work/Gaohaoyang/index.html',
-      img_link: 'http://7q5cdt.com1.z0.glb.clouddn.com/demo-demo-index.png',
-      code_link: 'https://github.com/Gaohaoyang/ife/tree/master/task/task0002/work/Gaohaoyang',
-      title: '百度前端学院 task0002 展示主页',
-      core_tech: 'HTML CSS',
-      description: '任务二的展示主页，里面包含五个小 demo。还有一篇相关的<a href="http://gaohaoyang.github.io/2015/04/22/baidu-ife-2-javascript/" target="_blank">日志。</a>'
-    }, {
-      demo_link: 'http://gaohaoyang.github.io/ife/task/task0001/work/Gaohaoyang/index.html',
-      img_link: 'http://7q5cdt.com1.z0.glb.clouddn.com/Demo-blog-ife.jpg',
-      code_link: 'https://github.com/Gaohaoyang/ife/tree/master/task/task0001/work/Gaohaoyang',
-      title: '百度前端学院 task0001 个人博客',
-      core_tech: 'HTML CSS',
-      description: '完成百度前端学院的任务。深刻的理解了BFC、浮动、inline-block间距，多列布局等技术。还有一篇相关的<a href="http://gaohaoyang.github.io/2015/04/15/baidu-ife-1/" target="_blank">日志。</a>'
-    }, {
-      demo_link: 'https://codepen.io/haoyang/pen/jrvrQq',
-      img_link: 'https://ooo.0o0.ooo/2016/11/24/5836d81f48cd2.png',
-      code_link: 'https://codepen.io/haoyang/pen/jrvrQq',
-      title: 'Fisher-Yates 洗牌算法动画',
-      core_tech: 'JavaScript',
-      description: 'Fisher-Yates 洗牌算法动画。算法详情见 <a href ="https://gaohaoyang.github.io/2016/10/16/shuffle-algorithm/">这里</a>。'
+      title: '清华uCoreOS lab实现与资料收集',
+      core_tech: 'C/C++，汇编',
+      description: '掌握OS基本概念：看在线课程，能理解OS原理与概念；看在线实验指导书并分析源码，能理解labcodes_answer的labs运行结果\n掌握OS设计实现：在1的基础上，能够通过编程完成labcodes的8个lab实验中的基本练习和实验报告\n掌握OS核心功能：在2的基础上，能够通过编程完成labcodes的8个lab实验中的challenge练习\n掌握OS科学研究：在3的基础上，能够通过阅读论文、设计、编程、实验评价等过程来完成课程设计（大实验）\n'
     }
 
   ];
