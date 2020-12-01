@@ -15,29 +15,29 @@
   var demoContent = [
    {
       demo_link: 'https://github.com/HuSharp/HuSharp_Os',
-      img_link: '',
+      img_link: '../assets/waterfall_js/HuSharpOS.jpg',
       code_link: 'https://github.com/HuSharp/HuSharp_Os',
       title: '小型类 Linux OS',
       core_tech: 'C & 汇编',
       description: '跟着《操作系统真象还原》在bochs上实现一个简单的操作系统，\n主要内容有：编写 MBR 主引导记录、保护模式实现、中断、内存管理系统、线程、输入输出系统、用户进程、编写硬盘驱动程序、文件系统、系统交互等核心技术。'
     }, {
       demo_link: 'https://github.com/HuSharp/Unix-Linux_Programming',
-      img_link: 'http://ww2.sinaimg.cn/large/7011d6cfjw1f3ba04okoqj20eq093wh1.jpg',
+      img_link: '../assets/waterfall_js/Unix_Linux_Programming.jpg',
       code_link: 'https://github.com/HuSharp/Unix-Linux_Programming',
       title: 'Unix-Linux_Programming',
       core_tech: 'C',
       description: 'code implement by reading understanding-unix-programming'
     }, {
       demo_link: 'http://gaohaoyang.github.io/ife/task/task0002/work/Gaohaoyang/task0002_2.html',
-      img_link: 'http://ww4.sinaimg.cn/large/7011d6cfjw1f3b9w6xpz5j20ae02pgm3.jpg',
+      img_link: '../assets/waterfall_js/MIPS5.jfif',
       code_link: 'https://github.com/Gaohaoyang/ife/tree/master/task/task0002/work/Gaohaoyang',
       title: 'MIPS 5 段流水线CPU虚拟平台搭建',
       core_tech: '数电、计组',
       description: 'MIPS 5 段流水线CPU虚拟平台搭建.基于JAVA平台的Logisim虚拟仿真软件开展相关实验。\n完成单周期、多周期CPU的搭建\n构建能处理各类冲突的MIPS 5 段流水线CPU，包括中断异常和分支预测'
     }, {
-      demo_link: 'http://gaohaoyang.github.io/ife/task/task0002/work/Gaohaoyang/task0002_1.html',
-      img_link: 'http://ww3.sinaimg.cn/large/7011d6cfjw1f3b9tmyuh2j20au0aaaar.jpg',
-      code_link: 'https://github.com/Gaohaoyang/ife/tree/master/task/task0002/work/Gaohaoyang',
+      demo_link: 'https://github.com/HuSharp/uCoreOS_labs',
+      img_link: '../assets/waterfall_js/uCoreOS.jpg',
+      code_link: 'https://github.com/HuSharp/uCoreOS_labs',
       title: '清华uCoreOS lab实现与资料收集',
       core_tech: 'C/C++，汇编',
       description: '掌握OS基本概念：看在线课程，能理解OS原理与概念；看在线实验指导书并分析源码，能理解labcodes_answer的labs运行结果\n掌握OS设计实现：在1的基础上，能够通过编程完成labcodes的8个lab实验中的基本练习和实验报告\n掌握OS核心功能：在2的基础上，能够通过编程完成labcodes的8个lab实验中的challenge练习\n掌握OS科学研究：在3的基础上，能够通过阅读论文、设计、编程、实验评价等过程来完成课程设计（大实验）\n'
