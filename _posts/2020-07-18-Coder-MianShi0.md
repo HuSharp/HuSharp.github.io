@@ -30,7 +30,7 @@ typora-root-url: ..
 
 ![image-20200901094002382](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200901094002382.png)
 
-```
+```java
 	public static void bubbleSort(int[] arr) {
 		if (arr == null || arr.length < 2) {
 			return;
@@ -71,7 +71,7 @@ typora-root-url: ..
 
 ![image-20200901094639406](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200901094639406.png)
 
-```
+```java
 	public static void selectionSort(int[] arr) {
 		if(arr == null || arr.length < 2) {
 			return;
@@ -109,7 +109,7 @@ typora-root-url: ..
 
 ![image-20200901100932224](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200901100932224.png)
 
-```
+```java
 	public static void insertionSort(int[] arr) {
 		if(arr == null || arr.length<2)
 			return;
@@ -156,7 +156,7 @@ typora-root-url: ..
 
 ![image-20200901103626533](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200901103626533.png)
 
-```
+```java
 	public static void mergeSortBegin(int[] arr) {
 		if(arr == null || arr.length < 2)
 			return;
@@ -226,7 +226,7 @@ T(N) = 2T(N/2) + O(N)
 
 归并思想：将左右小和加起来
 
-```
+```java
 	public static int smallNumSum(int[] arr, int L, int R) {
 		if(L == R)
 			return 0;
@@ -241,7 +241,7 @@ T(N) = 2T(N/2) + O(N)
 
 可用归并排序思想，改合并处代码即可
 
-```
+```java
 	while(i<=mid && j<=r) {
 			res += arr[i]<arr[j] ? arr[i]*(r-j+1) : 0;
 			mergeHelp[pos++] = arr[i]<arr[j]?arr[i++]:arr[j++];//选小值
@@ -263,7 +263,7 @@ T(N) = 2T(N/2) + O(N)
 
 利用左边界和右边界，左边界表示小于 pivot 的区域，右边界表示大于 pivot 区域，初始大小都为 -1。用 cur 指针依次指向进行判断。
 
-```
+```java
     // p 指示所需分割的数
     public static int[] partition(int[] arr, int l, int r, int p) {
         int less = l - 1;
@@ -297,7 +297,7 @@ T(N) = 2T(N/2) + O(N)
 
 pivot 就取当前数组的最后一个，因此大于区域需要进行向前移动一位。划分完之后，将 pivot 放回 小于区域/大于区域的边界处。
 
-```
+```java
 	public static void quickSort(int[] arr, int l, int r) {
 		if(l < r) {
 			// 第一行先忽略（属于随机快排改善 
@@ -382,46 +382,77 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
    
 
-3. 堆的往上走
+3. ### 堆排序再回顾
 
+   
+
+   1、对于一个新节点加入堆的函数 heapInsert
+
+   不断与比自己值小的父节点进行交换，当升到根节点时再停止。
+
+   ```java
+       // 大根堆建立
+       public static void heapInsert(int[] arr, int index) {
+           while(arr[index] > arr[(index - 1) / 2]) {
+               swap(arr, index, (index - 1) / 2);
+               index = (index - 1) / 2;
+           }
+       }
    ```
-   	// 堆的构造
-   	public static void heapInsert(int[] arr, int index) {
-   		while(arr[index] > arr[(index-1)/2]) {//和父亲比
-   			swap(arr, index, (index-1)/2);
-   			index = (index-1)/2;
-   		}
-   	}
+
+   2、调整根结构 ，进行下沉
+
+   由于是大顶堆，下沉时， 需要选出左右孩子以及根节点最大的，作为根节点
+
+   ```java
+       // 下沉操作
+       // 由于是大顶堆，下沉时， 需要选出左右孩子以及根节点最大的，作为根节点
+       public static void heapify(int[] arr, int index, int heapSize) {
+           int left = index * 2 + 1;// 左孩子
+           while(left < heapSize) {
+               // 确保右孩子也不越界
+               int largest = left + 1 < heapSize && arr[left + 1] > arr[left]
+                           ? left + 1
+                           : left;
+               largest = arr[largest] > arr[index] ? largest : index;
+               if(largest == index) {// 说明此时不能下沉
+                   break;
+               }
+               // 至此 能下沉
+               swap(arr, largest, index);
+               index = largest;
+               left = index * 2 + 1;
+           }
+       }
    ```
 
-4. 堆的往下走
+   3、删除堆顶元素时，采用堆顶与最后一个元素进行交换，再对堆顶进行下沉，对 heapSize 进行缩减一个。
 
-   需要将该节点**下沉**至相应位置。
+   最后进行 Sort，结合之前的函数，将大根堆的堆顶与最后一个数进行交换，然后再 heapSize-1, 并将前面的 heapify 调整成大根堆。
 
-   ```
-   	// heapSize表示界 选出 index节点 与 其孩子最大值
-   	public static void heapify(int[] arr, int index, int heapSize) {
-   		int left = index * 2 + 1;
-   		while(left < heapSize) {
-   			// 选出 儿子 最大值  && 需要判断右孩子越界
-   			int largest = left + 1 < heapSize && 
-   						  arr[left] < arr[left+1]
-   							?  left +1 
-   							: left;
-   			// 和当前index 进行判断
-   			largest = arr[largest] > arr[index] ? largest : index;
-   			if(largest == index)
-   				break;//说明已经下降到值的最低点了
-   			swap(arr, index, largest); // 至此 index 还未找到最低点
-   			index = largest;
-   			left = index * 2 + 1;
-   		}
+   ```java
+   	public static void heapSort(int[] arr) {
+           if(arr == null || arr.length < 2) {
+               return;
+           }
+           // 构成大根堆
+           for (int i = 0; i < arr.length; i++) {
+               heapInsert(arr, i);
+           }
+           // 现在开始排序
+           // 将大根堆的堆顶与最后一个数进行交换，然后再 heapSize-1, 并将前面的 heapify 调整成大根堆
+           // 循环操作即可
+           for (int i = arr.length-1; i >= 0; i--) {
+               swap(arr, i, 0);// 交换
+               heapify(arr, 0, i-1);
+           }
+   
    	}
    ```
 
    
 
-5. 堆的应用
+4. 堆的应用
 
    现一个水流不断输出数字，需要随时给出中位数。
 
@@ -431,7 +462,7 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
    
 
-6. **堆排序**
+5. **堆排序**
 
    采用上滤 O(nlogN)
 
@@ -506,7 +537,7 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
 对每个桶记录min 和 max。计算每个非空桶的 min 和 上一个最近非空桶 max 的差值。最大差值必定来自不同桶，因为**最起码**来自空桶两侧。也有可能两个相邻的桶差值大于空桶两侧。
 
-```
+```java
 	public static int maxGap(int[] arr) {
 		if(arr == null || arr.length < 2){
 			return 0;
@@ -601,7 +632,7 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
 我来总结一下，**基数排序对要排序的数据是有要求的，需要可以分割出独立的“位”来比较，而且位之间有递进的关系，如果 a 数据的高位比 b  数据大，那剩下的低位就不用比较了。除此之外，每一位的数据范围不能太大，要可以用线性排序算法来排序，否则，基数排序的时间复杂度就无法做到 O(n) 了**。
 
-```
+```java
 public class RadixSorter {
     public static void radixSort(int[] arr) {
         if(arr == null || arr.length < 2) {
