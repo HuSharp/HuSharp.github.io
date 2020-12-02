@@ -2,8 +2,8 @@
 layout: post
 title:  "《操作系统真象还原》学习笔记（一）"
 date:   2020-07-24 22:15:02 +0800
-categories:  Os
-tags: linux  操作系统
+categories:  OS
+tags: Linux 操作系统
 author: Hu#
 typora-root-url: ..
 ---

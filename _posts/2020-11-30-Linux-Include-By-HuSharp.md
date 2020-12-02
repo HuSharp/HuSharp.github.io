@@ -3,7 +3,7 @@ layout: post
 title:  " HuSharp 的 OS & Linux 学习总结 "
 date:   2020-11-30 16:03:14 +0800
 categories:  Linux
-tags: linux  基础知识
+tags: Linux 基础知识
 author: Hu#
 typora-root-url: ..
 stickie: true

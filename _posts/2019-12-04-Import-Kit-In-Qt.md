@@ -3,7 +3,7 @@ layout: post
 title:  "关于 Qt 的 Kit 引入"
 date:   2019-12-04 19:55:28 +0800
 categories:  工具
-tags: Qt c++
+tags: 工具
 author: Hu#
 typora-root-url: ..
 ---

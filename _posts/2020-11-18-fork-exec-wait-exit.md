@@ -3,7 +3,7 @@ layout: post
 title:  " fork exec wait exit探究"
 date:   2020-11-18 19:51:16 +0800
 categories:  Linux
-tags: linux  基础知识
+tags: Linux 基础知识
 author: Hu#
 typora-root-url: ..
 ---

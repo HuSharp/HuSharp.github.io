@@ -3,7 +3,7 @@ layout: post
 title:  "WinScp的安装（实现linux虚拟机和主机的文件传输）"
 date:   2020-07-22 21:30:00 +0800
 categories:  工具
-tags: linux  虚拟机
+tags: Linux
 author: Hu#
 typora-root-url: ..
 ---
