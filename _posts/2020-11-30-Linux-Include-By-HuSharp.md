@@ -31,11 +31,11 @@ stickie: true
 
 ## 二、源码分析
 
-1、[fork exec wait exit探究](./2020-11-18-fork-exec-wait-exit.md)
+1、[fork exec wait exit探究](../2020-11-18-fork-exec-wait-exit.md)
 
-2、
+2、[回车与换行的探究](../2020-11-20-nAndr.md)
 
-
+3、[终端控制和信号](../2020-11-22-Signal.md)
 
 
 
