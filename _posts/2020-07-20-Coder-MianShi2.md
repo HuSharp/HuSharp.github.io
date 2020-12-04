@@ -18,7 +18,7 @@ typora-root-url: ..
 给定一个整型矩阵matrix，请按照转圈的方式打印它。
 例如：
 
-```
+```java
 1  2  3  4 
 5  6  7  8 
 9  10  11  12 
@@ -36,7 +36,7 @@ typora-root-url: ..
 
 **矩阵分圈处理**。在矩阵中用左上角的坐标（tR，tC）和右下角的坐标（dR，dC）就可以表示一个子矩阵，比如，题目中的矩阵，当（tR，tC）=（0，0）、（dR，dC）=（3，3）时，表示的子矩阵就是整个矩阵，那么这个子矩阵最外层的部分如下：
 
-```
+```java
 1  2  3  4 
 5        8 
 9        12 
@@ -49,7 +49,7 @@ typora-root-url: ..
 
 1. 进入内层圈是 左下角++ 右上角--，直到 左下角超过右上角 终止。
 
-   ```
+   ```java
    while(topR <= botR && topC <= botC) {
    			printEdge(matrix, topR++, topC++, botR--, botC--);
    		}
@@ -57,7 +57,7 @@ typora-root-url: ..
 
 2. 最后一步可为一行或者一列
 
-   ```
+   ```java
    	if(topR == botR) {// 表示为在一行
    		for (int i = topC; i <= botC; i++) {
    			System.out.print(matrix[topR][i] + " ");
@@ -81,7 +81,7 @@ typora-root-url: ..
 给定一个 NXN 的矩阵matrix，把这个矩阵调整成顺时针转动90°后的形式。
 例如：
 
-```
+```java
 1  2  3  4 
 5  6  7  8 
 9  10  11  12 
@@ -90,7 +90,7 @@ typora-root-url: ..
 
 顺时针转动90°后为：
 
-```
+```java
 13  9  5  1
 14  10 6  2
 15  1  17 3
@@ -110,7 +110,7 @@ typora-root-url: ..
 
 只需要使用一个变量进行暂存即可；
 
-```
+```java
 int times = botC - topC;
 		int temp = 0;
 		for (int i = 0; i != times; i++) {
@@ -133,7 +133,7 @@ int times = botC - topC;
 【题目】 给定一个矩阵matrix，按照“之”字形的方式打印这
 个矩阵，例如：
 
-```
+```java
 1  2  3  4 
 5  6  7  8 
 9  10  11  12 
@@ -148,7 +148,7 @@ int times = botC - topC;
 
 安放两个指针，A向右运动，到界后向下；B向下运动，到界后向右。并每次调节打印方向。
 
-```
+```java
 public static void printDiagonal(int[][] matrix, int eastUpR, int eastUpC, 
 									int westBotR, int westBotC, boolean up) {
 		if(up) {//说明自下向上
@@ -173,7 +173,7 @@ public static void printDiagonal(int[][] matrix, int eastUpR, int eastUpC,
 给定一个有NxM的整型矩阵matrix和一个整数K，matrix的每一行和每一列都是排好序的。实现一个函数，判断K是否在matrix中。
 例如：
 
-```
+```java
 0 1 2 5
 2 3 4 7
 4 4 4 8
@@ -191,7 +191,7 @@ public static void printDiagonal(int[][] matrix, int eastUpR, int eastUpC,
 
 ![QQ图片20200724073622](/assets/blog_image/2020-07-20-Coder-MianShi2/QQ图片20200724073622.jpg)
 
-```
+```java
 // 从右上到左下
 		while(eastUpR != matrix.length || eastUpC != -1) {
 			if(matrix[eastUpR][eastUpC] == value) {
@@ -224,14 +224,14 @@ https://www.nowcoder.com/practice/0d65e18ca5784ae68577d9591df23033?tpId=101&&tqI
 
 输入描述:
 
-```
+```java
 第一行一个整数N。表示数组长度。
 接下来一行N个整数，表示数组内元素
 ```
 
 输出描述:
 
-```
+```java
 输出N个整数为答案数组
 ```
 
@@ -239,14 +239,14 @@ https://www.nowcoder.com/practice/0d65e18ca5784ae68577d9591df23033?tpId=101&&tqI
 
 输入
 
-```
+```java
 16
 1 2 2 2 3 3 4 5 6 6 7 7 8 8 8 9
 ```
 
 输出
 
-```
+```java
 1 2 3 4 5 6 7 8 9 6 2 7 2 8 8 3
 ```
 
@@ -260,7 +260,7 @@ https://www.nowcoder.com/practice/0d65e18ca5784ae68577d9591df23033?tpId=101&&tqI
 3. big 向右移动（++）。因为数组整体有序，所以如果 arr[ big ] != arr[small]，说明当前数arr[ big ] 应该加入到 A 区域里，所以交换 arr[small+1] 和 arr[ big ]，此时A的区域增加一个数（small++）：如果arr[ big ] = arr[small]，说明当前数ar[ big ]的值之前已经加入到A区域，此时不用再加入。
 4. 重复步骤3，直到所有的数遍历完。
 
-```
+```java
     public static void leftUnique(int[] arr) {
         int small = 0;
         int big = 1;

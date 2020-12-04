@@ -31,7 +31,7 @@ typora-root-url: ..
    2. 将 cur 的 next 指向 pre（pre初始为null）
    3. pre 指向当前指针，head 指向 next 指针（移到下一个）
 
-   ```
+   ```java
    public static Node reverseList(Node head) {
    		Node pre = null; 
    		Node next = null;
@@ -56,7 +56,7 @@ typora-root-url: ..
 
    即比单向链表的swap多一个将last指向next
 
-   ```
+   ```java
    public static DoubleNode reverseList(DoubleNode head) {
    		DoubleNode pre = null; 
    		DoubleNode next = null;
@@ -89,7 +89,7 @@ typora-root-url: ..
 
 **法一：**全部遍历存储到栈 ， 利用栈来逆向对比。
 
-```
+```java
 		// 先全部存入栈中
 		while(head != null) {
 			stack.push(head);
@@ -108,7 +108,7 @@ typora-root-url: ..
 
 与法一本质一样，还是压栈进行对比，不过只压入右半部分的栈。
 
-```
+```java
 		while(fast != null && fast.next != null) {
 			fast = fast.next.next;
 			slow = slow.next;
@@ -137,14 +137,14 @@ typora-root-url: ..
 
 2. 使 fast 指针指向右部第一个，slow 指针（此时即中间点）指向 null 
 
-   ```
+   ```java
    fast = slow.next;//右部第一个
    slow.next = null;  // mid -> null
    ```
 
 3. 对右部进行翻转（详情见第一题单链表的翻转）
 
-   ```
+   ```java
    		Node temp = null;//暂存节点
    		// 对右部进行翻转
    		while(fast != null) {
@@ -158,7 +158,7 @@ typora-root-url: ..
 
 4. 现对回文进行验证
 
-   ```
+   ```java
    		fast = head; // fast指向第一个	
    		boolean res = true;
    		while(fast != null && slow != null) {
@@ -172,7 +172,7 @@ typora-root-url: ..
 
 5. 进行恢复
 
-   ```
+   ```java
    		slow = temp.next; // 倒数第二个
    		temp.next = null; // 指向null
    		while(slow != null) {//由于中点指向null
@@ -204,7 +204,7 @@ typora-root-url: ..
 
 1. **普通方法**：即荷兰国旗问题。（详见之前内容）
 
-   ```
+   ```java
    public static void arrPartition(Node[] arr, int pivot) {
    		int small = -1;
    		int big = arr.length;

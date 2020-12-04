@@ -27,9 +27,9 @@ stickie: true
 
 ## 左神专栏
 
-[ （零）排序大汇总](http://husharp.today/2020/07/18/Coder-MianShi0/)                     
+ （零）[排序大汇总](http://husharp.today/2020/07/18/Coder-MianShi0/)                     
 
-[ （一）栈和队列](http://husharp.today/2020/07/20/Coder-MianShi1/)                     
+ （一）[栈和队列](http://husharp.today/2020/07/20/Coder-MianShi1/)                     
 
  （二）[数组和矩阵](http://husharp.today/2020/07/22/Coder-MianShi2/)                     
 

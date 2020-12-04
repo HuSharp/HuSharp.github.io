@@ -20,7 +20,7 @@ typora-root-url: ..
 
 ​	先序 中序 后序的区别在于——在遍历点第几次（每个点都会遍历3次）打印
 
-```
+```java
 1.先序
 	public static void preOrderRecur(Node head) {
 		if(head == null)
@@ -49,7 +49,7 @@ typora-root-url: ..
    2.从stack中弹出栈顶节点，记为cur，然后打印cur节点的值，再将节点cur的右孩子（不为空的话）先压入stack中，最后将cur的左孩子（不为空的话）压入stack中。（先右后左，因为打印是先左后右）
    3.不断重复步骤2，直到stack为空，全部过程结束。
 
-   ```
+   ```java
    public static void preOrderUnRecur(Node head) {
    		System.out.print("pre-UnRecurOrder:");
    		if(head != null) {
@@ -78,27 +78,30 @@ typora-root-url: ..
 
    ![img](/assets/blog_image/2020-07-24-Coder-MianShi4/RW_YQB%$JIUC{249%1[9X.png)
 
-   ```
-   
-   	public static void inOrderUnRecur(Node head) {
-   		System.out.print("in-UnRecurOrder: ");
-   		
-   		if(head != null) {
-   			Stack<Node> stack = new Stack<Node>();
-   			Node cur = head;
-   			while(!stack.isEmpty() || cur != null) {
-   				if(cur != null) {// 左子链向下
-   					stack.push(cur);
-   					cur = cur.left;
-   				}else {// 已经到达最左子链处，应当进入右子树，再遍历其左子链
-   					cur = stack.pop(); // pop出当前最左子链值（为父节点），访右子树
-   					System.out.print(cur.value + " ");
-   					cur = cur.right;
-   				}
-   			}
-   		}
-   		System.out.println();
-   	}
+   ```java
+       // 采用 stack + 左子链实现
+       public List<Integer> inorderTraversal(TreeNode root) {
+           List<Integer> list = new LinkedList<>();
+           Stack<TreeNode> stack = new Stack<>();
+           if(root == null) {
+               return list;
+           }
+           
+           TreeNode cur = root;
+           while(true) {
+               while(cur != null) {
+                   stack.push(cur);
+                   cur = cur.left;
+               }// 至此 找到左子链
+               if(stack.isEmpty()) {
+                   break;
+               }
+               TreeNode node = stack.pop();
+               list.add(node.val);
+               cur = node.right;
+           }
+           return list;
+       }
    ```
 
    
@@ -109,7 +112,7 @@ typora-root-url: ..
    由于是左右中， 而先序是中左右（极其容易）那么就直接套得中右左，
    再将其得到 中左右 时压到另一个栈中，再最终出栈打印 得到后序遍历
 
-   ```
+   ```java
    	public static void posOrderUnRecur1(Node head) {
    		System.out.print("pos-UnRecurOrder:");
    		if(head != null) {
@@ -163,7 +166,7 @@ typora-root-url: ..
 
  1. 介绍 调节统一长度的函数
 
-    ```
+    ```java
     	String value = to + head.value + to;// to 为 "H" / "v" / "^"
     	int lenL = (len-value.length()) / 2; 	// 左侧取下整
     	int lenR = len-lenL-value.length();		// 右侧取上整
@@ -181,7 +184,7 @@ typora-root-url: ..
 
 	2. 打印函数
 
-    ```
+    ```java
     	主函数先输出
     		System.out.println("Binary tree:");
     		printInOrder(head, 0, "H", 17);	// 规定len始终为17，头结点为 HxxxH
@@ -213,7 +216,7 @@ typora-root-url: ..
 
 【题目】现在有一种新的二叉树节点类型如下：
 
-```
+```java
 	public static class Node {
 		public int value;
 		public Node left;
@@ -244,7 +247,7 @@ typora-root-url: ..
 
    **情况3**：如果在情况2中一直向上寻找，都移动到空节点时还是没有发现node的后继节点，说明node根本不存在后继节点。
 
-   ```
+   ```java
    	public static Node getSuccessorNode(Node node) {
    		if(node == null)
    			return null;
@@ -287,7 +290,7 @@ typora-root-url: ..
 
 ​	如果不在一个值结束时加入特殊字符，那么上图两侧的先序遍历序列化结果都是123###。也就是说，生成的字符串并不代表唯一的树。
 
-```
+```java
 	// 先序序列化
 	// 加上 #！是为了区分 1 1 1
 	// 加上！ 是为了区分 12 3和 1 23
@@ -312,7 +315,7 @@ typora-root-url: ..
 4. 遇到“#”，生成null节点，它是节点3的右孩子，该节点为null，所以这个节点没有后续建立子树的过程。回到节点3后，再回到节点1，用values[4]建立节点1的右子树。
 5. 遇到“#”，生成null节点，它是节点l的右孩子，该节点为null，所以这个节点没有后续建立子树的过程。整个过程结束。
 
-```
+```java
 	public static Node reconByPreString(String preStr) {
 		String[] strs = preStr.split("!");
 		Queue<String> queue = new LinkedList<String>();
@@ -339,7 +342,7 @@ typora-root-url: ..
 
 #### 3.层次序列化 （按照队列实现）
 
-```
+```java
     // 层次序列化 用队列即可
     public static String serializeByLevelOrder(Node[] nodes, int root) {
 
@@ -396,7 +399,7 @@ typora-root-url: ..
 ​	判断的全部过程请参看如下代码中的isBalance方法。在递归函数 getHeight中，一旦发现不符合平衡二叉树的性质，递归过程会迅速退出，此时返回什么根本不重要。boolean]
 res长度为1，其功能相当于一个全局的boolean变量。
 
-```
+```java
 	public static class ReturnData{
 		public boolean isB;
 		public int h;
@@ -432,7 +435,7 @@ res长度为1，其功能相当于一个全局的boolean变量。
 
 1. 判断一棵二又树是否是搜索二叉树，只要改写一个二叉树**中序遍历**，在遍历的过程中看节点值是否都是递增的即可，将输出时与下一个进行大小判断。
 
-   ```
+   ```java
    	public static boolean isBST(Node head) {
    		if(head == null)
    			return true;
@@ -463,7 +466,7 @@ res长度为1，其功能相当于一个全局的boolean变量。
    3.如果当前节点并不是左右孩子全有，**那之后的节点必须都为叶节点**，否则返回false。
    4.遍历过程中如果不返回false，遍历结束后返回true。
 
-   ```
+   ```java
    	public static boolean isCBT(Node head) {
    		if(head == null)
    			return true;
@@ -520,7 +523,7 @@ res长度为1，其功能相当于一个全局的boolean变量。
 
 3. 这一步是求解的主要逻辑，也是一个递归过程记为bs（node，level ，h），node表示当前节点，**level 表示node所在的层数**，h表示整棵树的层数是始终不变的(全局变量)。bs（node，level ，h）的返回值表示以node为头的完全二叉树的节点数是多少。初始时node为头节点head，level 为1，因为head在第1层，一共有h层始终不变。那么这个递归的过程可以用两个例子来说明。
 
-   ```
+   ```java
    	// 返回以node为头结点的节点个数
    	// h为全局变量，表示所有深度
    	public static int bs(Node node, int level, int h) {
@@ -550,7 +553,7 @@ res长度为1，其功能相当于一个全局的boolean变量。
        ​	找到node右子树的最左节点，如果像图3-51的例子一样，发现它没有到达最后一层，说明node的**整棵右子树都是满二又树**，并且层数为h-level-1层，一棵层数为h-level-1的满二叉树，其节点数为2*level-1个。如果加上node节点自己，那么节点数为2^（h-level-1）-1+1==2（h-level-1）个。
        ​	此时如果再知道node左子树的节点数，那么以node为头的完全二叉树上到底有多少个节点就求出来了。node左子树的节点数到底是多少呢？就是bs（node.left，level+1，h）的结果，递归去求即可，最后整体返回2^（h-level-1）+bs（node.left，level+1，h）。
 
-       ```
+       ```java
        	// 判断左边界高度
        	public static int mostLeftLevel(Node head, int level) {
        		while(head != null) {

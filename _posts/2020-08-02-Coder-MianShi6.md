@@ -19,7 +19,7 @@ typora-root-url: ..
 【题目】
 字典树又称为前缀树或Trie树，是处理字符串常见的数据结构。假设组成所有单词的字符仅是“a”~“z”，请实现字典树结构，并包含以下四个主要功能。
 
-```
+```java
 ·void insert（String word）：添加word，可重复添加。
 ·void delete（String word）：删除word，如果word添加过多次，仅删除一个。
 ·boolean search（String word）：查询word是否在字典树中。
@@ -49,19 +49,19 @@ typora-root-url: ..
 2. 有多少个节点到达过该节点 path
 3. 记录接着的单词 用一个26大小数组存放，标记A-Z
 
-```
+```java
 	// 类似自动机，边表示吃进字符，节点表示状态
 	public static class TrieNode{
 		public int path; 
 		public int end;
 		public TrieNode[] nexts;
 		
-		public TrieNode() {
-			this.path = 0; // 有多少个节点到达过
-			this.end = 0; // 有多少个以该节点为结尾的单词
-			nexts = new TrieNode[26]; // A-Z
-		}
+	public TrieNode() {
+		this.path = 0; // 有多少个节点到达过
+		this.end = 0; // 有多少个以该节点为结尾的单词
+		nexts = new TrieNode[26]; // A-Z
 	}
+}
 ```
 
 #### 2.方法实现
@@ -70,7 +70,7 @@ typora-root-url: ..
 
     index 为遍历插入单词的位置指示，并每次将经过路径+1，最终将end+1
 
-    ```
+```java
     		public void insert(String word) {
     			if(word == null)
     				return;
@@ -87,81 +87,85 @@ typora-root-url: ..
     			}
     			node.end++;// 
     		}		
-    ```
+```
 
-	2. search 函数
+2. search 函数
 
-    与insert函数大致一样
+与insert函数大致一样
 
-    ```
-    // 返回插入次数
-    		public int search(String word) {
-    			if(word == null)
-    				return 0;
-    			
-    			char[] ch = word.toCharArray();
-    			TrieNode node = root;
-    			int index = 0;
-    			for (int i = 0; i < ch.length; i++) {
-    				index = ch[i] - 'a';
-    				if(node.nexts[index] == null)
-    					return 0;
-    				node = node.nexts[index];
-    			}
-    			return node.end;
-    		}
-    ```
+```java
+		// 返回插入次数
+		public int search(String word) {
+			if(word == null)
+				return 0;
+			
+			char[] ch = word.toCharArray();
+			TrieNode node = root;
+			int index = 0;
+			for (int i = 0; i < ch.length; i++) {
+				index = ch[i] - 'a';
+				if(node.nexts[index] == null)
+					return 0;
+				node = node.nexts[index];
+			}
+			return node.end;
+		}
+```
 
-	3. delete 函数
 
-    先调用 search 函数，要是不存在，直接返回；存在的话，便继续下一步，在找的过程中，将沿途节点的 path 减 1。
 
-    值得注意的是，若到某一点其沿途计数器全部变为0，那么将该节点指向null即可，不用管其之后的点。用于简化
 
-    ```
-    		// 删除时，若到某一点其沿途计数器全部变为0，
-    		// 那么将该节点指向null即可，不用管其之后的点
-    		public void delete(String word) {
-    			if(search(word) == 0)
-    				return;
-    			
-    			char[] ch = word.toCharArray();
-    			TrieNode node = root;
-    			int index = 0;
-    			for (int i = 0; i < ch.length; i++) {
-    				index = ch[i] - 'a';
-    				if(--node.nexts[index].path == 0) {
-    					node.nexts[index] = null;//指向null
-    					return;
-    				}
-    				node = node.nexts[index];	
-    			}
-    			node.end--;
-    		}
-    ```
+3. delete 函数
 
-	4. prefixNumber 函数：和查找操作同理，根据pre不断找到节点，假设最后的节点记为e，返回 e.path 的值即可。
+先调用 search 函数，要是不存在，直接返回；存在的话，便继续下一步，在找的过程中，将沿途节点的 path 减 1。
 
-    ```
-    		// 返回前缀数量
-    		public int prefixNum(String pre) {
-    			if(pre == null)
-    				return 0;
-    			
-    			char[] ch = pre.toCharArray();
-    			TrieNode node = root;
-    			int index = 0;
-    			for (int i = 0; i < ch.length; i++) {
-    				index = ch[i] - 'a';
-    				if(node.nexts[index] == null)
-    					return 0;
-    				node = node.nexts[index];
-    			}
-    			return node.path;//即路过次数
-    		}
-    ```
+值得注意的是，若到某一点其沿途计数器全部变为0，那么将该节点指向null即可，不用管其之后的点。用于简化
 
-    
+```java
+		// 删除时，若到某一点其沿途计数器全部变为0，
+		// 那么将该节点指向null即可，不用管其之后的点
+		public void delete(String word) {
+			if(search(word) == 0)
+				return;
+			
+			char[] ch = word.toCharArray();
+			TrieNode node = root;
+			int index = 0;
+			for (int i = 0; i < ch.length; i++) {
+				index = ch[i] - 'a';
+				if(--node.nexts[index].path == 0) {
+					node.nexts[index] = null;//指向null
+					return;
+				}
+				node = node.nexts[index];	
+			}
+			node.end--;
+		}
+```
+
+4. prefixNumber 函数：和查找操作同理，根据pre不断找到节点，假设最后的节点记为e，返回 e.path 的值即可。
+
+```java
+		// 返回前缀数量
+		public int prefixNum(String pre) {
+			if(pre == null)
+				return 0;
+			
+			char[] ch = pre.toCharArray();
+			TrieNode node = root;
+			int index = 0;
+			for (int i = 0; i < ch.length; i++) {
+				index = ch[i] - 'a';
+				if(node.nexts[index] == null)
+					return 0;
+				node = node.nexts[index];
+			}
+			return node.path;//即路过次数
+		}
+```
+
+
+​    
 
 
 

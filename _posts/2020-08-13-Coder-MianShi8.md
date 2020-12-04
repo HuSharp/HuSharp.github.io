@@ -38,7 +38,7 @@ typora-root-url: ..
 
 ### 2、Node 结构
 
-```
+```java
 public class Node {
 	public int value;
 	public int in; // 入度 
@@ -60,7 +60,7 @@ public class Node {
 
 ### 3、Edge 结构
 
-```
+```java
 public class Edge {
 	public int weight;
 	public Node from;
@@ -80,7 +80,7 @@ public class Edge {
 
 利用 HashMap 和 HashSet 来存储
 
-```
+```java
 public class Graph {
 	public HashMap<Integer, Node> nodes;// key 为点的编号
 	public HashSet<Edge> edges;
@@ -96,7 +96,7 @@ public class Graph {
 
 ### 5、图的生成
 
-```
+```java
 public class GraphGenerator {
 	public static Graph createGraph(Integer[][] matrix) {
 		Graph graph = new Graph();
@@ -142,7 +142,7 @@ public class GraphGenerator {
 - 4，直到队列变空
 - ![image-20200903104408562](/assets/blog_image/2020-08-13-Coder-MianShi8/image-20200903104408562.png)
 
-```
+```java
 	public static void bfs(Node node) {
 		if(node == null) {
 			return;
@@ -195,7 +195,7 @@ BFS 不需要整张图的结构，只需要 Node 结构就可。
 - 4，直到栈变空
 - ![image-20200903104606450](/assets/blog_image/2020-08-13-Coder-MianShi8/image-20200903104606450.png)
 
-```
+```java
 	public static void dfs(Node node) {
 		if (node == null) {
 			return;
@@ -247,7 +247,7 @@ BFS 不需要整张图的结构，只需要 Node 结构就可。
 ​	利用一个 HashMap 记录各个点的入度。
 ​	利用一个队列来储存 拓扑排序的选择，先进先出。
 
-```
+```java
 	// directed graph and no loop
 	// 找入度为0点，删掉入度为0点时，会出现新的入度为0点
 	public static List<Node> sortedTopology(Graph graph) {
@@ -297,7 +297,7 @@ BFS 不需要整张图的结构，只需要 Node 结构就可。
 
 ![image-20200903145749152](/assets/blog_image/2020-08-13-Coder-MianShi8/image-20200903145749152.png)
 
-```
+```java
 public static Set<Edge> kruskalMST(Graph graph) {
 		// 首先搞出并查集
 		UnionFind unionFind = new UnionFind(); 
@@ -325,7 +325,7 @@ public static Set<Edge> kruskalMST(Graph graph) {
 
 小根堆按照 边的权重进行排序
 
-```
+```java
 	public static class EdgeComparator implements Comparator<Edge> {
 		@Override
 		public int compare(Edge o1, Edge o2) {
@@ -348,7 +348,7 @@ public static Set<Edge> kruskalMST(Graph graph) {
 
 ​		不用并查集 因为 Prim采用的是一个set ，让没进来过的进来。而不是Kruskal算法的要将两个
 
-```
+```java
 	public static Set<Edge> primMST(Graph graph) {
 		PriorityQueue<Edge> priorityQueue = new PriorityQueue<Edge>(new EdgeComparator());
 		HashSet<Node> set = new HashSet<Node>();// 用于作为已访问点的集合
@@ -408,7 +408,7 @@ popMinDistance 函数：每次推出堆顶函数
 
 我们从优先级队列中取出 dist 最小的顶点 record，然后考察这个顶点可达的所有顶点（代码中的 nextVertex）。如果  record 的 dist 值加上 record 与 nextVertex 之间边的权重 w 小于 nextVertex 当前的  dist 值，也就是说，存在另一条更短的路径，它经过 record 到达 nextVertex。那我们就把 nextVertex 的  dist 更新为 record 的 dist 值加上 w。然后，我们把 nextVertex  加入到优先级队列中。重复这个过程，直到找到终止顶点 t 或者队列为空。
 
-```
+```java
     public static HashMap<Node, Integer> dijkstra2(Node head, int size) {
         NodeHeap nodeHeap = new NodeHeap(size);
         // 增加 更新 或者忽视
@@ -430,7 +430,7 @@ popMinDistance 函数：每次推出堆顶函数
 
 现展示最为重要的 addOrUpdateOrIgnore 函数
 
-```
+```java
         public void addOrUpdateOrIgnore(Node node, int distance) {
             // 进入过堆，且现在还在堆中
             if(inHeap(node)) {
@@ -450,7 +450,7 @@ popMinDistance 函数：每次推出堆顶函数
 
 以及 pop 函数的实现，采用与堆中最后一个元素进行交换。
 
-```
+```java
         public NodeRecord popMinDistance() {
             NodeRecord nodeRecord = new NodeRecord(nodes[0], distanceMap.get(nodes[0]));
             swap(0, heapSize - 1);
