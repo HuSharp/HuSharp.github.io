@@ -227,7 +227,7 @@ typora-root-url: ..
    2. 将small、equal和big三个链表重新串起来即可。
    3. 整个过程需要特别注意对null节点的判断和处理。
 
-   ```
+   ```java
    		if(head.value < pivot) {// 加入进左部分链表
    			if(sH == null) { // sH表示small的Head
    				sH = head;
@@ -244,7 +244,7 @@ typora-root-url: ..
 
    至此 已经将各个链表做好，现在需要将其串起来
 
-   ```
+   ```java
    		if(sT != null) { // small 和 equal 链接
    			sT.next = eH;
    			eT = eT == null ? sT : eT;
@@ -288,7 +288,7 @@ typora-root-url: ..
 
    利用快慢指针进行判断，最终返回节点
 
-   ```
+   ```java
    	public static Node getLoopNode(Node head) {
    		if (head == null || head.next == null || head.next.next == null) 
    			return null;
@@ -318,7 +318,7 @@ typora-root-url: ..
    3. 如果end1 ！= end2，说明两个链表不相交，返回null 即可；如果end-=end2，说明两个链表相交，进入步骤4来找寻**第一个相交节点**。
    4. 如果链表1比较长，链表1就先走len1-len2步；如果链表2比较长，链表2就先走len2-len1步。然后两个链表一起走，一起走的过程中，两个链表第一次走到一起的那个节点，就是第一个相交的节点。
 
-   ```
+   ```java
    	// 两个无环链表相交
    	public static Node noLoop(Node head1, Node head2) {
    		if(head1 == null || head2 == null)
@@ -378,7 +378,7 @@ typora-root-url: ..
 
       因此需要让 loop1 进行循环，若是能遍历到 loop2 则说明为情况 2 ，此时返回 loop1 或者 loop2 都算正确。
 
-      ```
+      ```java
       	// 两个有环链表相交
       	public static Node bothLoop(Node head1, Node loop1, Node head2, Node loop2) {
       		Node cur1 = head1;

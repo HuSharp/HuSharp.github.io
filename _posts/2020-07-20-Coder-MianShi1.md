@@ -88,11 +88,12 @@ if(help.isEmpty() || pushNum <= help.peek())
 
 【解答】
 
-	1. 要想实现对栈的逆序递归，需要将栈底元素取出并递归调用，当栈取完时 return。并在递归返回时开始压栈到另一个栈中。
+1. 要想实现对栈的逆序递归，需要将栈底元素取出并递归调用，当栈取完时 return。并在递归返回时开始压栈到另一个栈中。
+
  	2. 对于栈底元素的取出，需要实现一个递归函数 getAndRemoveElement ；
  	3. 因此 共要实现两个递归函数
 
-```
+```java
 	// 1. 利用递归函数将栈底元素返回并输出
 	public static int getAndRemoveStack(Stack<Integer> data) {
 		int res = data.pop();// 需要移除
@@ -108,7 +109,7 @@ if(help.isEmpty() || pushNum <= help.peek())
 
 ​									![image-20200801163012287](/assets/blog_image/2020-07-20-Coder-MianShi1/image-20200801163012287.png)	
 
-```
+```java
 	// 2. 将每次栈底元素压回栈
 	public static void reverse(Stack<Integer> stack) {
 		if(stack.isEmpty())
@@ -133,7 +134,7 @@ if(help.isEmpty() || pushNum <= help.peek())
 
  宠物、狗和猫的类如下：
 
-```
+```java
 public class Pet { private String type;
 	public Pet(String type) { this.type = type; }
 	public String getPetType() { return this.type; }
@@ -160,7 +161,7 @@ public class Cat extends Pet { public Cat() { super("cat"); } }
 
 2. 本题实现将不同的实例盖上**时间戳**的方法，但是**又不能改变用户本身的类**，所以定义一个新的类。
 
-   ```
+   ```java
    public static class PetEnter{
    	private Pet pet;
    	private int count;//时间戳记录次序
@@ -176,7 +177,7 @@ public class Cat extends Pet { public Cat() { super("cat"); } }
 
 4. 当按照实际顺序取出时，因为 dogQ 的队列头表示所有dog实例中最早进队列的实例，同时 catQ 的队列头表示所有的cat实例中最早进队列的实例。则比较这两个队列头的时间戳，谁更早，就弹出谁。
 
-   ```
+   ```java
    public Pet pollAll() {
    	if(!catQ.isEmpty() && !dogQ.isEmpty()) {
    		if(catQ.poll().count < dogQ.poll().count) {//poll出时间戳小的
@@ -208,10 +209,11 @@ public class Cat extends Pet { public Cat() { super("cat"); } }
 
 采用一个help栈，由于最终是自顶向下从大到小，那么应该在help栈中是自顶向下从小到大，因此，在每次stack的pop操作时，先将pop值存到cur变量中，再将cur与help栈顶比较（help为空时压入）
 
-	1. 若 cur > help.peek 值，那么弹出peek 循环比较；
+1. 若 cur > help.peek 值，那么弹出peek 循环比较；
+
  	2. 若 cur <= help.peek 值，那么直接压入 help 栈中；
 
-```
+```java
 public static void sortStackByStack(Stack<Integer> stack) {
 		Stack<Integer> help = new Stack<Integer>();
 		while(!stack.isEmpty()) {
