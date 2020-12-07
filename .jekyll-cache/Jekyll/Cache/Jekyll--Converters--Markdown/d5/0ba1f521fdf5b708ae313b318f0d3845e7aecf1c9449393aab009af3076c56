@@ -1,0 +1,450 @@
+I"̈́<ul id="markdown-toc">
+  <li><a href="#字符串问题" id="markdown-toc-字符串问题">字符串问题</a>    <ul>
+      <li><a href="#一介绍前缀树" id="markdown-toc-一介绍前缀树">一、介绍前缀树</a>        <ul>
+          <li><a href="#1何为前缀树-如何生成前缀树" id="markdown-toc-1何为前缀树-如何生成前缀树">1.何为前缀树？ 如何生成前缀树？</a></li>
+          <li><a href="#2方法实现" id="markdown-toc-2方法实现">2.方法实现</a></li>
+        </ul>
+      </li>
+      <li><a href="#二字符串拼接找-最低字典序" id="markdown-toc-二字符串拼接找-最低字典序">二、字符串拼接找 最低字典序</a></li>
+      <li><a href="#kmp算法" id="markdown-toc-kmp算法">KMP算法</a>        <ul>
+          <li><a href="#1理解本质" id="markdown-toc-1理解本质">1.理解本质</a></li>
+          <li><a href="#2next数组求法" id="markdown-toc-2next数组求法">2.next数组求法</a></li>
+        </ul>
+      </li>
+      <li><a href="#kmp应用" id="markdown-toc-kmp应用">KMP应用</a>        <ul>
+          <li><a href="#1最小出现两次-shortesthavetwice" id="markdown-toc-1最小出现两次-shortesthavetwice">1、最小出现两次 ShortestHaveTwice</a></li>
+          <li><a href="#2判断子树包含" id="markdown-toc-2判断子树包含">2、判断子树包含</a></li>
+        </ul>
+      </li>
+      <li><a href="#manacher-算法" id="markdown-toc-manacher-算法">Manacher 算法</a></li>
+      <li><a href="#manacher变式题" id="markdown-toc-manacher变式题">Manacher变式题：</a></li>
+      <li><a href="#bfprt-算法--on选出数组第k大的数" id="markdown-toc-bfprt-算法--on选出数组第k大的数">BFPRT 算法  O(n)选出数组第k大的数</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="字符串问题">字符串问题</h2>
+
+<h3 id="一介绍前缀树">一、介绍前缀树</h3>
+
+<p>【题目】
+字典树又称为前缀树或Trie树，是处理字符串常见的数据结构。假设组成所有单词的字符仅是“a”~“z”，请实现字典树结构，并包含以下四个主要功能。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">·</span><span class="kt">void</span> <span class="n">insert</span><span class="err">（</span><span class="nc">String</span> <span class="n">word</span><span class="err">）：</span><span class="n">添加word</span><span class="err">，</span><span class="n">可重复添加</span><span class="err">。</span>
+<span class="err">·</span><span class="kt">void</span> <span class="n">delete</span><span class="err">（</span><span class="nc">String</span> <span class="n">word</span><span class="err">）：</span><span class="n">删除word</span><span class="err">，</span><span class="n">如果word添加过多次</span><span class="err">，</span><span class="n">仅删除一个</span><span class="err">。</span>
+<span class="err">·</span><span class="kt">boolean</span> <span class="n">search</span><span class="err">（</span><span class="nc">String</span> <span class="n">word</span><span class="err">）：</span><span class="n">查询word是否在字典树中</span><span class="err">。</span>
+<span class="err">·</span><span class="kt">int</span> <span class="n">prefixNumber</span><span class="err">（</span><span class="nc">String</span> <span class="n">pre</span><span class="err">）：</span><span class="n">返回以字符串pre为前缀的单词数量</span><span class="err">。</span>
+</code></pre></div></div>
+
+<p>【说明】</p>
+
+<h4 id="1何为前缀树-如何生成前缀树">1.何为前缀树？ 如何生成前缀树？</h4>
+
+<blockquote>
+  <p><strong>字典树的基本性质如下</strong>：
+1、根节点没有字符路径。除根节点外，每一个节点都被一个字符路径找到。
+2、从根节点到某一节点，将路径上经过的字符连接起来，为扫过的对应字符串。
+3、每个节点向下所有的字符路径上的字符都不同。</p>
+</blockquote>
+
+<p>在字典树上搜索添加过的单词的步骤为：
+1.从根节点开始搜索。
+2.取得要查找单词的第一个字母，并根据该字母选择对应的字符路径向下继续搜索。
+3.字符路径指向的第二层节点上，根据第二个字母选择对应的字符路径向下继续搜索。
+4.一直向下搜索，如果单词搜索完后，找到的最后一个节点是一个终止节点，说明字典树中含有这个单词；如果找到的最后一个节点不是一个终止节点，说明单词不是字典树中添加过的单词。如果单词没搜索完，但是已经没有后续的节点了，也说明单词不是字典树中添加过的单词。</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813093456579.png" alt="image-20200813093456579" /></p>
+
+<p>每个节点都会记录三个数据：</p>
+
+<ol>
+  <li>有多少个以该节点为结尾的单词 end</li>
+  <li>有多少个节点到达过该节点 path</li>
+  <li>记录接着的单词 用一个26大小数组存放，标记A-Z</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 类似自动机，边表示吃进字符，节点表示状态</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">TrieNode</span><span class="o">{</span>
+		<span class="kd">public</span> <span class="kt">int</span> <span class="n">path</span><span class="o">;</span> 
+		<span class="kd">public</span> <span class="kt">int</span> <span class="n">end</span><span class="o">;</span>
+		<span class="kd">public</span> <span class="nc">TrieNode</span><span class="o">[]</span> <span class="n">nexts</span><span class="o">;</span>
+		
+	<span class="kd">public</span> <span class="nf">TrieNode</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">path</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="c1">// 有多少个节点到达过</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">end</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="c1">// 有多少个以该节点为结尾的单词</span>
+		<span class="n">nexts</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TrieNode</span><span class="o">[</span><span class="mi">26</span><span class="o">];</span> <span class="c1">// A-Z</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="2方法实现">2.方法实现</h4>
+
+<ol>
+  <li>
+    <p>insert 函数</p>
+
+    <p>index 为遍历插入单词的位置指示，并每次将经过路径+1，最终将end+1</p>
+  </li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">insert</span><span class="o">(</span><span class="nc">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+    			<span class="k">if</span><span class="o">(</span><span class="n">word</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+    				<span class="k">return</span><span class="o">;</span>
+    			<span class="kt">char</span><span class="o">[]</span> <span class="n">ch</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">();</span>
+    			<span class="nc">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+    			<span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    			<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ch</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+    				<span class="n">index</span> <span class="o">=</span> <span class="n">ch</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">-</span> <span class="sc">'a'</span><span class="o">;</span>
+    				<span class="k">if</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">]</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+    					<span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TrieNode</span><span class="o">();</span>
+    				<span class="o">}</span>
+    				<span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">];</span><span class="c1">//吃进，并指向下一个节点</span>
+    				<span class="n">node</span><span class="o">.</span><span class="na">path</span><span class="o">++;</span>
+    			<span class="o">}</span>
+    			<span class="n">node</span><span class="o">.</span><span class="na">end</span><span class="o">++;</span><span class="c1">// </span>
+    		<span class="o">}</span>		
+</code></pre></div></div>
+
+<ol>
+  <li>search 函数</li>
+</ol>
+
+<p>与insert函数大致一样</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>		<span class="c1">// 返回插入次数</span>
+		<span class="kd">public</span> <span class="kt">int</span> <span class="nf">search</span><span class="o">(</span><span class="nc">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">word</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+				<span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+			
+			<span class="kt">char</span><span class="o">[]</span> <span class="n">ch</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">();</span>
+			<span class="nc">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+			<span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+			<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ch</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+				<span class="n">index</span> <span class="o">=</span> <span class="n">ch</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">-</span> <span class="sc">'a'</span><span class="o">;</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">]</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+				<span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">];</span>
+			<span class="o">}</span>
+			<span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="na">end</span><span class="o">;</span>
+		<span class="o">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li>delete 函数</li>
+</ol>
+
+<p>先调用 search 函数，要是不存在，直接返回；存在的话，便继续下一步，在找的过程中，将沿途节点的 path 减 1。</p>
+
+<p>值得注意的是，若到某一点其沿途计数器全部变为0，那么将该节点指向null即可，不用管其之后的点。用于简化</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>		<span class="c1">// 删除时，若到某一点其沿途计数器全部变为0，</span>
+		<span class="c1">// 那么将该节点指向null即可，不用管其之后的点</span>
+		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">delete</span><span class="o">(</span><span class="nc">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">search</span><span class="o">(</span><span class="n">word</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+				<span class="k">return</span><span class="o">;</span>
+			
+			<span class="kt">char</span><span class="o">[]</span> <span class="n">ch</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">();</span>
+			<span class="nc">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+			<span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+			<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ch</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+				<span class="n">index</span> <span class="o">=</span> <span class="n">ch</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">-</span> <span class="sc">'a'</span><span class="o">;</span>
+				<span class="k">if</span><span class="o">(--</span><span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">].</span><span class="na">path</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+					<span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">]</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span><span class="c1">//指向null</span>
+					<span class="k">return</span><span class="o">;</span>
+				<span class="o">}</span>
+				<span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">];</span>	
+			<span class="o">}</span>
+			<span class="n">node</span><span class="o">.</span><span class="na">end</span><span class="o">--;</span>
+		<span class="o">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li>prefixNumber 函数：和查找操作同理，根据pre不断找到节点，假设最后的节点记为e，返回 e.path 的值即可。</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>		<span class="c1">// 返回前缀数量</span>
+		<span class="kd">public</span> <span class="kt">int</span> <span class="nf">prefixNum</span><span class="o">(</span><span class="nc">String</span> <span class="n">pre</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">pre</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+				<span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+			
+			<span class="kt">char</span><span class="o">[]</span> <span class="n">ch</span> <span class="o">=</span> <span class="n">pre</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">();</span>
+			<span class="nc">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+			<span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+			<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ch</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+				<span class="n">index</span> <span class="o">=</span> <span class="n">ch</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">-</span> <span class="sc">'a'</span><span class="o">;</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">]</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+				<span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">nexts</span><span class="o">[</span><span class="n">index</span><span class="o">];</span>
+			<span class="o">}</span>
+			<span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="na">path</span><span class="o">;</span><span class="c1">//即路过次数</span>
+		<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​</p>
+
+<h3 id="二字符串拼接找-最低字典序">二、字符串拼接找 最低字典序</h3>
+
+<p>【题目】
+给定一个字符串类型的数组strs，请找到一种拼接顺序，使得将所有的字符串拼接起来组成的大写字符串是所有可能性中字典顺序最小的，并返回这个大写字符串。</p>
+
+<p>【举例】
+	strs=[“abc”，“de”]，可以拼成“abcde”，也可以拼成“deabc”，但前者的字典顺序更小，所以返回”abcde”。
+	strs=[“b”，”ba”]，可以拼成“bba”，也可以拼成“bab”，但后者的字典顺序更小，所以返回”bab”。</p>
+
+<p>【解答】</p>
+
+<p>​	1.错误思路：</p>
+
+<p>​	先把strs中的字符串按照字典顺序排序，然后将串起来的结果返回。这么做是错误的，比如题目中的例子2，按照字典排序结果是B、BA，串起来的大写字符串为“BBA”，但是字典顺序最小的大写字符串是“BAB”，所以按照单个字符串的字典顺序进行排序的想法是行不通的。</p>
+
+<p>​	2.正确思路：</p>
+
+<p>​	假设有两个字符串，分别记为a和b，a和b拼起来的字符串表示为a.b。那么如果a.b的字典顺序小于b.a，就把字符串a放在前面，否则把字符串b放在前面。每两个字符串之间都按照这个标准进行比较，以此标准排序后，再依次串起来的大写字符串就是结果。这样做为什么对呢？下面给出证明。</p>
+
+<p>​	首先，要是这种比较方式不具有传递性：比如人为规定：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>甲和乙比较，甲放在前面
+乙和丙比较，乙放在前面
+丙和甲比较，丙放在前面
+	此时就相当于一个环，不具有传递性。
+</code></pre></div></div>
+
+<p>​	证明的关键步骤是证明这种比较方式具有传递性。由条件 a.b&lt;b.a  和 b.c&lt;c.b 如果能够根据上面两式证明出a.c&lt;c.a，说明这种比较方式具有传递性，证明过程如下：</p>
+
+<p>​</p>
+
+<p>将字符串 理解为 m进制的数——比如，只由字符 a~z 组成的字符串其实可以看作 26 进制的数。那么字符串a.b这个数可以看作 a 这个数是它的高位，b 是低位，即 a.b=a * m的b长度次方+b。我们把“ m 的 b长度次方 ”记为m（b）。</p>
+
+<p>则原来的两个不等式可化简为：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a.b&lt;b.a =&gt; a * m（b）+ b &lt; b * k（a）+a 不等式1 
+b.c&lt;c.b =&gt; b * m（C）+ c &lt; c * k（b）+b 不等式2
+</code></pre></div></div>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/QQ图片20200819094457.jpg" alt="QQ图片20200819094457" /></p>
+
+<p>​	<strong>证明传递性后，还需要证明通过这种比较方式排序后，如果交换任意两个字符串的位置所得到的总字符串，将拥有更大的字典顺序。</strong></p>
+
+<p>假设通过如上比较方式排序后，得到字符串的序列为：
+.A.M1.M2…M（n-1）.M（n）.L..
+该序列表示，代号为A的字符串之前与代号为L的字符串之后都有若干字符串用“…”
+表示，A和L中间有若干字符串，用Ml..M（n）。现在交换A和L这两个字符串，交换之前和交换之后两个总字符串就分别为：
+.A.M1.M2..M（n-1）.M（n）.L..换之前
+..L.M1.M2…M（n-1）.M（n）.A..换之后
+现在需要证明交换之后的总字符串字典顺序大于交换之前的，具体过程如下。
+在排好序的序列中，M1排在L的前面，所以有Ml.L&lt;L.M1，进一步有：
+…M1.M2…M（n-1）.M（n）.A…&gt;…M1.L.M2…M（n-1）.M（n）.A…
+在排好序的序列中，M2排在L的前面，所以有M2.L&lt;L.M2，进一步有：
+.M1.L.M2..M（n-1）.M（n）.A..&gt;…M1.M2.L..M（n-1）.M（n）.A…
+在排好序的序列中，M（i）排在L的前面，所以有M（i）.L&lt;L.M（i），进一步有：
+.M1.M2..L.M（i）..M（n-1）.M（n）.A…&gt;..M1.M2..M（i）.L..M（n-1）.M（n）.A…
+最终，.M1.M2..M（n-1）.M（n）.L.A….M1.M2..M（n-1）.M（n）.A.L..
+在排好序的序列中，A排在M（N）的前面，所以有A.M（n）&lt;M（n）.A，进一步有：
+.M1.M2…M（n-1）.M（n）.A.L..&gt;..M1.M2..M（n-1）.A.M（n）.L..
+在排好序的序列中，A排在M（n-1）的前面，所以有A.M（n-1）&lt;M（n-l）.A，进一步有：
+.M1.M2..M（n-1）.A.M（n）.L..&gt;..M1.M2..A.M（n-1）.M（n）.L..
+最终，.M1.A.M2..M（n-1）.M（n）.L…..A.M1.M2..M（n-1）.M（n）.L..
+所以，.A.M1.M2..M（n-1）.M（n）.L……&lt;….M1.M2..M（n-1）.M（n）.A..
+解法有效性证明完毕。</p>
+
+<p><strong>即层层增大，因此最终必然比之前大。</strong></p>
+
+<h3 id="kmp算法">KMP算法</h3>
+
+<h4 id="1理解本质">1.理解本质</h4>
+
+<p><strong>next 数组</strong>：表示该字符的最长前后缀（不同时包括第一个和最后一个字符）匹配。第 0 个 next  数组值默认为 -1，第 1 个 next 数组值 由于只有一个字符，因此默认为 0.</p>
+
+<p>如下图，此时状况为 str2 与 str1 进行匹配时，发现 X 与 Y 不匹配。现在由于知道 str2 在  Y 处的 next 数组值，即下图所标记的 1 与 2 相等，且 2 与 3 由于之前的匹配可知是相等的，因此 3 与 2 也是相等，所以直接将 str2 移到 2 与 3 匹配的位置，再从 2 的结尾坐标处开始比对。</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201008205504848.png" alt="image-20201008205504848" /></p>
+
+<p>再举一个例子如下：</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201008211433147.png" alt="image-20201008211433147" /></p>
+
+<p>实质在于：<strong>肯定了 str 1 的 j 坐标之前（3 的开头） 都配不出 str2，</strong></p>
+
+<p>反证如下：假设 j 坐标之前的 k 能配出 str2。</p>
+
+<p>那么 即 1 能配出 2，且 1 能 配上 3 ，意思是 2 能配 3，此时与最长前后缀相矛盾。</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201008211824422.png" alt="image-20201008211824422" /></p>
+
+<h4 id="2next数组求法">2.next数组求法</h4>
+
+<p>现在已知：第 0 个 next  数组值默认为 -1，第 1 个 next 数组值 由于只有一个字符，因此默认为 0。</p>
+
+<p>现在进行数学归纳：对于 i 位置此时为 a，前面一个字符 为 b，且 b 的 next 值为 4。现在对长度为 4 的前缀下一个字符进行判断。</p>
+
+<ul>
+  <li>若为 b，则直接在 b 的 next 数组值上 +1，即此时 a 的 next 值为 5;</li>
+</ul>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201008220310723.png" alt="image-20201008220310723" /></p>
+
+<ul>
+  <li>若不为 b，那么继续进行判断</li>
+</ul>
+
+<p>如下图所示，首先判断 1 处，发现不为 b，那么访问 1 处的 next 值，递归进行判断是否为 b。若为 b， 那么 + 1，否则继续递归到 0 位置，那么就为 0.</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201008220953746.png" alt="image-20201008220953746" /></p>
+
+<h3 id="kmp应用">KMP应用</h3>
+
+<h4 id="1最小出现两次-shortesthavetwice">1、最小出现两次 ShortestHaveTwice</h4>
+
+<p>给定一个原始串 str ，要在后面加上一些字符，使形成的新字符中出现两次 str。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. str:aaaa	--&gt;后面加一个 a 即可
+2. str:aab  --&gt; aabaab
+</code></pre></div></div>
+
+<p>思路：</p>
+
+<p>采用 next 数组，找最后一个字符的 next 值， 然后加上 next 值以后的字符。</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201009105622034.png" alt="image-20201009105622034" /></p>
+
+<h4 id="2判断子树包含">2、判断子树包含</h4>
+
+<p>给定两棵树，Tree1 与 Tree2 ，判断 Tree2 是否为 Tree1 的子树。</p>
+
+<p>【解答】</p>
+
+<p>1.首先进行序列化</p>
+
+<p>2.其次进行两字符串匹配</p>
+
+<h3 id="manacher-算法">Manacher 算法</h3>
+
+<p>作用：在线性时间内找到一个字符串的最长回文子串</p>
+
+<p>1、初始思路</p>
+
+<p>​	<strong>首先</strong>暴力想法：从每个字符向两边扩展，看看以这个字符作为中心能够产生多大的回文字符串，只要解决奇回文和偶回文寻找方式的不同就可以。比如“121“是奇回文，有确定的轴2”。”1221”是偶回文，没有确定的轴，回文的虚轴在“22”中间。</p>
+
+<p>​	但是这种方法有<strong>明显的问题</strong>，之前遍历过的字符完全无法指导后面遍历的过程，也就是对每个字符来说都是从自己的位置出发，往左右两个方向扩出去检查。这样，对每个字符来说，往外扩的代价都是一个级别的。即为 O(N^2)。</p>
+
+<p>​	<strong>值得注意的是</strong>：因为奇回文和偶回文在判断时比较麻烦，所以对 str 进行处理，把每个字符开头、结尾和中间插入一个特殊字符 # 来得到一个新的字符串数组。比如 str=”bcbaa”，处理后为 “#b#c#b#a#a#” ，然后从每个字符左右扩出去的方式找最大回文子串就方便多了。<strong>本质为：现长 L = (n-1) + n + 2 = 2n + 1.任何数 * 2 为偶数，+ 1 为奇数。</strong></p>
+
+<p>​	对奇回文来说，不这么处理也能通过扩的方式找到，比如 “bcb” ，从 ‘c’ 开始向左右两侧扩出去能找到最大回文。处理后为 “#c#b#”，从 c 开始向左右两侧扩出去依然能找到最大回文。对偶回文来说，不处理而直接通过扩的方式是找不到的，比如“aa”，因为没有确定的轴，但是处理后为“#a#a#”，就可以通过从中间的 # 扩出去的方式找到最大回文。所以通过这样的处理方式，最大回文子串无论是偶回文还是奇回文，都可以通过统一的“扩”过程找到，解决了差异性的问题。同时要说的是，这个特殊字符是什么无所谓，甚至可以是字符串中出现的字符，也不会影响最终的结果，就是一个纯辅助的作用。（因为辅助字符只和辅助字符比较）</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201015101314486.png" alt="image-20201015101314486" /></p>
+
+<p>2、Manacher思路</p>
+
+<p>回文半径数组， 右边界，index， 回文中心 (用 C 标记)</p>
+
+<p>最右回文右边界 R：回文串中最靠右位置，起始位置在 -1</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200814103241109.png" alt="image-20200814103241109" /></p>
+
+<ol>
+  <li>
+    <p>index 位置不在回文右边界里面，回文右边界暴力向外扩</p>
+
+    <p>如 index 指向 0 和 1 时，都在右边界里面，因此右边界直接向外扩便可</p>
+  </li>
+</ol>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813103259111.png" alt="image-20200813103259111" /></p>
+
+<ol>
+  <li>
+    <p>index 位置在回文右边界里面，分三种情况</p>
+
+    <ol>
+      <li>
+        <p>找index的对称位置，i’ 的回文范围——在L,R的范围内</p>
+
+        <p>那么 i 的回文范围必然与 i’ 是一样的</p>
+
+        <p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813103730514.png" alt="image-20200813103730514" /></p>
+      </li>
+      <li>
+        <p>找index的对称位置，i’的回文范围——不在L,R的范围内</p>
+
+        <p>此时 i 的回文半径是 i-R</p>
+
+        <p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813104103146.png" alt="image-20200813104103146" /></p>
+
+        <p>证明如下：</p>
+
+        <p>正是由于 x ！= x’ 所以才导致L与R的范围没有扩出去</p>
+
+        <p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813104331125.png" alt="image-20200813104331125" /></p>
+
+        <p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813104245522.png" alt="image-20200813104245522" /></p>
+      </li>
+      <li>
+        <p>找index的对称位置，i’的回文范围——刚好在L,R的范围内的压线处</p>
+
+        <p>i 的回文范围 &gt;= i-R，而i-R之外的是否是回文，需要进行继续判断</p>
+
+        <p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813104525838.png" alt="image-20200813104525838" /></p>
+      </li>
+    </ol>
+  </li>
+</ol>
+
+<p>总结复杂度</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200813104729106.png" alt="image-20200813104729106" /></p>
+
+<p>由于R只会向右或停止，不会回退，因此从 R 变化的角度来看，时间复杂度为 O(n),</p>
+
+<h3 id="manacher变式题">Manacher变式题：</h3>
+
+<p>一个字符串 只能向后添加字符，怎样让其得到最短回文字符串</p>
+
+<p>abc12321 ——&gt; abc12321 cba  添加 cba</p>
+
+<p>思路：在必须<strong>包含最后一个字符的情况下</strong>求最长回文串多长。将前面不属于回文串的逆序</p>
+
+<p>在 manacher 计算过程中，<strong>一旦回文右边界到达最后一个字符时</strong>，立马<strong>停</strong>，此时找到的便是最长回文，因为左边界此时最远，之后的左边界只会向右边移动</p>
+
+<p>如下图 R到达 最右时，3 为中间点</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20201015104427983.png" alt="image-20201015104427983" /></p>
+
+<h3 id="bfprt-算法--on选出数组第k大的数">BFPRT 算法  O(n)选出数组第k大的数</h3>
+
+<p>1.参考 荷兰国旗问题</p>
+
+<p>2.分组 按照间隔为5进行分组，将每组排序</p>
+
+<p>3.把每个数组的中位数拿出，组成一个新的数组 长度约 n/5</p>
+
+<p>4.递归调用BFPRT算法，将新的数组传进去，找中位数（即第len/2大的数）因此可以递归</p>
+
+<p>5.<strong>最终得到的数放在原数组 去做荷兰国旗的划分</strong></p>
+
+<p>6.荷兰国旗划分 O(n)</p>
+
+<p>为什么为O(n)？因为可以保证最差情况都是荷兰国旗两边的数(&gt; 或  &lt;)</p>
+
+<p>如下图 由于开始分为每组五个，并取中间值，由于中间数组长度为 N/5， 那么至少有 N/10的数比所取值大，又因为比所取值大的 N/10 个数，分别为它所在数组的中位数，因此比所取值大的数至少有 N/5 + N/10 = 3N/10 个。</p>
+
+<p>因此比所取值大的最多 7N/10 个， 至少 3N/10 个</p>
+
+<p>同理 比其小的也是一个范围</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200815161644929.png" alt="image-20200815161644929" /></p>
+
+<p>最终时间复杂度为：</p>
+
+<p>1.分组 O(1)  2. 按照间隔为5进行分组，将每组排序O(n)</p>
+
+<p>3.把每个数组的中位数拿出，组成一个新的数组 长度约 n/5   O(n)</p>
+
+<p>4.递归调用BFPRT算法，将新的数组传进去，找中位数（即第len/2大的数）因此可以递归 T(n/5)</p>
+
+<p>4.荷兰国旗划分 O(n)</p>
+
+<p>5.选择走左边还是右边 T(7N/10)</p>
+
+<p><img src="/assets/blog_image/2020-08-02-Coder-MianShi6/image-20200815162539469.png" alt="image-20200815162539469" /></p>
+
+:ET

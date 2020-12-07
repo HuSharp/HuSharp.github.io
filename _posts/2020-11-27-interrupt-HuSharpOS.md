@@ -1,4 +1,15 @@
+---
+layout: post
+title:  " 中断 与 信号 详解"
+date:   2020-11-27 22:59:01 +0800
+categories:  Linux
+tags: Linux 基础知识
+author: Hu#
+typora-root-url: ..
+---
 
+* content
+{:toc}
 
 
 
@@ -91,7 +102,7 @@ CPU处理流程主要有6个步骤：
 
 
 
-![image-20201205234253159](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205234253159.png)
+![image-20201205234253159](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205234253159.png)
 
 ### 堆栈的切换
 
@@ -99,7 +110,7 @@ CPU处理流程主要有6个步骤：
 
 **当不发生特权级变化时：**
 
-![image-20201206184225640](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201206184225640.png)
+![image-20201206184225640](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201206184225640.png)
 
 **当发生特权级变化时：**
 
@@ -114,13 +125,13 @@ CPU处理流程主要有6个步骤：
   error code
 ```
 
-![image-20201206003037919](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201206003037919.png)
+![image-20201206003037919](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201206003037919.png)
 
 
 
 ### 通过 IDT 找到中断处理程序
 
-![image-20201205234551290](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205234551290.png)
+![image-20201205234551290](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205234551290.png)
 
 > **IRQ编号**
 >
@@ -128,7 +139,7 @@ CPU处理流程主要有6个步骤：
 >
 > **外部中断**正是通过 INTR 和 NMI 两条信号线通知 CPU
 >
-> ![image-20201205234520090](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205234520090.png)
+> ![image-20201205234520090](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205234520090.png)
 
 
 
@@ -138,7 +149,7 @@ CPU处理流程主要有6个步骤：
 
 8259A 为两个芯片级联，共有 16 个IRQ 接口，由于从片连接主片需要一个接口，因此 8259A 共支持 15 个中断接口。
 
-![image-20201205235958848](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205235958848.png)
+![image-20201205235958848](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201205235958848.png)
 
 8259A 的工作流程如下图
 
@@ -146,7 +157,7 @@ CPU处理流程主要有6个步骤：
 - PR：判决优先级器——IRQ 的接口号越大，优先级越高。
 - ISR ：某个中断正在被处理时，保存在此处
 
-![image-20201206002648826](../assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201206002648826.png)
+![image-20201206002648826](/assets/blog_image/2020-11-27-interrupt-HuSharpOS/image-20201206002648826.png)
 
 ## 中断排队和中断判优
 

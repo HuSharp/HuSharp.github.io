@@ -1,0 +1,17 @@
+I"l<ul id="markdown-toc">
+  <li><a href="#内存管理" id="markdown-toc-内存管理">内存管理</a>    <ul>
+      <li><a href="#husharpos-中的内存管理" id="markdown-toc-husharpos-中的内存管理">HuSharpOS 中的内存管理</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>接上一篇 Blog</p>
+
+<p>**cat /proc/<pid>/maps**  **查看某个进程占用的内存区域**</pid></p>
+
+<h1 id="内存管理">内存管理</h1>
+
+<h2 id="husharpos-中的内存管理">HuSharpOS 中的内存管理</h2>
+
+<p><img src="/assets/blog_image/2020-12-03-HuSharp-Memory-02/image-20201206185312397.png" alt="image-20201206185312397" /></p>
+:ET

@@ -1,0 +1,392 @@
+I"�<ul id="markdown-toc">
+  <li><a href="#五hashmap问题" id="markdown-toc-五hashmap问题">五、HashMap问题</a>    <ul>
+      <li><a href="#1设计randompool结构" id="markdown-toc-1设计randompool结构">1、设计RandomPool结构</a></li>
+      <li><a href="#2认识并查集结构" id="markdown-toc-2认识并查集结构">2、认识并查集结构</a></li>
+      <li><a href="#3岛问题" id="markdown-toc-3岛问题">3、岛问题</a></li>
+      <li><a href="#4认识位图-bitmap" id="markdown-toc-4认识位图-bitmap">4、认识位图 bitMap</a></li>
+      <li><a href="#5布隆过滤器" id="markdown-toc-5布隆过滤器">5、布隆过滤器</a></li>
+      <li><a href="#6一致性哈希" id="markdown-toc-6一致性哈希">6、一致性哈希</a>        <ul>
+          <li><a href="#1一致性哈希实现思路基础版" id="markdown-toc-1一致性哈希实现思路基础版">1、一致性哈希实现思路（基础版）</a></li>
+          <li><a href="#2一致性哈希实现负载均衡采用虚拟节点技术" id="markdown-toc-2一致性哈希实现负载均衡采用虚拟节点技术">2、一致性哈希实现负载均衡（采用虚拟节点技术</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<h2 id="五hashmap问题">五、HashMap问题</h2>
+
+<h3 id="1设计randompool结构">1、设计RandomPool结构</h3>
+
+<p>【题目】 设计一种结构，在该结构中有如下三个功能：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">insert</span><span class="o">(</span><span class="n">key</span><span class="o">)</span><span class="err">：</span><span class="n">将某个key加入到该结构</span><span class="err">，</span><span class="n">做到不重复加入</span><span class="err">。</span>
+<span class="n">delete</span><span class="o">(</span><span class="n">key</span><span class="o">)</span><span class="err">：</span><span class="n">将原本在结构中的某个key移除</span><span class="err">。</span> 
+<span class="n">getRandom</span><span class="o">()</span><span class="err">：</span><span class="n">等概率随机返回结构中的任何一个key</span><span class="err">。</span>
+</code></pre></div></div>
+
+<p>【要求】 Insert、delete和getRandom方法的时间复杂度都是 O(1)</p>
+
+<p>【解答】</p>
+
+<p>采用两个map</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">map1</span><span class="o">;</span>
+<span class="kd">public</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">map2</span><span class="o">;</span>
+</code></pre></div></div>
+
+<p>如下图解释所示，map1 用于存放 key ，其value值表示第几个加入（为方便之后的等概率随机）</p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/QQ图片20200803084531.jpg" alt="QQ图片20200803084531" /></p>
+
+<ol>
+  <li>
+    <p>对于 insert  ，当map1 中不包含时，插入key, size++</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">insert</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(!</span><span class="n">map1</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+			<span class="n">map1</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="o">++</span><span class="k">this</span><span class="o">.</span><span class="na">size</span><span class="o">);</span>
+			<span class="n">map2</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">size</span><span class="o">,</span> <span class="n">key</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ol>
+      <li>对于 delete ，为确保之后等概率，需要将 删除那一条 与 最后一条进行 swap。swap 的形式是：将 key为序号 size（即最后一个）的那一条，取代为删除 key 的 序号，并将size–。map1 中也随即改变对应值的 value。——————详情见上图</li>
+    </ol>
+
+    <p>以确保 map2 中数字范围一直是 size</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">void</span> <span class="nf">delete</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+	<span class="k">if</span><span class="o">(</span><span class="n">map1</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+		<span class="nc">String</span> <span class="n">last</span> <span class="o">=</span> <span class="n">map2</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">size</span><span class="o">);</span><span class="c1">//获得最后一个</span>
+		<span class="kt">int</span> <span class="n">deleteIndex</span> <span class="o">=</span> <span class="n">map1</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span><span class="c1">// 获得删除的序号，需要赋给最后一个</span>
+		<span class="n">map2</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">size</span><span class="o">--);</span> <span class="c1">// map2让size--</span>
+		<span class="c1">// 并且需要改掉之前最后一个的index, </span>
+		<span class="c1">// 或者说改掉 key（作为value） 对应index 的value</span>
+		<span class="n">map2</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">deleteIndex</span><span class="o">,</span> <span class="n">last</span><span class="o">);</span>
+    				
+		<span class="n">map1</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+		<span class="n">map1</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">last</span><span class="o">,</span> <span class="n">deleteIndex</span><span class="o">);</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ol>
+      <li>由于删除一直是删除序号为size的那一行值，因此random便简单的随机取值就行。</li>
+    </ol>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nc">String</span> <span class="nf">getRandom</span><span class="o">()</span> <span class="o">{</span>
+	<span class="kt">int</span> <span class="n">num</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">((</span><span class="nc">Math</span><span class="o">.</span><span class="na">ceil</span><span class="o">(</span><span class="nc">Math</span><span class="o">.</span><span class="na">random</span><span class="o">()</span> <span class="o">*</span> <span class="k">this</span><span class="o">.</span><span class="na">size</span><span class="o">)));</span><span class="c1">// 取1~size</span>
+	<span class="k">return</span> <span class="n">map2</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">num</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="2认识并查集结构">2、认识并查集结构</h3>
+
+<p>对于并查集，主要是两个操作—— find &amp; union</p>
+
+<p>现对于存储方式：</p>
+
+<ol>
+  <li>
+    <p>首先考虑数组存储。如图，时间复杂度过于高<img src="/assets/blog_image/2020-08-01-Coder-MianShi5/QQ图片20200808092909.jpg" alt="QQ图片20200808092909" /></p>
+  </li>
+  <li>
+    <p>因此采用有向多叉树的方式。根节点作为代表节点，并用根节点标识集合大小（采用HashMap的方式）</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">UnionFindSet</span><span class="o">{</span>
+	<span class="kd">public</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">,</span> <span class="nc">Node</span><span class="o">&gt;</span> <span class="n">fatherMap</span><span class="o">;</span><span class="c1">// key:child, value:father</span>
+	<span class="kd">public</span> <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">,</span> <span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">setSize</span><span class="o">;</span><span class="c1">//每个代表节点代表集合大小</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>fatherMap：key:child, value:father ，对于根节点自己指向自己。</p>
+
+    <p>因此寻找根节点只需判断——当前节点父节点是否等于自己即可</p>
+
+    <ol>
+      <li>
+        <p>递归方式：</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 递归版本</span>
+	<span class="kd">private</span> <span class="nc">Node</span> <span class="nf">findHead</span><span class="o">(</span><span class="nc">Node</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Node</span> <span class="n">father</span> <span class="o">=</span> <span class="n">fatherMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">node</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">father</span> <span class="o">!=</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">father</span> <span class="o">=</span> <span class="n">findHead</span><span class="o">(</span><span class="n">node</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="n">fatherMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">node</span><span class="o">,</span> <span class="n">father</span><span class="o">);</span> <span class="c1">//将其node的father更新 </span>
+		<span class="k">return</span> <span class="n">father</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div>        </div>
+
+        <p><strong>路径压缩</strong>——<strong>并在每次查询后将查询节点指向代表节点   O(lgn)–&gt;O(1)</strong></p>
+
+        <p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/QQ图片20200808092929.jpg" alt="QQ图片20200808092929" /></p>
+      </li>
+      <li>
+        <p>非递归版本</p>
+
+        <p>其思路是，对向上找的节点进行 stack 的存储，一旦找到了，分别将这些节点弹出，指向根节点，以达到路径压缩。</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 非递归版本</span>
+	<span class="kd">private</span> <span class="nc">Node</span> <span class="nf">findHeadUncur</span><span class="o">(</span><span class="nc">Node</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">stack</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;();</span>
+      			
+		<span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">node</span><span class="o">;</span>
+		<span class="nc">Node</span> <span class="n">parent</span> <span class="o">=</span> <span class="n">fatherMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">cur</span><span class="o">);</span><span class="c1">//获取当前parent</span>
+      			
+		<span class="k">while</span><span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="n">parent</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">);</span>
+			<span class="n">cur</span> <span class="o">=</span> <span class="n">parent</span><span class="o">;</span>
+			<span class="n">parent</span> <span class="o">=</span> <span class="n">fatherMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">cur</span><span class="o">);</span>
+		<span class="o">}</span><span class="c1">// 至此 parent 为代表节点</span>
+      			
+		<span class="k">while</span><span class="o">(!</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">fatherMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="na">pop</span><span class="o">(),</span> <span class="n">parent</span><span class="o">);</span><span class="c1">//将其全部赋为parent</span>
+		<span class="o">}</span>
+      			
+		<span class="k">return</span> <span class="n">parent</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+    </ol>
+  </li>
+  <li>
+    <p>Union 函数</p>
+
+    <p>采用 规模小的树的根节点指向 规模大的树的根节点</p>
+
+    <p>先进行 find 操作找到根节点，每个根节点中储存的有该树大小</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">union</span><span class="o">(</span><span class="nc">Node</span> <span class="n">a</span><span class="o">,</span> <span class="nc">Node</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">a</span><span class="o">==</span><span class="kc">null</span> <span class="o">||</span> <span class="n">b</span><span class="o">==</span><span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span><span class="o">;</span>
+   			
+		<span class="nc">Node</span> <span class="n">aHead</span> <span class="o">=</span> <span class="n">findHead</span><span class="o">(</span><span class="n">a</span><span class="o">);</span>
+		<span class="nc">Node</span> <span class="n">bHead</span> <span class="o">=</span> <span class="n">findHead</span><span class="o">(</span><span class="n">b</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">aHead</span> <span class="o">!=</span> <span class="n">bHead</span><span class="o">)</span> <span class="o">{</span><span class="c1">//不等于才需要合并</span>
+			<span class="kt">int</span> <span class="n">aSetSize</span> <span class="o">=</span> <span class="n">setSize</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">aHead</span><span class="o">);</span>
+			<span class="kt">int</span> <span class="n">bSetSize</span> <span class="o">=</span> <span class="n">setSize</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">bHead</span><span class="o">);</span>
+   				
+			<span class="k">if</span><span class="o">(</span><span class="n">aSetSize</span> <span class="o">&gt;</span> <span class="n">bSetSize</span><span class="o">)</span> <span class="o">{</span><span class="c1">//便将b合并到a中</span>
+				<span class="n">fatherMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">bHead</span><span class="o">,</span> <span class="n">aHead</span><span class="o">);</span>
+				<span class="n">setSize</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">aHead</span><span class="o">,</span> <span class="n">aSetSize</span><span class="o">+</span><span class="n">bSetSize</span><span class="o">);</span>
+			<span class="o">}</span><span class="k">else</span> <span class="o">{</span>
+				<span class="n">fatherMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">aHead</span><span class="o">,</span> <span class="n">bHead</span><span class="o">);</span>
+				<span class="n">setSize</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">bHead</span><span class="o">,</span> <span class="n">aSetSize</span><span class="o">+</span><span class="n">bSetSize</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="3岛问题">3、岛问题</h3>
+
+<p>【问题】</p>
+
+<p>一个矩阵中只有0和1两种值，每个位置都可以和自己的上、下、左、右
+四个位置相连，如果有一片1连在一起，这个部分叫做一个岛，求一个
+矩阵中有多少个岛？
+举例：</p>
+
+<blockquote>
+  <p>0 0 1 0 1 0
+1 1 1 0 1 0
+1 0 0 1 0 0
+0 0 0 0 0 0</p>
+</blockquote>
+
+<p>这个矩阵中有三个岛。</p>
+
+<p>【解答】</p>
+
+<p><strong>初阶思路</strong></p>
+
+<p>对整个矩阵用 两个 for 循环嵌套进行遍历，若发现为 1 的，便利用感染函数对该块进行 1-&gt;2 并将岛的数量++；</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">countIslands</span><span class="o">(</span><span class="kt">int</span><span class="o">[][]</span> <span class="n">m</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">m</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">m</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+		<span class="o">}</span>
+		
+		<span class="kt">int</span> <span class="no">M</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="na">length</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="no">N</span> <span class="o">=</span> <span class="n">m</span><span class="o">[</span><span class="mi">0</span><span class="o">].</span><span class="na">length</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+		<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="no">M</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+			<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="no">N</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">m</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+					<span class="n">res</span><span class="o">++;</span>
+					<span class="n">infect</span><span class="o">(</span><span class="n">m</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">,</span> <span class="no">M</span><span class="o">,</span> <span class="no">N</span><span class="o">);</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>感染函数的实现</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">infect</span><span class="o">(</span><span class="kt">int</span><span class="o">[][]</span> <span class="n">m</span><span class="o">,</span> <span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="kt">int</span> <span class="n">j</span><span class="o">,</span> <span class="kt">int</span> <span class="no">M</span><span class="o">,</span> <span class="kt">int</span> <span class="no">N</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">i</span><span class="o">&lt;</span><span class="mi">0</span> <span class="o">||</span> <span class="n">i</span><span class="o">&gt;=</span><span class="no">M</span> <span class="o">||</span> <span class="n">j</span><span class="o">&lt;</span><span class="mi">0</span> <span class="o">||</span> <span class="n">j</span><span class="o">&gt;=</span><span class="no">N</span> <span class="o">||</span> <span class="n">m</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="o">)</span><span class="c1">//过边界</span>
+			<span class="k">return</span> <span class="o">;</span>
+		
+		<span class="n">m</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">;</span> <span class="c1">// 将 1 变为 2</span>
+		<span class="n">infect</span><span class="o">(</span><span class="n">m</span><span class="o">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">,</span> <span class="n">j</span><span class="o">,</span> <span class="no">M</span><span class="o">,</span> <span class="no">N</span><span class="o">);</span>
+		<span class="n">infect</span><span class="o">(</span><span class="n">m</span><span class="o">,</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">j</span><span class="o">,</span> <span class="no">M</span><span class="o">,</span> <span class="no">N</span><span class="o">);</span>
+		<span class="n">infect</span><span class="o">(</span><span class="n">m</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">,</span> <span class="no">M</span><span class="o">,</span> <span class="no">N</span><span class="o">);</span>
+		<span class="n">infect</span><span class="o">(</span><span class="n">m</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="no">M</span><span class="o">,</span> <span class="no">N</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>进阶思路</strong>——实现并行计算（多线程进行计算</p>
+
+<p>需要解决问题：1.每个块如何遍历；2.所有块怎么合并</p>
+
+<p>​					例如：<img src="/assets/blog_image/2020-08-01-Coder-MianShi5/image-20200809091802771.png" alt="image-20200809091802771" /></p>
+
+<p>​	现在划分为两个块，中间一个大块就变成了两个块</p>
+
+<p><strong>【解决方案】</strong></p>
+
+<p>1.首先对每个块进行之前一样的遍历，并标注每个块一个唯一的特征。如下图的A,B,C</p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/image-20200809091938235.png" alt="image-20200809091938235" /></p>
+
+<p>2.现在对多个块进行合并，将连接在一起的块合并为一个集合，即采用并查集。每次合并集合时，对岛的总数量进行-1，若遍历时发现之前已经在一个并查集了，便跳过，岛数量不变。</p>
+
+<h3 id="4认识位图-bitmap">4、认识位图 bitMap</h3>
+
+<p>【定义】</p>
+
+<p>位图（Bitmap）是一种特殊的序列结构，可用以动态地表示由一组（无符号）整数构成的集合。其长度无限，且其中每个元素的取值均为布尔型（初始均为false），且每个元素用bit来表示，1——true；0——false；</p>
+
+<p>支持的操作接口主要包括：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="n">set</span><span class="err">（</span><span class="kt">int</span> <span class="n">i</span><span class="err">）；</span><span class="c1">//将第i位置为true（将整数i加入当前集合）</span>
+<span class="kt">void</span> <span class="n">clear</span><span class="err">（</span><span class="kt">int</span> <span class="n">i</span><span class="err">）；</span><span class="c1">//将第i位置为false（从当前集合中删除整数1）</span>
+<span class="n">bool</span> <span class="n">test</span><span class="err">（</span><span class="kt">int</span> <span class="n">i</span><span class="err">）；</span><span class="c1">//测试第i位是否为true（判断整数i是否属于当前集合）</span>
+</code></pre></div></div>
+
+<p>位图的构造函数：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BitMap</span> <span class="o">{</span>
+	<span class="c1">//char类型存储数字的时候，只占1个字节，也就是8位。</span>
+	<span class="kd">private</span> <span class="kt">char</span><span class="o">[]</span> <span class="n">bytes</span><span class="o">;</span><span class="c1">//位图存放空间</span>
+	<span class="kd">private</span> <span class="kt">int</span> <span class="n">nbits</span><span class="o">;</span><span class="c1">//容量为nbits</span>
+	
+	<span class="kd">public</span> <span class="nf">BitMap</span><span class="o">(</span><span class="kt">int</span> <span class="n">aNbits</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">nbits</span> <span class="o">=</span> <span class="n">aNbits</span><span class="o">;</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">bytes</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="o">[</span><span class="n">aNbits</span><span class="o">/</span><span class="mi">8</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>方法实现：</p>
+
+<p>1.set 方法：<strong>异或</strong></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">set</span><span class="o">(</span><span class="kt">int</span> <span class="n">k</span><span class="o">)</span> <span class="o">{</span><span class="c1">//将k位置设为true</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">k</span> <span class="o">&gt;</span> <span class="n">nbits</span><span class="o">)</span>	<span class="k">return</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">byteIndex</span> <span class="o">=</span> <span class="n">k</span><span class="o">/</span><span class="mi">8</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">bitIndex</span> <span class="o">=</span> <span class="n">k</span><span class="o">%</span><span class="mi">8</span><span class="o">;</span>
+		
+		<span class="n">bytes</span><span class="o">[</span><span class="n">byteIndex</span><span class="o">]</span> <span class="o">|=</span> <span class="o">(</span><span class="mi">1</span><span class="o">&lt;&lt;</span><span class="n">bitIndex</span><span class="o">);</span><span class="c1">//异或将指定位变为true</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>2.get方法：<strong>取与</strong></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">get</span><span class="o">(</span><span class="kt">int</span> <span class="n">k</span><span class="o">)</span> <span class="o">{</span><span class="c1">//得到第k位的参数</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">k</span> <span class="o">&gt;</span> <span class="n">nbits</span><span class="o">)</span>	<span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">byteIndex</span> <span class="o">=</span> <span class="n">k</span><span class="o">/</span><span class="mi">8</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">bitIndex</span> <span class="o">=</span> <span class="n">k</span><span class="o">%</span><span class="mi">8</span><span class="o">;</span>
+		
+		<span class="k">return</span> <span class="o">(</span><span class="n">bytes</span><span class="o">[</span><span class="n">byteIndex</span><span class="o">]</span> <span class="o">&amp;</span> <span class="o">(</span><span class="mi">1</span><span class="o">&lt;&lt;</span><span class="n">bitIndex</span><span class="o">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>3.test 方法</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">test</span><span class="o">(</span><span class="kt">int</span> <span class="n">local</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">BitMap</span> <span class="n">bitMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BitMap</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+		<span class="n">bitMap</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">local</span><span class="o">);</span>
+		<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">bitMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="o">==</span> <span class="kc">true</span><span class="o">)</span>
+				<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"1"</span><span class="o">);</span>
+			<span class="k">else</span> <span class="o">{</span>
+				<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"0"</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/image-20200811094941235.png" alt="image-20200811094941235" style="zoom:200%;" /></p>
+
+<h3 id="5布隆过滤器">5、布隆过滤器</h3>
+
+<p>【题目】
+不安全网页的黑名单包含100亿个黑名单网页，每个网页的URL最多占用64B。现在想要实现一种网页过滤系统，可以根据网页的URL判断该网页是否在黑名单上，请设计该系统</p>
+
+<p>【要求】
+1.该系统允许有万分之一以下的判断失误率。
+2.使用的额外空间不要超过30GB。</p>
+
+<p>【解答】</p>
+
+<p>​	如果把黑名单中所有的URL通过数据库或哈希表保存下来，就可以对每条URL进行查询，但是每个URL有64B，数量是100亿个，所以至少需要640GB的空间，不满足要求2。
+​	如果面试者遇到网页黑名单系统、垃圾邮件过滤系统、爬虫的网址判重系统等题目，又看到系统容忍一定程度的失误率，但是对空间要求比较严格，那么很可能是面试官希望面试者具备布隆过滤器的知识。一个布隆过滤器精确地代表一个集合，并可以精确判断一个元素是否在集合中。注意，只是精确代表和精确判断，到底有多精确呢？则完全在于你具体的设计，但想做到完全正确是不可能的。布隆过滤器的优势就在于使用很少的空间就可以将准确率做到很高的程度，该结构由Burton Howard Bloom于1970年提出。</p>
+
+<p>​	因此采用位图进行过滤：</p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/QQ图片20200811100558.jpg" alt="QQ图片20200811100558" /></p>
+
+<p><strong>因此失误率与bitMap的长度成反比</strong></p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/QQ图片20200811101320.jpg" alt="QQ图片20200811101320" /></p>
+
+<h3 id="6一致性哈希">6、一致性哈希</h3>
+
+<p>【题目】
+	工程师常使用服务器集群来设计和实现数据缓存，以下是常见的策略：</p>
+
+<ol>
+  <li>无论是添加、查询还是删除数据，都先将数据的id通过哈希函数转换成一个哈希值，记为key。</li>
+  <li>如果目前机器有N台，则计算key%N的值，这个值就是该数据所属的机器编号，无论是添加、删除还是查询操作，都只在这台机器上进行。请分析这种缓存策略可能带来的问题，并提出改进的方案。</li>
+</ol>
+
+<p>【解答】</p>
+
+<h4 id="1一致性哈希实现思路基础版">1、一致性哈希实现思路（基础版）</h4>
+
+<p>​	<strong>面临问题：</strong>题目中描述的缓存策略的潜在问题是如果增加或删除机器时（ N 变化）代价会很高，所有的数据都不得不根据 id 重新计算一遍哈希值，并将哈希值对新的机器数进行取模操作，然后进行大规模的数据迁移。</p>
+
+<p>​	<strong>解决方案</strong>，下面介绍一下<strong>一致性哈希算法</strong>，这是一种很好的数据缓存设计方案。我们假设数据的id通过哈希函数转换成的哈希值范围是2^32，也就是0-（2^32)-1的数字空间中。现在我们可以将这些数字头尾相连，想象成一个闭合的环形，那么一个数据id在计算出哈希值之后认为对应到环中的一个位置上，如图6-3所示。
+​	接下来想象有三台机器也处在这样一个环中，这三台机器在环中的位置根据机器id计算出的哈希值来决定。那么一条数据如何确定归属哪台机器呢？首先把该数据的id用哈希函数算出哈希值，并映射到环中的相应位置，然后<strong>顺时针找寻离这个位置最近的机器</strong>，那台机器就是该数据的归属，如图6-4所示。</p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/image-20200811101841828.png" alt="image-20200811101841828" /></p>
+
+<p>​	<strong>实现方法：</strong></p>
+
+<blockquote>
+  <p>现存在多个机器，如 m1,m2,m3，现在对其 hash 后得到的值组成一个<strong>有序数组</strong>，假设为 [m1, m3, m2]， 现在加入数据时 对于数据求 hash 后<strong>顺时针距离最近</strong>的机器则为放入机器。</p>
+</blockquote>
+
+<p>​	在图6-4中，data1 根据其id计算出的哈希值为key1，顺时针的第一台机器是machine2，所以datal归属machine2；同理，data2归属machine3，data3 和 data4都归属machinel。
+​	假设有两台机器（ml、m2）和三个数据（datal、data2、data3），数据和机器在环中的结构如下图左所示。如果此时想加入新的机器m3，同时算出机器m3的 id 在ml与m2右半侧的环中，那么发生的变化如下图右所示。</p>
+
+<p>​	即将 m3 和 m1 之间原本属于 m2 的数据移到 m3 中。删除同理</p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/image-20200811103635306.png" alt="" /></p>
+
+<h4 id="2一致性哈希实现负载均衡采用虚拟节点技术">2、一致性哈希实现负载均衡（采用虚拟节点技术</h4>
+
+<p>现在又面临一个问题——机器负载不均时的处理。如果机器较少，很有可能造成机器在整个环上的分布不均匀，从而导致机器之间的负载不均衡，如下图所示的两台机器，ml可能比m2面临更大的负载。</p>
+
+<p><img src="/assets/blog_image/2020-08-01-Coder-MianShi5/image-20200811103943671.png" alt="image-20200811103943671" /></p>
+
+<p><strong>解决方案：</strong>现在将各个机器虚拟为多个节点：如 m1 分为： m1-1, m1-2, m1-3….m1-1000; 然后将这些节点按照之前的步骤类比为一个机器，这样均衡的平衡性就好多了。</p>
+:ET

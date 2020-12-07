@@ -1,0 +1,68 @@
+I")<ul id="markdown-toc">
+  <li><a href="#二数组和矩阵问题" id="markdown-toc-二数组和矩阵问题">二、数组和矩阵问题</a>    <ul>
+      <li><a href="#1转圈打印矩阵" id="markdown-toc-1转圈打印矩阵">1、转圈打印矩阵</a></li>
+    </ul>
+  </li>
+</ul>
+<h2 id="二数组和矩阵问题">二、数组和矩阵问题</h2>
+
+<h3 id="1转圈打印矩阵">1、转圈打印矩阵</h3>
+
+<p>【题目】
+给定一个整型矩阵matrix，请按照转圈的方式打印它。
+例如：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">1</span>  <span class="mi">2</span>  <span class="mi">3</span>  <span class="mi">4</span> 
+<span class="mi">5</span>  <span class="mi">6</span>  <span class="mi">7</span>  <span class="mi">8</span> 
+<span class="mi">9</span>  <span class="mi">10</span>  <span class="mi">11</span>  <span class="mi">12</span> 
+<span class="mi">13</span> <span class="mi">14</span>  <span class="mi">15</span>  <span class="mi">16</span>
+</code></pre></div></div>
+
+<p>打印结果为：1，2，3，4，8，12，16，15，14，13，9，5，6，7，11，10</p>
+
+<p>【要求】
+额外空间复杂度为O（1）。</p>
+
+<p>【解答】</p>
+
+<p>介绍一种矩阵处理思想：</p>
+
+<p><strong>矩阵分圈处理</strong>。在矩阵中用左上角的坐标（tR，tC）和右下角的坐标（dR，dC）就可以表示一个子矩阵，比如，题目中的矩阵，当（tR，tC）=（0，0）、（dR，dC）=（3，3）时，表示的子矩阵就是整个矩阵，那么这个子矩阵最外层的部分如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">1</span>  <span class="mi">2</span>  <span class="mi">3</span>  <span class="mi">4</span> 
+<span class="mi">5</span>        <span class="mi">8</span> 
+<span class="mi">9</span>        <span class="mi">12</span> 
+<span class="mi">13</span> <span class="mi">14</span> <span class="mi">15</span> <span class="mi">16</span>
+</code></pre></div></div>
+
+<p>将矩阵按照层次转圈打印，如最外圈就是 从 1 开始顺时针到 5，此时进入内部圈，按照相同方法进行打印。</p>
+
+<p>值得注意的是：</p>
+
+<ol>
+  <li>
+    <p>进入内层圈是 左下角++ 右上角–，直到 左下角超过右上角 终止。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">while</span><span class="o">(</span><span class="n">topR</span> <span class="o">&lt;=</span> <span class="n">botR</span> <span class="o">&amp;&amp;</span> <span class="n">topC</span> <span class="o">&lt;=</span> <span class="n">botC</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">printEdge</span><span class="o">(</span><span class="n">matrix</span><span class="o">,</span> <span class="n">topR</span><span class="o">++,</span> <span class="n">topC</span><span class="o">++,</span> <span class="n">botR</span><span class="o">--,</span> <span class="n">botC</span><span class="o">--);</span>
+		<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>最后一步可为一行或者一列</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">if</span><span class="o">(</span><span class="n">topR</span> <span class="o">==</span> <span class="n">botR</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 表示为在一行</span>
+		<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">topC</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">botC</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+			<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">matrix</span><span class="o">[</span><span class="n">topR</span><span class="o">][</span><span class="n">i</span><span class="o">]</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">topC</span> <span class="o">==</span> <span class="n">botC</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 表示为在一列</span>
+		<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">topR</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">botR</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+			<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">matrix</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">topC</span><span class="o">]</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span><span class="k">else</span> <span class="o">{</span><span class="c1">// 至此说明可以画出一个矩形 按照上右下左打出</span>
+		<span class="o">...</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+:ET

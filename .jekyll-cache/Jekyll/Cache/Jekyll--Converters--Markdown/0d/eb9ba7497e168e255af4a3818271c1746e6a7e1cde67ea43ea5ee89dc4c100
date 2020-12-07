@@ -1,0 +1,67 @@
+I"�<ul id="markdown-toc">
+  <li><a href="#四二叉树问题" id="markdown-toc-四二叉树问题">四、二叉树问题</a>    <ul>
+      <li><a href="#1实现二叉树的先序中序后序遍历包括递归方式和非递归" id="markdown-toc-1实现二叉树的先序中序后序遍历包括递归方式和非递归">1、实现二叉树的先序、中序、后序遍历，包括递归方式和非递归</a></li>
+    </ul>
+  </li>
+</ul>
+<h2 id="四二叉树问题">四、二叉树问题</h2>
+
+<h3 id="1实现二叉树的先序中序后序遍历包括递归方式和非递归">1、实现二叉树的先序、中序、后序遍历，包括递归方式和非递归</h3>
+
+<p>方式</p>
+
+<p>1）递归版本</p>
+
+<p>​	先序 中序 后序的区别在于——在遍历点第几次（每个点都会遍历3次）打印</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">1</span><span class="o">.</span><span class="na">先序</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">preOrderRecur</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span><span class="o">;</span>
+		
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+		<span class="n">preOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="n">preOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+	<span class="o">}</span>
+	
+<span class="mi">2</span><span class="o">.</span><span class="na">中序</span>
+		<span class="n">inOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+		<span class="n">inOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+<span class="mi">3</span><span class="o">.</span><span class="na">后序</span>
+		<span class="n">posOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="n">posOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>2）非递归</p>
+
+<ol>
+  <li>
+    <p><strong>先序</strong></p>
+
+    <p>1.申请一个新的栈，记为stack。然后将头节点head压入stack中。
+2.从stack中弹出栈顶节点，记为cur，然后打印cur节点的值，再将节点cur的右孩子（不为空的话）先压入stack中，最后将cur的左孩子（不为空的话）压入stack中。（先右后左，因为打印是先左后右）
+3.不断重复步骤2，直到stack为空，全部过程结束。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">preOrderUnRecur</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"pre-UnRecurOrder:"</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">stack</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;();</span>
+			<span class="n">stack</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">head</span><span class="o">);</span> <span class="c1">// 压入头结点</span>
+			<span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">head</span><span class="o">;;</span>
+			<span class="k">while</span><span class="o">(!</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">cur</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="na">pop</span><span class="o">();</span><span class="c1">//当前弹出节点</span>
+				<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+:ET

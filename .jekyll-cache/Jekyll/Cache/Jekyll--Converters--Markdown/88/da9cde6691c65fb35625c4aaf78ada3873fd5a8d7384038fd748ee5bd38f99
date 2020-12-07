@@ -1,0 +1,560 @@
+I"5<ul id="markdown-toc">
+  <li><a href="#四二叉树问题" id="markdown-toc-四二叉树问题">四、二叉树问题</a>    <ul>
+      <li><a href="#1实现二叉树的先序中序后序遍历包括递归方式和非递归" id="markdown-toc-1实现二叉树的先序中序后序遍历包括递归方式和非递归">1、实现二叉树的先序、中序、后序遍历，包括递归方式和非递归</a></li>
+      <li><a href="#2如何直观的打印一颗二叉树" id="markdown-toc-2如何直观的打印一颗二叉树">2、如何直观的打印一颗二叉树</a></li>
+      <li><a href="#3在二叉树中找到一个节点的后继节点" id="markdown-toc-3在二叉树中找到一个节点的后继节点">3、在二叉树中找到一个节点的后继节点</a></li>
+      <li><a href="#4介绍二叉树的序列化和反序列化" id="markdown-toc-4介绍二叉树的序列化和反序列化">4、介绍二叉树的序列化和反序列化</a>        <ul>
+          <li><a href="#1序列化" id="markdown-toc-1序列化">1.序列化</a></li>
+          <li><a href="#2反序列化按队列进行恢复" id="markdown-toc-2反序列化按队列进行恢复">2.反序列化(按队列进行恢复)</a></li>
+          <li><a href="#3层次序列化-按照队列实现" id="markdown-toc-3层次序列化-按照队列实现">3.层次序列化 （按照队列实现）</a></li>
+          <li><a href="#结果展示" id="markdown-toc-结果展示">结果展示</a></li>
+        </ul>
+      </li>
+      <li><a href="#5判断二叉树是否为平衡二叉树" id="markdown-toc-5判断二叉树是否为平衡二叉树">5、判断二叉树是否为平衡二叉树</a></li>
+      <li><a href="#6判断一棵树是否是搜索二叉树判断一棵树是否是完全二叉树" id="markdown-toc-6判断一棵树是否是搜索二叉树判断一棵树是否是完全二叉树">6、判断一棵树是否是搜索二叉树、判断一棵树是否是完全二叉树</a></li>
+      <li><a href="#7已知一棵完全二叉树求其节点的个数" id="markdown-toc-7已知一棵完全二叉树求其节点的个数">7、已知一棵完全二叉树，求其节点的个数</a></li>
+    </ul>
+  </li>
+</ul>
+<h2 id="四二叉树问题">四、二叉树问题</h2>
+
+<h3 id="1实现二叉树的先序中序后序遍历包括递归方式和非递归">1、实现二叉树的先序、中序、后序遍历，包括递归方式和非递归</h3>
+
+<p>方式</p>
+
+<p>1）递归版本</p>
+
+<p>​	先序 中序 后序的区别在于——在遍历点第几次（每个点都会遍历3次）打印</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">1</span><span class="o">.</span><span class="na">先序</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">preOrderRecur</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span><span class="o">;</span>
+		
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+		<span class="n">preOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="n">preOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+	<span class="o">}</span>
+	
+<span class="mi">2</span><span class="o">.</span><span class="na">中序</span>
+		<span class="n">inOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+		<span class="n">inOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+<span class="mi">3</span><span class="o">.</span><span class="na">后序</span>
+		<span class="n">posOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="n">posOrderRecur</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>2）非递归</p>
+
+<ol>
+  <li>
+    <p><strong>先序</strong></p>
+
+    <p>1.申请一个新的栈，记为stack。然后将头节点head压入stack中。
+2.从stack中弹出栈顶节点，记为cur，然后打印cur节点的值，再将节点cur的右孩子（不为空的话）先压入stack中，最后将cur的左孩子（不为空的话）压入stack中。（先右后左，因为打印是先左后右）
+3.不断重复步骤2，直到stack为空，全部过程结束。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">preOrderUnRecur</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"pre-UnRecurOrder:"</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">stack</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;();</span>
+			<span class="n">stack</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">head</span><span class="o">);</span> <span class="c1">// 压入头结点</span>
+			<span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">head</span><span class="o">;;</span>
+			<span class="k">while</span><span class="o">(!</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">cur</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="na">pop</span><span class="o">();</span><span class="c1">//当前弹出节点</span>
+				<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p><strong>中序</strong></p>
+
+    <p>中序遍历是  左侧链 + 右子树（结合ds来理解）
+ —&gt;先访问顶点，但是先输出的是最左侧链点，因此要采用LIFO即 栈</p>
+
+    <p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/RW_YQB%$JIUC{249%1[9X.png" alt="img" /></p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// 采用 stack + 左子链实现</span>
+    <span class="kd">public</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="nf">inorderTraversal</span><span class="o">(</span><span class="nc">TreeNode</span> <span class="n">root</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedList</span><span class="o">&lt;&gt;();</span>
+        <span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">TreeNode</span><span class="o">&gt;</span> <span class="n">stack</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;&gt;();</span>
+        <span class="k">if</span><span class="o">(</span><span class="n">root</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">list</span><span class="o">;</span>
+        <span class="o">}</span>
+           
+        <span class="nc">TreeNode</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+        <span class="k">while</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">while</span><span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">);</span>
+                <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+            <span class="o">}</span><span class="c1">// 至此 找到左子链</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="nc">TreeNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="na">pop</span><span class="o">();</span>
+            <span class="n">list</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">val</span><span class="o">);</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">list</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p><strong>后序</strong></p>
+
+    <p>后序 1 —»&gt;
+由于是左右中， 而先序是中左右（极其容易）那么就直接套得中右左，
+再将其得到 中左右 时压到另一个栈中，再最终出栈打印 得到后序遍历</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">posOrderUnRecur1</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">"pos-UnRecurOrder:"</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">stack</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;();</span>
+			<span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">stack2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;();</span>
+			<span class="n">stack</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">head</span><span class="o">);</span>
+			<span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">head</span><span class="o">;;</span>
+			<span class="k">while</span><span class="o">(!</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">cur</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="na">pop</span><span class="o">();</span>
+				<span class="n">stack2</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">);</span> <span class="c1">// 将先序遍历时每次输出的值压入 stack2 中</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="c1">// 由于是中右左，因此需要先压入左，再压入右</span>
+					<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+				<span class="k">if</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+					<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">while</span><span class="o">(!</span><span class="n">stack2</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+				<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">stack2</span><span class="o">.</span><span class="na">pop</span><span class="o">().</span><span class="na">value</span> <span class="o">+</span> <span class="s">" "</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<hr />
+
+<h3 id="2如何直观的打印一颗二叉树">2、如何直观的打印一颗二叉树</h3>
+
+<p>【题目】
+二叉树可以用常规的三种遍历结果来描述其结构，但是不够直观，尤其是二又树中有重复值的时候，仅通过三种遍历的结果来构造二叉树的真实结构更是难上加难，有时则根本不可能。给定一棵二叉树的头节点head，已知二叉树节点值的类型为32位整型，请实现一个打印二叉树的函数，可以直观地展示树的形状，也便于画出真实的结构。</p>
+
+<p>【解答】</p>
+
+<p>设计展示形状如图</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200728092752757.png" alt="image-20200728092752757" /></p>
+
+<p><strong>1.解释形状含义</strong>：</p>
+
+<p>​	首先，二叉树大概的样子是把打印结果顺时针旋转90°，接下来，如果一个节点打印结果的前缀与后缀都有“H”（比如“H1H”），说明这个节点是头节点，当然就不存在父节点。如果一个节点打印结果的前缀与后缀都有“v”，表示父节点在该节点所在列的前一列，在该节点所在行的下方，并且是离该节点最近的节点。比如图3-5中的“v3v”、“v66v”，父节点分别为“HIH”、“v3v”。如果一个节点打印结果的前缀与后缀都有“^”，表示父节点在该节点所在行的上方，并且是离该节点最近的节点。比如，“^-222222222^”、父节点为“HIH””。</p>
+
+<p><strong>2.规定节点打印时占用的统一长度：</strong></p>
+
+<p>​	我们必须规定一个节点在打印时到底占多长。试想一下，如果有些节点的值本身的长度很短，比如“1”、“2” 等，而有些节点的值本身的长度很长，比如“43323232”、“78787237”等，那么如果不规定一个统一的长度，在打印一个长短值交替的二叉树时必然会出现格式对不齐的问题，进而产生歧义。在Java中，整型值占用长度最长的值是 Integer.MIN_VALUE（即-2147483648），占用的长度为11，加上前缀和后缀（“H”、“v”或“^”）之后占用长度为13。为了在打印之后更好地区分，再把前面加上两个空格，后面加上两个空格，总共占用长度为17。也就是说，<strong>长度为17的空间必然可以放下任何一个32位整数</strong>，同时样式还不错。至此，我们约定，打印每一个节点的时候，必须让每一个节点在打印时占用长度都为17，如果不足，前后都用空格补齐。比如节点值为8，假设这个节点加上“v”作为前后缀，那么实质内容为“v8v”，长度才为3，在打印时在“v8v”的前面补7个空格，后面也补7个空格，让总长度为17。再如节点值为66，假设这个节点加上“v”作为前后缀，那么实质内容为“v66v”，长度才为4，在打印在“v66v”的前面补6个空格，后面补7个空格，让总长度为17。
+​	总之，如果长度不足，前后贴上几乎数量相等的空格来补齐。</p>
+
+<p><strong>3.代码实现</strong></p>
+
+<p>​	采用类似中序遍历的递归方法，不过由于顶层为右子树，因此需要先打印右子树。打印右子树时，需要前后缀加上”v”</p>
+
+<ol>
+  <li>
+    <p>介绍 调节统一长度的函数</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="nc">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">to</span> <span class="o">+</span> <span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="n">to</span><span class="o">;</span><span class="c1">// to 为 "H" / "v" / "^"</span>
+	<span class="kt">int</span> <span class="n">lenL</span> <span class="o">=</span> <span class="o">(</span><span class="n">len</span><span class="o">-</span><span class="n">value</span><span class="o">.</span><span class="na">length</span><span class="o">())</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span> 	<span class="c1">// 左侧取下整</span>
+	<span class="kt">int</span> <span class="n">lenR</span> <span class="o">=</span> <span class="n">len</span><span class="o">-</span><span class="n">lenL</span><span class="o">-</span><span class="n">value</span><span class="o">.</span><span class="na">length</span><span class="o">();</span>		<span class="c1">// 右侧取上整</span>
+	<span class="n">value</span> <span class="o">=</span> <span class="n">getSpace</span><span class="o">(</span><span class="n">lenL</span><span class="o">)</span> <span class="o">+</span> <span class="n">value</span> <span class="o">+</span> <span class="n">getSpace</span><span class="o">(</span><span class="n">lenR</span><span class="o">);</span><span class="c1">//现为节点长度</span>
+    		
+<span class="n">getspace函数</span> <span class="n">用于获取空格数</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">String</span> <span class="nf">getSpace</span><span class="o">(</span><span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">StringBuffer</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">StringBuffer</span><span class="o">();</span>
+		<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+			<span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="s">" "</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ol>
+      <li>打印函数</li>
+    </ol>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="n">主函数先输出</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Binary tree:"</span><span class="o">);</span>
+		<span class="n">printInOrder</span><span class="o">(</span><span class="n">head</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="s">"H"</span><span class="o">,</span> <span class="mi">17</span><span class="o">);</span>	<span class="c1">// 规定len始终为17，头结点为 HxxxH</span>
+	<span class="c1">// 先打印右子树</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">printInOrder</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">,</span> <span class="kt">int</span> <span class="n">height</span><span class="o">,</span> <span class="nc">String</span> <span class="n">to</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span><span class="o">;</span>
+    		
+		<span class="n">printInOrder</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">,</span> <span class="n">height</span><span class="o">+</span><span class="mi">1</span><span class="o">,</span> <span class="s">"v"</span><span class="o">,</span> <span class="n">len</span><span class="o">);</span>
+    		
+		<span class="nc">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">to</span> <span class="o">+</span> <span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="n">to</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">lenL</span> <span class="o">=</span> <span class="o">(</span><span class="n">len</span><span class="o">-</span><span class="n">value</span><span class="o">.</span><span class="na">length</span><span class="o">())</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>
+		<span class="kt">int</span> <span class="n">lenR</span> <span class="o">=</span> <span class="n">len</span><span class="o">-</span><span class="n">lenL</span><span class="o">-</span><span class="n">value</span><span class="o">.</span><span class="na">length</span><span class="o">();</span>		
+		<span class="n">value</span> <span class="o">=</span> <span class="n">getSpace</span><span class="o">(</span><span class="n">lenL</span><span class="o">)</span> <span class="o">+</span> <span class="n">value</span> <span class="o">+</span> <span class="n">getSpace</span><span class="o">(</span><span class="n">lenR</span><span class="o">);</span><span class="c1">//现为节点长度</span>
+    		
+		<span class="c1">// 现需要对层数进行判断</span>
+		<span class="c1">// 需要注意的是，每层前面的空格也应该调整</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">getSpace</span><span class="o">(</span><span class="n">len</span><span class="o">*</span><span class="n">height</span><span class="o">)</span> <span class="o">+</span> <span class="n">value</span><span class="o">);</span>
+    		
+		<span class="n">printInOrder</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">,</span> <span class="n">height</span><span class="o">+</span><span class="mi">1</span><span class="o">,</span> <span class="s">"^"</span><span class="o">,</span> <span class="n">len</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="3在二叉树中找到一个节点的后继节点">3、在二叉树中找到一个节点的后继节点</h3>
+
+<p>【题目】现在有一种新的二叉树节点类型如下：</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Node</span> <span class="o">{</span>
+		<span class="kd">public</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
+		<span class="kd">public</span> <span class="nc">Node</span> <span class="n">left</span><span class="o">;</span>
+		<span class="kd">public</span> <span class="nc">Node</span> <span class="n">right</span><span class="o">;</span>
+		<span class="kd">public</span> <span class="nc">Node</span> <span class="n">parent</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	该结构比普通二叉树节点结构多了一个指向父节点的parent指针。假设有一 棵Node类型的节点组成的二叉树，树中每个节点的parent指针都正确地指向自己的父节点，头节点的parent指向null。只给一个在二叉树中的某个节点 node，请实现返回node的后继节点的函数。在二
+叉树的中序遍历的序列中， node的下一个节点叫作node的后继节点。</p>
+
+<p>【题解】</p>
+
+<p>​	最优解法不必遍历所有的节点如果node节点和node后继节点之间的实际距离为L，最优解法只用走过L个节点，时间复杂度为O（L），额外空间复杂度为O（1）。接下来详细说明最优解法是如何找到node的后继节点的。</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200729081141965.png" alt="image-20200729081141965" /></p>
+
+<p>​	<strong>情况1</strong>：如果node有右子树，那么后继节点就是<strong>右子树上最左边的节点</strong>。
+​	<strong>情况2</strong>：如果node没有右子树，</p>
+
+<ol>
+  <li>
+    <p>那么先看node是不是node父节点的左孩子，如果是左孩子，那么此时node的父节点就是node的后继节点；</p>
+
+    <p>​	例如，上图所示的二叉树中，当node为节点7时，节点7的父节点是节点8，同时节点7是节点8的左孩子，此时节点8就是节点7的后继节点。</p>
+  </li>
+  <li>
+    <p>如果是右孩子，就向上寻找node的后继节点，假设向上移动到的节点记为s，s的父节点记为p，如果发现s是p的左孩子，那么节点p就是node节点的后继节点，否则就一直向上移动。————»&gt; 向上遍历，找到一个点，该点为该点父节点的左子树</p>
+
+    <p>​	再如，题目所示的二叉树中，当node为节点5时，节点5的父节点是节点4，但是节点5是节点4的右孩子，所以向上寻找node的后继节点。当向上移动到节点4，节点4的父节点是节点3，但是节点4还是节点3的右孩子，继续向上移动。当向上移动到节点3时，节点3的父节点是节点6，此时终于发现节点3是节点6的左孩子，移动停止，节点6就是node（节点5）的后继节点。</p>
+
+    <p><strong>情况3</strong>：如果在情况2中一直向上寻找，都移动到空节点时还是没有发现node的后继节点，说明node根本不存在后继节点。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">Node</span> <span class="nf">getSuccessorNode</span><span class="o">(</span><span class="nc">Node</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">node</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">right</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span> <span class="nf">getLeftMost</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">right</span><span class="o">);</span><span class="c1">// 去得到该右子树的最左节点</span>
+		<span class="c1">// 至此 说明不含右子树，应当对该节点的父节点进行判断</span>
+		<span class="c1">// 主要分为两种情况</span>
+		<span class="c1">// 1. 该节点为父节点的左子树，则其父亲为其后继</span>
+		<span class="nc">Node</span> <span class="n">parent</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">parent</span><span class="o">;</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">parent</span><span class="o">.</span><span class="na">left</span> <span class="o">==</span> <span class="n">node</span><span class="o">)</span>
+			<span class="k">return</span> <span class="n">parent</span><span class="o">;</span>
+		<span class="c1">// 2. 该节点为父节点的右子树，向上遍历，找到一个点，其为该点父节点的左子树</span>
+		<span class="k">while</span><span class="o">(</span><span class="n">parent</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">parent</span><span class="o">.</span><span class="na">left</span> <span class="o">!=</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 不满足则向上直到头结点</span>
+			<span class="n">node</span> <span class="o">=</span> <span class="n">parent</span><span class="o">;</span>
+			<span class="n">parent</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">parent</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="n">parent</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>而对于前驱而言，与后继大致相反，进行对应更改即可。</p>
+
+<h3 id="4介绍二叉树的序列化和反序列化">4、介绍二叉树的序列化和反序列化</h3>
+
+<p>【题目】
+二叉树被记录成文件的过程叫作二叉树的序列化，通过文件内容重建原来二叉树的过程叫作二叉树的反序列化。给定一棵二叉树的头节点head，并已知二叉树节点值的类型为32位整型。请设计一种二叉树序列化和反序列化的方案，并用代码实现。</p>
+
+<p>【解答】</p>
+
+<h4 id="1序列化">1.序列化</h4>
+
+<p>​	首先假设序列化的结果字符串为str，初始时str = “”。先序遍历二叉树，如果遇到null节点，就在 str 的末尾加上“#！”，“#” 表示这个节点为空，节点值不存在，“！”表示一个值的结束；如果遇到不为空的节点，假设节点值为3，就在 str 的末尾加上“3！”。比如左图所示的二叉树。
+根据上文的描述，先序遍历序列化，最后的结果字符串str为：12!3!#!#!#!.。</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200729083924358.png" alt="image-20200729083924358" /></p>
+
+<p>​	为什么在每一个节点值的后面都要加上“！”呢？因为如果不标记一个值的结束，最后产生的结果会有歧义，如上图所示。</p>
+
+<p>​	如果不在一个值结束时加入特殊字符，那么上图两侧的先序遍历序列化结果都是123###。也就是说，生成的字符串并不代表唯一的树。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 先序序列化</span>
+	<span class="c1">// 加上 #！是为了区分 1 1 1</span>
+	<span class="c1">// 加上！ 是为了区分 12 3和 1 23</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">String</span> <span class="nf">serialByPre</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span> <span class="s">"#!"</span><span class="o">;</span>
+		<span class="nc">String</span> <span class="n">res</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="na">value</span> <span class="o">+</span> <span class="s">"!"</span><span class="o">;</span>
+		<span class="n">res</span> <span class="o">+=</span> <span class="n">serialByPre</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="n">res</span> <span class="o">+=</span> <span class="n">serialByPre</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+		
+		<span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="2反序列化按队列进行恢复">2.反序列化(按队列进行恢复)</h4>
+
+<p>​	接下来介绍如何通过先序遍历序列化的结果字符串str，重构二叉树的过程，即反序列化。把结果字符串str变成字符串类型的数组，记为 values，数组代表一棵二叉树先序遍历的节点顺序。例如，str=”12！3！#！#！#！”，生成的values为[“12”，”3”，“#””，”#”，“#”]，然后用values[0..4]按照先序遍历的顺序建立整棵树。</p>
+
+<ol>
+  <li>遇到“12”，生成节点值为12的节点（head），然后用values[l.4]建立节点12的左子树。</li>
+  <li>遇到“3”，生成节点值为3的节点，它是节点12的左孩子，然后用values[2.4]建立节点3的左子树。</li>
+  <li>遇到“#”，生成null节点，它是节点3的左孩子，该节点为nul，所以这个节点没有后续建立子树的过程。回到节点3后，用values[3.4]建立节点3的右子树。</li>
+  <li>遇到“#”，生成null节点，它是节点3的右孩子，该节点为null，所以这个节点没有后续建立子树的过程。回到节点3后，再回到节点1，用values[4]建立节点1的右子树。</li>
+  <li>遇到“#”，生成null节点，它是节点l的右孩子，该节点为null，所以这个节点没有后续建立子树的过程。整个过程结束。</li>
+</ol>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">Node</span> <span class="nf">reconByPreString</span><span class="o">(</span><span class="nc">String</span> <span class="n">preStr</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">String</span><span class="o">[]</span> <span class="n">strs</span> <span class="o">=</span> <span class="n">preStr</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">"!"</span><span class="o">);</span>
+		<span class="nc">Queue</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">queue</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedList</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;();</span>
+		<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">strs</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+			<span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">strs</span><span class="o">[</span><span class="n">i</span><span class="o">]);</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="nf">reconPreOrder</span><span class="o">(</span><span class="n">queue</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">Node</span> <span class="nf">reconPreOrder</span><span class="o">(</span><span class="nc">Queue</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">queue</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="na">poll</span><span class="o">();</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">value</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"#"</span><span class="o">))</span>
+			<span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+		<span class="nc">Node</span> <span class="n">head</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Node</span><span class="o">(</span><span class="nc">Integer</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">value</span><span class="o">));</span>
+		<span class="n">head</span><span class="o">.</span><span class="na">left</span> <span class="o">=</span> <span class="n">reconPreOrder</span><span class="o">(</span><span class="n">queue</span><span class="o">);</span>
+		<span class="n">head</span><span class="o">.</span><span class="na">right</span> <span class="o">=</span> <span class="n">reconPreOrder</span><span class="o">(</span><span class="n">queue</span><span class="o">);</span>
+		<span class="k">return</span> <span class="n">head</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>递归对当前节点的左子树和右子树进行重构即可。</p>
+
+<h4 id="3层次序列化-按照队列实现">3.层次序列化 （按照队列实现）</h4>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">// 层次序列化 用队列即可</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="nc">String</span> <span class="nf">serializeByLevelOrder</span><span class="o">(</span><span class="nc">Node</span><span class="o">[]</span> <span class="n">nodes</span><span class="o">,</span> <span class="kt">int</span> <span class="n">root</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">.</span><span class="na">length</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="s">"#!"</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="nc">String</span> <span class="n">res</span> <span class="o">=</span> <span class="s">""</span><span class="o">;</span>
+        <span class="nc">Node</span> <span class="n">head</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">[</span><span class="n">root</span><span class="o">];</span>
+        <span class="nc">Queue</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">queue</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedList</span><span class="o">&lt;&gt;();</span>
+
+        <span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">head</span><span class="o">);</span>
+        <span class="k">while</span><span class="o">(!</span><span class="n">queue</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+            <span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="na">poll</span><span class="o">();</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">res</span> <span class="o">+=</span> <span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">value</span><span class="o">+</span><span class="s">"!"</span><span class="o">);</span>
+                <span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+                <span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="n">res</span> <span class="o">+=</span> <span class="s">"#!"</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<h4 id="结果展示">结果展示</h4>
+
+<p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200729084640277.png" alt="image-20200729084640277" /></p>
+
+<h3 id="5判断二叉树是否为平衡二叉树">5、判断二叉树是否为平衡二叉树</h3>
+
+<p>【题目】
+	平衡二叉树的性质为：要么是一棵空树，要么任何一个节点的左右子树高度差的绝对值不超过1。给定一棵二叉树的头节点head，判断这棵二叉树是否为平衡二叉树。</p>
+
+<p>【要求】
+	如果二叉树的节点数为N，要求时间复杂度为O（N）。</p>
+
+<p>【解答】</p>
+
+<p>​	解法的整体过程为二叉树的后序遍历，对任何一个节点node来说，先遍历node的左子树，遍历过程中收集两个信息，node的左子树是否为平衡二叉树，node的左子树最深到哪一层记为1H。</p>
+
+<p>​	如果发现node的左子树不是平衡二叉树，退出遍历过程；如果node的左子树是平衡二叉树，再遍历node的右子树，遍历过程中再收集两个信息，node的右子树是否为平衡二叉树，node的右子树最深到哪一层记为rH。</p>
+
+<p>​	如果发现node的右子树不是平衡二叉树，退出遍历过程；如果node的右子树也是平衡二叉树，就看IH和rH差的绝对值是否大于1，如果大于1，说明已经发现整棵树不是平衡二叉树，如果不大于1，则返回H和rH较大的一个。</p>
+
+<p>​	判断的全部过程请参看如下代码中的isBalance方法。在递归函数 getHeight中，一旦发现不符合平衡二叉树的性质，递归过程会迅速退出，此时返回什么根本不重要。boolean]
+res长度为1，其功能相当于一个全局的boolean变量。</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">ReturnData</span><span class="o">{</span>
+		<span class="kd">public</span> <span class="kt">boolean</span> <span class="n">isB</span><span class="o">;</span>
+		<span class="kd">public</span> <span class="kt">int</span> <span class="n">h</span><span class="o">;</span>
+		
+		<span class="kd">public</span> <span class="nf">ReturnData</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">isB</span><span class="o">,</span> <span class="kt">int</span> <span class="n">h</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">isB</span> <span class="o">=</span> <span class="n">isB</span><span class="o">;</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">h</span> <span class="o">=</span> <span class="n">h</span><span class="o">;</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+	
+	<span class="c1">// 树形DT</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">ReturnData</span> <span class="nf">process</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span> <span class="k">new</span> <span class="nf">ReturnData</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+		
+		<span class="nc">ReturnData</span> <span class="n">leftData</span> <span class="o">=</span> <span class="n">process</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(!</span><span class="n">leftData</span><span class="o">.</span><span class="na">isB</span><span class="o">)</span>
+			<span class="k">return</span> <span class="k">new</span> <span class="nf">ReturnData</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+		<span class="nc">ReturnData</span> <span class="n">rightData</span> <span class="o">=</span> <span class="n">process</span><span class="o">(</span><span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">);</span>
+		<span class="k">if</span><span class="o">(!</span><span class="n">rightData</span><span class="o">.</span><span class="na">isB</span><span class="o">)</span>
+			<span class="k">return</span> <span class="k">new</span> <span class="nf">ReturnData</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+		<span class="c1">// 至此需要判断高度差</span>
+		<span class="k">if</span><span class="o">(</span><span class="nc">Math</span><span class="o">.</span><span class="na">abs</span><span class="o">(</span><span class="n">leftData</span><span class="o">.</span><span class="na">h</span> <span class="o">-</span> <span class="n">rightData</span><span class="o">.</span><span class="na">h</span><span class="o">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span>
+			<span class="k">return</span> <span class="k">new</span> <span class="nf">ReturnData</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+		
+		<span class="k">return</span> <span class="k">new</span> <span class="nf">ReturnData</span><span class="o">(</span><span class="kc">true</span><span class="o">,</span> <span class="nc">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">leftData</span><span class="o">.</span><span class="na">h</span><span class="o">,</span> <span class="n">rightData</span><span class="o">.</span><span class="na">h</span><span class="o">)+</span><span class="mi">1</span><span class="o">);</span>
+	
+</code></pre></div></div>
+
+<h3 id="6判断一棵树是否是搜索二叉树判断一棵树是否是完全二叉树">6、判断一棵树是否是搜索二叉树、判断一棵树是否是完全二叉树</h3>
+
+<ol>
+  <li>
+    <p>判断一棵二又树是否是搜索二叉树，只要改写一个二叉树<strong>中序遍历</strong>，在遍历的过程中看节点值是否都是递增的即可，将输出时与下一个进行大小判断。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isBST</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+   		
+		<span class="nc">Stack</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">stack</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">&lt;</span><span class="n">Code_07_IsBSTAndCBT</span><span class="o">.</span><span class="na">Node</span><span class="o">&gt;();</span>
+		<span class="nc">Node</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">head</span><span class="o">;</span>
+		<span class="k">while</span><span class="o">(!</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()</span> <span class="o">||</span> <span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">cur</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">stack</span><span class="o">.</span><span class="na">push</span><span class="o">(</span><span class="n">cur</span><span class="o">);</span>
+				<span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+			<span class="o">}</span><span class="k">else</span> <span class="o">{</span>
+				<span class="n">cur</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="na">pop</span><span class="o">();</span>
+				<span class="k">if</span><span class="o">(!</span><span class="n">stack</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">cur</span><span class="o">.</span><span class="na">value</span> <span class="o">&gt;</span> <span class="n">stack</span><span class="o">.</span><span class="na">peek</span><span class="o">().</span><span class="na">value</span><span class="o">)</span>
+					<span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+				<span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>判断一棵二又树是否是完全二叉树，依据以下标准会使判断过程变得简单且易实现：
+1.按层遍历二叉树，从每层的左边向右边依次遍历所有的节点。</p>
+
+    <p>​		—— 按层遍历  采用队列弹出队首时，先吃进左孩子，再吃进右孩子</p>
+
+    <p>2.如果当前节点有右孩子，但没有左孩子，直接返回false。
+3.如果当前节点并不是左右孩子全有，<strong>那之后的节点必须都为叶节点</strong>，否则返回false。
+4.遍历过程中如果不返回false，遍历结束后返回true。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isCBT</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">head</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+			<span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+		<span class="nc">Queue</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;</span> <span class="n">queue</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedList</span><span class="o">&lt;</span><span class="nc">Node</span><span class="o">&gt;();</span>
+		<span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">head</span><span class="o">);</span>
+		<span class="nc">Node</span> <span class="n">left</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+		<span class="nc">Node</span> <span class="n">right</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+   		
+		<span class="c1">// 当并不是左右孩子都有时（即有左没右，或者左右都无时），之后遇到的应该都为叶节点</span>
+		<span class="kt">boolean</span> <span class="n">leaf</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span><span class="c1">// 判断叶子节点的开启</span>
+   		
+		<span class="k">while</span><span class="o">(!</span><span class="n">queue</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">head</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="na">poll</span><span class="o">();</span>
+			<span class="n">left</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+			<span class="n">right</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">right</span><span class="o">!=</span><span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">left</span><span class="o">==</span><span class="kc">null</span><span class="o">)</span> <span class="c1">// 有右孩子无左孩子 返回错误</span>
+				<span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">leaf</span> <span class="o">&amp;&amp;(</span><span class="n">left</span><span class="o">!=</span><span class="kc">null</span> <span class="o">||</span> <span class="n">right</span><span class="o">!=</span><span class="kc">null</span><span class="o">))</span> <span class="c1">// 开启叶节点，但还有</span>
+				<span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+			<span class="c1">// 开启叶子节点的判断</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">left</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+				<span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">left</span><span class="o">);</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">right</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+				<span class="n">queue</span><span class="o">.</span><span class="na">offer</span><span class="o">(</span><span class="n">right</span><span class="o">);</span>
+			<span class="c1">// 由于不可能为有右孩子无左孩子（前面已经判断</span>
+			<span class="k">if</span><span class="o">(</span><span class="n">left</span><span class="o">==</span><span class="kc">null</span> <span class="o">||</span> <span class="n">right</span><span class="o">==</span><span class="kc">null</span><span class="o">)</span>
+				<span class="n">leaf</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="7已知一棵完全二叉树求其节点的个数">7、已知一棵完全二叉树，求其节点的个数</h3>
+
+<p>【要求】</p>
+
+<p>​	时间复杂度低于O(N)，N为这棵树的节点个数</p>
+
+<p>【解答】</p>
+
+<p>​	由于要求低于O(N)，那么必然不是遍历所有节点，而是采用一种奇妙的方法——每层遍历一个节点–&gt;右子树的最左边界进行判断，即O(lgN*lgN)。具体过程如下：</p>
+
+<ol>
+  <li>
+    <p>如果head-null，说明是空树，直接返回0。</p>
+  </li>
+  <li>
+    <p>如果不是空树，就求树的高度，求法是找到树的最左节点看能到哪一层，层数记为h。</p>
+  </li>
+  <li>
+    <p>这一步是求解的主要逻辑，也是一个递归过程记为bs（node，level ，h），node表示当前节点，<strong>level 表示node所在的层数</strong>，h表示整棵树的层数是始终不变的(全局变量)。bs（node，level ，h）的返回值表示以node为头的完全二叉树的节点数是多少。初始时node为头节点head，level 为1，因为head在第1层，一共有h层始终不变。那么这个递归的过程可以用两个例子来说明。</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 返回以node为头结点的节点个数</span>
+	<span class="c1">// h为全局变量，表示所有深度</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">bs</span><span class="o">(</span><span class="nc">Node</span> <span class="n">node</span><span class="o">,</span> <span class="kt">int</span> <span class="n">level</span><span class="o">,</span> <span class="kt">int</span> <span class="n">h</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span><span class="o">(</span><span class="n">level</span> <span class="o">==</span> <span class="n">h</span><span class="o">)</span>
+			<span class="k">return</span> <span class="mi">1</span><span class="o">;</span><span class="c1">//最后一层为1个</span>
+   		
+		<span class="k">if</span><span class="o">(</span><span class="n">mostLeftLevel</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">right</span><span class="o">,</span> <span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="o">)</span> <span class="o">==</span> <span class="n">h</span><span class="o">)</span><span class="c1">// 说明左子树为满二叉树</span>
+			<span class="k">return</span> <span class="o">((</span><span class="mi">1</span><span class="o">&lt;&lt;(</span><span class="n">h</span><span class="o">-</span><span class="n">level</span><span class="o">))</span> <span class="o">+</span> <span class="n">bs</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">right</span><span class="o">,</span> <span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="o">,</span> <span class="n">h</span><span class="o">));</span>
+		<span class="k">else</span> <span class="o">{</span><span class="c1">// 说明右子树为 少一层次的满二叉树</span>
+			<span class="k">return</span> <span class="o">((</span><span class="mi">1</span><span class="o">&lt;&lt;(</span><span class="n">h</span><span class="o">-</span><span class="n">level</span><span class="o">-</span><span class="mi">1</span><span class="o">))</span> <span class="o">+</span> <span class="n">bs</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">left</span><span class="o">,</span> <span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="o">,</span> <span class="n">h</span><span class="o">));</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <ol>
+      <li>
+        <p><strong>左子树为满二叉树</strong></p>
+
+        <p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200802095243441.png" alt="image-20200802095243441" /></p>
+
+        <p>找到node右子树的最左节点，发现它能到达最后一层，即h==4层。此时说明node的整棵左子树都是满二叉树，并且层数为 h-level 层，一棵层数为h-level 的满二叉树，其节点数为2^(h-level )-1个。如果加上node节点自己，那么节点数为2^（h-level ）-1+1==2（h-level ）个。此时如果再知道node右子树的节点数，那么以node为头的完全二叉树上到底有多少个节点就求出来了。那么node右子树的节点数到底是多少呢？就是bs（node.right，1+level ，h）的结果，递归去求即可。最后整体返回2^（h-level ）+bs（node.right，I+level ，h）。</p>
+      </li>
+      <li>
+        <p><strong>左子树不为满二叉树</strong></p>
+
+        <p><img src="/assets/blog_image/2020-07-24-Coder-MianShi4/image-20200802095813716.png" alt="image-20200802095813716" /></p>
+
+        <p>​	找到node右子树的最左节点，如果像图3-51的例子一样，发现它没有到达最后一层，说明node的<strong>整棵右子树都是满二又树</strong>，并且层数为h-level-1层，一棵层数为h-level-1的满二叉树，其节点数为2*level-1个。如果加上node节点自己，那么节点数为2^（h-level-1）-1+1==2（h-level-1）个。
+​	此时如果再知道node左子树的节点数，那么以node为头的完全二叉树上到底有多少个节点就求出来了。node左子树的节点数到底是多少呢？就是bs（node.left，level+1，h）的结果，递归去求即可，最后整体返回2^（h-level-1）+bs（node.left，level+1，h）。</p>
+
+        <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 判断左边界高度</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">mostLeftLevel</span><span class="o">(</span><span class="nc">Node</span> <span class="n">head</span><span class="o">,</span> <span class="kt">int</span> <span class="n">level</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">while</span><span class="o">(</span><span class="n">head</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">level</span><span class="o">++;</span>
+			<span class="n">head</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="n">level</span><span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div>        </div>
+      </li>
+    </ol>
+  </li>
+</ol>
+
+:ET

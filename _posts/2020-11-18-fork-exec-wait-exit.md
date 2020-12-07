@@ -158,7 +158,7 @@ count is : 1
 >
 > 创建的子进程数为 2 的（N）次方 - 1.
 >
-> ![image-20201130102756953](./assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130102756953.png)
+> ![image-20201130102756953](/assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130102756953.png)
 
 
 
@@ -390,7 +390,7 @@ _start:
    call  main
 ```
 
-![image-20201130105602230](./assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130105602230.png)
+![image-20201130105602230](/assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130105602230.png)
 
 
 
@@ -445,7 +445,7 @@ exit() 函数与 _exit() 函数最大的区别就在于 **exit() 函数在调用
 ​	每次读文件时，会连续读出若干条记录，这样在下次读文件时就可以直接从内存的缓冲区中读取;同样，每次写文件时，也仅仅是写入内存中的缓冲区，等满足了一定的条件（如达到一定数量或遇到特定字符等，最典型的就是咱们的vim中使用的:w命令），再将缓冲区中的内容一次性写入文件。
 这种技术大大增加了文件读写的速度，但也给咱们的编程带来了一些麻烦。比如有些数据你认为已经被写入到文件中，实际上因为没有满足特定的条件，它们还只是被保存在缓冲区内，**这时用_exit()函数直接将进程关闭掉，缓冲区中的数据就会丢失**。因此，若想保证数据的完整性，最好使用exit()函数。
 
-![image-20201130112638412](./assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130112638412.png)
+![image-20201130112638412](/assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130112638412.png)
 
 ### wait 函数
 
@@ -533,7 +533,7 @@ int main(void)
 }
 ```
 
-![image-20201130122828846](./assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130122828846.png)
+![image-20201130122828846](/assets/blog_image/2020-11-18-fork-exec-wait-exit/image-20201130122828846.png)
 
 ```shell
 ps -e -o ppid,stat | grep Z
