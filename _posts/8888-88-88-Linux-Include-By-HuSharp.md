@@ -30,23 +30,31 @@ stickie: true
 
 
 
-## 二、源码分析
+## 二、相关思考
 
-1、[fork exec wait exit探究](http://husharp.today/2020/11/18/fork-exec-wait-exit/)
+0、[HuSharpOS总览](http://husharp.today/2020/07/24/Os-MakeByBook/)
 
-2、[回车与换行的探究](http://husharp.today/2020/11/20/nAndr/)
+1、 [fork exec wait exit探究](http://husharp.today/2020/11/18/fork-exec-wait-exit/)
 
-3、[终端控制和信号](http://husharp.today/2020/11/22/Signal/)
+2、 [回车与换行的探究](http://husharp.today/2020/11/20/nAndr/)
 
-4、[中断原理详解，以及中断与信号的关系](http://husharp.today/2020/11/27/interrupt-HuSharpOS/)
+3、 [终端控制和信号](http://husharp.today/2020/11/22/Signal/)
 
-5、[内存管理（一）前置知识 & 虚拟地址布局 ](http://husharp.today/2020/12/01/HuSharp-Memory-01/)
+4、 [中断原理详解，以及中断与信号的关系](http://husharp.today/2020/11/27/interrupt-HuSharpOS/)
 
-6、[内存管理（二）物理内存管理](http://husharp.today/2020/12/03/HuSharp-Memory-02/)
+5、 [内存管理（一）前置知识 & 虚拟地址布局 ](http://husharp.today/2020/12/01/HuSharp-Memory-01/)
 
-7、[内存管理（三）虚拟内存与物理内存的映射关系 & pagefault](http://husharp.today/2020/12/05/HuSharp-Memory-03/)
+6、 [内存管理（二）物理内存管理](http://husharp.today/2020/12/03/HuSharp-Memory-02/)
 
+7、 [内存管理（三）虚拟内存与物理内存的映射关系 & pagefault](http://husharp.today/2020/12/05/HuSharp-Memory-03/)
 
+8、  [进程管理（一）task_struct详解 & Linux 中的各种栈](http://husharp.today/2020/12/06/task-struct-01/)
+
+9、  [进程管理（二）shell 是如何运行程序的? & 进程的创建](http://husharp.today/2020/12/07/process-create/)
+
+10、[进程管理（三）线程的创建 & 线程对数据的保护](http://husharp.today/2020/12/08/thread-create/)
+
+11、[进程管理（四）调度流程  & Linux中的调度相关](http://husharp.today/2020/12/08/thread-schedule/)
 
 
 
@@ -58,6 +66,6 @@ stickie: true
 
 [操作系统真象还原](https://book.douban.com/subject/26745156/)
 
-[Linux/UNIX系统编程手册]()
+[Linux/UNIX系统编程手册](https://book.douban.com/subject/25809330/)
 
 [Unix/Linux编程实践教程](https://book.douban.com/subject/1219329/)

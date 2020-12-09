@@ -1,0 +1,59 @@
+I"g<ul id="markdown-toc">
+  <li><a href="#完善中" id="markdown-toc-完善中"><strong>完善中……</strong></a></li>
+  <li><a href="#一相关-github" id="markdown-toc-一相关-github">一、相关 Github</a></li>
+  <li><a href="#二源码分析" id="markdown-toc-二源码分析">二、源码分析</a></li>
+  <li><a href="#三资料推荐" id="markdown-toc-三资料推荐">三、资料推荐</a></li>
+</ul>
+
+<h3 id="完善中"><strong>完善中……</strong></h3>
+
+<p>对于 OS &amp; Linux 的相关知识学习</p>
+
+<p>包括相关学习的 Github、源码分析、书籍&amp;专栏推荐….</p>
+
+<h2 id="一相关-github">一、相关 Github</h2>
+
+<p>1、<a href="https://github.com/HuSharp/HuSharp_OS">小型类 Linux OS </a></p>
+
+<p>2、<a href="https://github.com/HuSharp/Unix-Linux_Programming">Unix/Linux Programming</a></p>
+
+<p>3、<a href="https://github.com/HuSharp/uCoreOS_labs">ucore OS lab实现</a></p>
+
+<h2 id="二源码分析">二、源码分析</h2>
+
+<p>0、<a href="">HuSharpOS总览</a></p>
+
+<p>1、 <a href="http://husharp.today/2020/11/18/fork-exec-wait-exit/">fork exec wait exit探究</a></p>
+
+<p>2、 <a href="http://husharp.today/2020/11/20/nAndr/">回车与换行的探究</a></p>
+
+<p>3、 <a href="http://husharp.today/2020/11/22/Signal/">终端控制和信号</a></p>
+
+<p>4、 <a href="http://husharp.today/2020/11/27/interrupt-HuSharpOS/">中断原理详解，以及中断与信号的关系</a></p>
+
+<p>5、 <a href="http://husharp.today/2020/12/01/HuSharp-Memory-01/">内存管理（一）前置知识 &amp; 虚拟地址布局 </a></p>
+
+<p>6、 <a href="http://husharp.today/2020/12/03/HuSharp-Memory-02/">内存管理（二）物理内存管理</a></p>
+
+<p>7、 <a href="http://husharp.today/2020/12/05/HuSharp-Memory-03/">内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault</a></p>
+
+<p>8、  <a href="http://husharp.today/2020/12/06/task-struct-01/">进程管理（一）task_struct详解 &amp; Linux 中的各种栈</a></p>
+
+<p>9、  <a href="http://husharp.today/2020/12/07/process-create/">进程管理（二）shell 是如何运行程序的? &amp; 进程的创建</a></p>
+
+<p>10、<a href="http://husharp.today/2020/12/08/thread-create/">进程管理（三）线程的创建 &amp; 线程对数据的保护</a></p>
+
+<p>11、<a href="http://husharp.today/2020/12/08/thread-schedule/">进程管理（四）调度流程  &amp; Linux中的调度相关</a></p>
+
+<h2 id="三资料推荐">三、资料推荐</h2>
+
+<p><a href="https://www.xuetangx.com/course/THU08091000267/1516699?channel=learn_title">清华大学 ucore OS 网课</a></p>
+
+<p><a href="https://book.douban.com/subject/4889838/">鸟哥的私房菜</a></p>
+
+<p><a href="https://book.douban.com/subject/26745156/">操作系统真象还原</a></p>
+
+<p><a href="">Linux/UNIX系统编程手册</a></p>
+
+<p><a href="https://book.douban.com/subject/1219329/">Unix/Linux编程实践教程</a></p>
+:ET
