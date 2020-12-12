@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  " HuSharp 的 OS & Linux 学习总结 "
-date:   2020-12-06 16:03:14 +0800
+date:   2020-12-12 16:03:14 +0800
 categories:  Linux
 tags: Linux 基础知识
 author: Hu#
@@ -52,9 +52,13 @@ stickie: true
 
 9、  [进程管理（二）shell 是如何运行程序的? & 进程的创建](http://husharp.today/2020/12/07/process-create/)
 
-10、[进程管理（三）线程的创建 & 线程对数据的保护](http://husharp.today/2020/12/08/thread-create/)
+10、[进程管理（三）线程的创建 & 线程对数据的保护](http://husharp.today/2020/12/09/thread-schedule/)
 
-11、[进程管理（四）调度流程  & Linux中的调度相关](http://husharp.today/2020/12/08/thread-schedule/)
+11、[进程管理（四）调度流程  & Linux中的调度相关](http://husharp.today/2020/12/09/thread-schedule/)
+
+12、[进程管理（五）进程类别 & 线程与进程的区别](http://husharp.today/2020/12/11/difference-of-process-and-thread/)
+
+13、[文件系统总结](http://husharp.today/2020/12/12/FileSystem-Thinking/)
 
 
 
