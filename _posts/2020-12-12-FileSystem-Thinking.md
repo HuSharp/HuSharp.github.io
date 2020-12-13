@@ -6,7 +6,6 @@ categories:  Linux
 tags: Linux 基础知识
 author: Hu#
 typora-root-url: ..
-stickie: true
 ---
 
 * content

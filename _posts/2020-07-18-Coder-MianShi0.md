@@ -360,13 +360,25 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
 1. 大根堆的概念：在树中任意一棵树中，顶点都是最大值。
 
-   堆的构成：
+   **建堆：**
+
+   第一种是：在堆中插入一个元素的思路。尽管数组中包含 n 个数据，但是我们可以假设，起初堆中只包含一个数据，就是下标为 1 的数据。然后，我们调用插入操作，将下标从 2 到 n 的数据依次插入到堆中。这样我们就将包含 n 个数据的数组，组织成了堆。
+
+   第二种实现思路，跟第一种截然相反，也是我这里要详细讲的。第一种建堆思路的处理过程是从前往后处理数组数据，并且每个数据插入堆中时，都是从下往上堆化。而第二种实现思路，是从后往前处理数组，并且**每个数据都是从上往下堆化**。
 
    1.自上而下的上滤：
 
+   插入与上滤
+
    ![image-20200903163315226](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200903163315226.png)
 
-   2.自下而上的下滤：对内部节点进行下滤 从 n/2-1 到根节点
+   2.自下而上的下滤：
+
+   对叶子节点而言，下滤没有什么意义。因此只考虑 对内部节点进行下滤 从 n/2-1 到根节点
+
+   即：对下标从 n2 开始到 1 的数据进行堆化，下标是 n2+1 到 n 的节点是叶子节点，我们不需要堆化。
+
+   
 
    ![image-20200903163748062](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200903163748062.png)
 
@@ -386,21 +398,48 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
    
 
-   1、对于一个新节点加入堆的函数 heapInsert
+   ### 1、建堆两种实现
 
-   不断与比自己值小的父节点进行交换，当升到根节点时再停止。
+   1. 自左向右，自上而下插入所有元素
 
-   ```java
-       // 大根堆建立
-       public static void heapInsert(int[] arr, int index) {
-           while(arr[index] > arr[(index - 1) / 2]) {
-               swap(arr, index, (index - 1) / 2);
-               index = (index - 1) / 2;
-           }
-       }
-   ```
+      往堆中插入一个元素  heapInsert
 
-   2、调整根结构 ，进行下沉
+      对于一个新节点加入堆的函数 heapInsert
+
+      不断与比自己值小的父节点进行交换，当升到根节点时再停止。
+
+      ```java
+          public static void buildHeap(int[] arr, int size) {
+              for (int i = size/2; i >= 0; i--) {
+                  heapify(arr, i, size);
+              }
+          }
+      	// 大根堆建立
+          public static void heapInsert(int[] arr, int index) {
+              while(arr[index] > arr[(index - 1) / 2]) {
+                  swap(arr, index, (index - 1) / 2);
+                  index = (index - 1) / 2;
+              }
+          }
+      ```
+
+      
+
+   2. 利用堆化 heapify
+
+      ```java
+          public static void buildHeap(int[] arr, int size) {
+              for (int i = size/2; i >= 1; --i) {
+                  heapify(arr, i, size);
+              }
+          }
+      ```
+
+      由于越靠近底层节点数越多，且第一种方法与深度相关，第二种方法与高度相关，因此第一种时间复杂度高。
+
+   2、堆化 heapify 
+
+   调整根结构 ，进行下沉，下沉操作是——将末尾节点与根节点交换后的基础
 
    由于是大顶堆，下沉时， 需要选出左右孩子以及根节点最大的，作为根节点
 
@@ -426,28 +465,36 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
        }
    ```
 
-   3、删除堆顶元素时，采用堆顶与最后一个元素进行交换，再对堆顶进行下沉，对 heapSize 进行缩减一个。
+   3、堆排序
+
+   >  堆排序的基本思想是：将待排序序列构造成一个大顶堆，此时，整个序列的最大值就是堆顶的根节点。将其与末尾元素进行交换，此时末尾就为最大值。然后将剩余n-1个元素重新构造成一个堆，这样会得到n个元素的次小值。如此反复执行，便能得到一个有序序列了
+
+   采用上滤 O(nlogN)
+
+   堆排序包括建堆和排序两个操作，建堆过程的时间复杂度是 O(n)，排序过程的时间复杂度是 O(nlogn)，所以，堆排序整体的时间复杂度是 O(nlogn)。
+
+   ![image-20200902093031097](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200902093031097.png)
+
+   删除堆顶元素时，采用堆顶与最后一个元素进行交换，再对堆顶进行下沉，对 heapSize 进行缩减一个。
 
    最后进行 Sort，结合之前的函数，将大根堆的堆顶与最后一个数进行交换，然后再 heapSize-1, 并将前面的 heapify 调整成大根堆。
 
    ```java
-   	public static void heapSort(int[] arr) {
+       private static void heapSort(int[] arr) {
            if(arr == null || arr.length < 2) {
                return;
            }
-           // 构成大根堆
-           for (int i = 0; i < arr.length; i++) {
-               heapInsert(arr, i);
+           // 首先构成大根堆
+           buildHeap(arr, arr.length);// 现在根顶为最大值
+           // 现在进行循环操作， 从后往前， 将大根堆堆顶与最后一个元素交换，得到数组
+           // swap(arr, arr.length-1, 0);
+           int cnt = arr.length;// 需要交换次数
+           while(cnt > 0) {
+               swap(arr, cnt-1, 0);
+               heapify(arr, 0, cnt-1);
+               cnt--;
            }
-           // 现在开始排序
-           // 将大根堆的堆顶与最后一个数进行交换，然后再 heapSize-1, 并将前面的 heapify 调整成大根堆
-           // 循环操作即可
-           for (int i = arr.length-1; i >= 0; i--) {
-               swap(arr, i, 0);// 交换
-               heapify(arr, 0, i-1);
-           }
-   
-   	}
+       }
    ```
 
    
@@ -462,30 +509,7 @@ swap(arr, l + (int)(Math.random() * (r-l+1)), r);
 
    
 
-5. **堆排序**
-
-   采用上滤 O(nlogN)
-
-   ![image-20200902093031097](/assets/blog_image/2020-07-18-Coder-MianShi0/image-20200902093031097.png)
-
-   ```
-   	public static void heapSort(int[] arr) {
-   		if(arr == null || arr.length < 2)
-   			return;
-   		//先插入
-   		for (int i = 0; i < arr.length; i++) { 
-   			heapInsert(arr, i);
-   		}
-   		// 不断进行调整
-   		int heapSize = arr.length;
-   		while (heapSize > 0) {
-   			swap(arr, --heapSize, 0);
-   			heapify(arr, 0, heapSize);
-   		}
-   	} 
-   ```
-
-
+   
 
 
 
