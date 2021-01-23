@@ -1,3 +1,15 @@
+---
+layout: post
+title:  "汇编实验"
+date:   2019-11-23 18:13:28 +0800
+categories:  汇编
+tags: 汇编 基础知识
+author: Hu#
+typora-root-url: ..
+---
+
+* content
+{:toc}
 **目录**
 
 第1章  绪论	..2
