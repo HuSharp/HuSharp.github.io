@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/assets/css/hack.css">
+    <link rel="stylesheet" href="/assets/css/checkbox-container.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <script type="text/javascript" src="/assets/js/jquery-3.1.1.min.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+
+    <title> 《冒泡课堂》编程范式 —— 多态 </title>
+    <style>
+     .main {
+       padding: 20px 10px;
+     }
+
+     .hack h1 {
+       padding-top: 0;
+     }
+
+     footer.footer {
+       border-top: 1px solid #ccc;
+       margin-top: 80px;
+       margin-top: 5rem;
+       padding: 48px 0;
+       padding: 3rem 0;
+     }
+
+     img {
+       max-width: 100%;
+       padding: 1em;
+     }
+    </style>
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>《冒泡课堂》编程范式 —— 多态</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="《冒泡课堂》编程范式 —— 多态" />
+<meta name="author" content="Hu#" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="一、多态类型 一、多态类型" />
+<meta property="og:description" content="一、多态类型 一、多态类型" />
+<link rel="canonical" href="http://localhost:4000/subtopics/polymorphism.html" />
+<meta property="og:url" content="http://localhost:4000/subtopics/polymorphism.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-08-20T09:10:19+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="《冒泡课堂》编程范式 —— 多态" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Hu#"},"dateModified":"2021-08-20T09:10:19+08:00","datePublished":"2021-08-20T09:10:19+08:00","description":"一、多态类型 一、多态类型","headline":"《冒泡课堂》编程范式 —— 多态","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/subtopics/polymorphism.html"},"url":"http://localhost:4000/subtopics/polymorphism.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+  <body class="snow hack">
+    <script data-goatcounter="https://tabokie.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+    <div class="container">
+      <header>
+    <p>
+        <a href="/">HuSharp</a>
+        | <a href="/blogs.html">Blog</a>
+        - <a href="/topics.html">Topic</a>
+        - <a href="/resume.html">Résumé</a>
+        - <a href="/collections.html">Collections</a>
+        | <a href="/feed.xml">RSS</a>
+        <!-- | <label class="checkbox-container"><input type="checkbox" id="lightSelected">
+            <b>[<span class="indicator">Light</span>]</b>
+          </label> -->
+    </p> 
+      
+    <!-- <p><a href="/">HuSharp</a> - <a href="/blogs.html">Blog</a> - <a href="/contact">Contact</a> - <a href="/gallery">Gallery</a> - <a href="/resume">Resume</a> - <a href="/collections">Collections</a> - <a href="/talks">Talks</a> | <a target="_blank" rel="noopener noreferrer" href="https://graphviz.christine.website">GraphViz</a> - <a target="_blank" rel="noopener noreferrer" href="https://when-then-zen.christine.website/">When Then Zen</a></p> -->
+</header>
+
+
+      <div class="snowframe">
+      
+      <h1> 《冒泡课堂》编程范式 —— 多态 </h1>
+      
+      
+      <ul id="markdown-toc">
+  <li><a href="#一多态类型" id="markdown-toc-一多态类型">一、多态类型</a></li>
+  <li><a href="#二抽象类型" id="markdown-toc-二抽象类型">二、抽象类型</a>    <ul>
+      <li><a href="#接口和抽象类的区别" id="markdown-toc-接口和抽象类的区别">接口和抽象类的区别</a></li>
+      <li><a href="#接口和抽象类的社会地位" id="markdown-toc-接口和抽象类的社会地位">接口和抽象类的“社会地位”</a>        <ul>
+          <li><a href="#从电脑主板思考" id="markdown-toc-从电脑主板思考">从电脑主板思考</a></li>
+          <li><a href="#再到社会地位" id="markdown-toc-再到社会地位">再到“社会地位”</a></li>
+        </ul>
+      </li>
+      <li><a href="#语义区别" id="markdown-toc-语义区别">语义区别</a></li>
+      <li><a href="#go-实现-add-的函数重载" id="markdown-toc-go-实现-add-的函数重载">Go 实现 Add 的函数重载</a></li>
+    </ul>
+  </li>
+</ul>
+<h2 id="一多态类型">一、多态类型</h2>
+
+<p>继承是多态的基础，多态是继承的目的。</p>
+
+<p>多态是动静结合的产物，将静态类型的安全性和动态类型的灵活性融为一体。</p>
+
+<p>前者(参数多态)是发散式的，让相同的实现代码应用于不同的场合。
+后者(包含多态)是收敛式的，让不同的实现代码应用于相同的场合。</p>
+
+<p>模板方法模式突出的是稳定坚固的骨架，策略模式突出的是灵活多变的手腕。</p>
+
+<h2 id="二抽象类型">二、抽象类型</h2>
+
+<p>首先需要明白：具体类型是创建对象的模板，抽象类型是创建类型的模板。</p>
+
+<p>抽象类的意义在于：父类推迟决定，让子类选择实现方式。</p>
+
+<h3 id="接口和抽象类的区别">接口和抽象类的区别</h3>
+
+<p>​	其实最初C++的抽象类，足为了定义一组协议并强令各子类遵守，实质上正是Java和C#中的接口所起的作用。但在协议规范的实现过程中，可能会产生一些不完全实现类。 允许这种类的存在固然是一种灵活的举措,但必须认识到它们与纯规范的抽象类已判若云泥。</p>
+
+<blockquote>
+  <p>打个比方，如果把对象看作产品，把具体类看作一个制作产品的模具，那么接口就是模具的规格标准，而抽象类是在模具加工过程中产生的半成品。接口与抽象类无法实例化，模具规格与模具半成品也不能直接制作产品；一个具体类可以有多个接口，一个模具也可有多个不同方面的规格；一个具体类至多只能继承一个抽象类， 一个模具也至多只能在一种模具半成品的基础上直接加工。</p>
+</blockquote>
+
+<p>继续思考：<strong>假如一个抽象类完全没有任何实现呢?抛开多重继承的限制，它与接口又有何区别呢？</strong></p>
+
+<blockquote>
+  <p>如果具体类、抽象类和接口分别对应于模具、模具半成品和模具规格，那后两者的区别的确比前两者的区别还大。可是假如一个抽象类完全没有任何实现呢?抛开多重继承的限制，它与接口又有何区别呢?</p>
+</blockquote>
+
+<p>​	一个抽象类可以没有任何实现，但也随时可以加入实现。接口则不同，永远都不能有实现代码。这正是引入关键字interface的目的，明明白白地表明：此乃规范集合所在，杜绝任何自以为是、画蛇添足的实现。初看似乎不合常理:这不是自缚手脚、自废武功吗?殊不知自由源于自制。</p>
+
+<p>​	许多人为了贪恋一点点代码重用，总忍不住把一些实现放在本该只是规范的地方。一来，这模糊了规范与实现的界限，背离了接口与实现相分离的设计初衷。要知道，再完美的实现都有改动的余地，将其捆绑到规范中只会增加不稳定因素:再完美的实现也不应该影响其他的实现，先入为主只会降低灵活性。二来，带有实现的抽象类无法用于合成，必须通过类继承才能起作用,而实现继承的弊端我们已经见识过了。在有些情况下，规范的实现比较复杂，需要渐进实现，保留一些中间状态的抽象类也是合理的，但最初的接口最好保留。总不能因为有了模具半成品，就抛弃模具规格吧?以 Java Collections Framework为例，既规范了 Collection、 Set. List. Map等接口，又为这些接口提供了抽象类和具体类,从而给了用户3种选择:直接利用具体类、扩展抽象类、直接实现接口，方便程度递减而灵活程度递增。</p>
+
+<h3 id="接口和抽象类的社会地位">接口和抽象类的“社会地位”</h3>
+
+<h4 id="从电脑主板思考">从电脑主板思考</h4>
+
+<p>​	看看电脑主板，开过机箱攒过机的人应该对它并不陌生。上面密密麻麻地布满了各种元件，那是它的实部，而我们关注的是它的虚部一各种插槽和接口， 包括CPU 插槽、内存插槽、PCI 插槽、AGP插槽、ATA接口、PS/2 接口、USB接口，以及其他林林总总的扩展插槽等。这些接口的存在，使得主板与CPU、内存条、外围设备及打展卡等不必硬性焊接在-起，大大增强了电脑主机的可定制性。</p>
+
+<blockquote>
+  <p>主板与其他硬件就好比一个个的具体类型，那些插槽和接口就相当于一个个的接口类型。所有的硬件以接口为桥来组装合成，以机箱为壳来封装隐藏，一个新的具体类型：一具有完整 功能的主机便产生了。</p>
+</blockquote>
+
+<p>​	不过准确地说， <strong>与接口类型对应的不是物理接口，而是接口规范</strong>。如果仅仅是物理接口，只能保证该接口适用于某种特定型号的硬件产品，却不能保证同时适用于其他型号或其他类型的硬件。以大家熟悉的 USB (Universal Serial Bus)接口为例，它能接入各种外部设备，包括鼠标、键盘、打印机、外置硬盘、内存和形形色色的数码产品。这当然不是偶然的，因为所有厂家在生产这些硬件时均遵循了相同的业界标准——USB 协议规范。换言之，<strong>任何一个与 USB 接口兼容的设备，都可看作是实现了此接口的具体类型，而主机对该设备的自动识别能力则可看作一种多态机制。</strong></p>
+
+<p>​	正如前面说的：接口继承不是为了重用，而是为了被重用。比如一个鼠标，可以有串行接口、PS/2 接口、USB接口或无线接口，还可以同时拥有多个不同类型的接口。无论怎样，它本身都是完整的产品，根本不需要重用主机上的其他硬件，它实现某些接口的目的完全是为了能被主机所用。</p>
+
+<h4 id="再到社会地位">再到“社会地位”</h4>
+
+<p>一个公民的社会身份是指他在社会中所处的地位和扮演的角色。比如，一个人在学校里是学生，在公司里是职员，在商店里是顾客，他真正的个体身份往往是被掩盖的。同样地，一个对象在与外界联系时，通常不以其实际类型的身份出现，而是在不同的场合下以不同的抽象类型的身份出现。我想，这大概就是<strong>多态带来的社会身份</strong>吧。</p>
+
+<blockquote>
+  <p>那么这种社会身份的意义何在呢？</p>
+</blockquote>
+
+<p>​	社会身份既是一 种资格，也是一种义务。比如，在列车上有人得了急病,可以通过广播找医生。人们不用事先知道来者的具体个人身份，只要他是医生，就会放心地让他第一时间去救人。</p>
+
+<p>​	不用事先知道个人身份，不正说明广播呼叫的对象是一个多态的抽象类型吗?同理，当一个具体类型显式继承了一个接口，它的对象便拥有了个体身份之外的社会身份：有资格以该接口的形式与外界打交道，也有义务履行该接口的职责。</p>
+
+<p>​	对象每多一种社会身份，便多一条与外界交流的渠道。为什么遮遮掩掩地不肯以本来面目示人呢?非是羞于见人，盖因一般的具体类型在公共场合是不为人知的，只有少数核心库里的核心类是例外。即使侥幸被认识，也难被
+认可，因为那会以代码的复杂度和耦合度为代价。社会身份则不然，它远比一般的个体身份更容易被接受。</p>
+
+<blockquote>
+  <p>这就好比上课得有学生证，上班得有工作证，上火车得有火车票，上飞机得有登机牌。只要不是炙手可热的公众人物，很多场合都是认牌认证不认人的。</p>
+</blockquote>
+
+<h3 id="语义区别">语义区别</h3>
+
+<p>​	先从本性 上看:接口是一套功能规范集合，因此相同的接口代表相同的功能，多表示‘can do’关系,常用后缀为 ‘able’ 的形容词命名，如Comparable、Runnable、Cloneable, 等等。接口一般表述的是对象的边缘特征，或者说一个对象在某一方面的特征， 因此能在本质不同的类之间建立起横向联系。由于一个对象可拥有多方面的角色特征，故而可有多种接口。</p>
+
+<p>​	与之相对地，抽象类是一类对象的本质属性的抽象，因此相同的抽象基类代表相同的种类，多表示’is-a’ 关系，常用名词命名。抽象类一般表述的是对象的核心特征，只能在本质相同的类之闻沿着继承树建立起纵向联系。由于一个对象通常只有一个核心，故而只能有一种基类。</p>
+
+<p>​	再从目的上看：接口是为了规范重用，让一个规范有多种实现，看重的是可置换性；抽象类主要是为了代码重用，能逐级分步实现基类的抽象方法，看重的是可扩展性。</p>
+
+<blockquote>
+  <p>演变指的又是什么呢?’</p>
+</blockquote>
+
+<p>严格说来， 演变不属语义范畴，属于语法推论。在系统演变过程中，接口与抽象类的表现差异很大。接口由于是被广泛采用的规范，相当于行业标准，一经确立不能轻易改动。一旦被广泛采用，它的任何改动一包括增减接口、
+修改接口的签名或规范——将波及整个 系统，必须慎之又慎。抽象类的演变则没有那么困难，一则它在系统中用得没有接口那么广泛，更多地是家庭身份而非社会身份;二则它可随时新增域成员或有默认实现的方法成员，所有子类将自动得以扩充。这是抽象类的最大优点之一。不过接口也有抽象类所不具备的优点，虽然自身难以演化，但很容易让其他类型演化为该接口的子类型。例如，JDK5.0 之前的 StringBuffer、CharBuffer、Writer 和PrintStream 本是互不相关的，在引进了接口 Appendable 并让以上类实现该接口后，它们便有了横向联系,均可作为格式化输出类 Formatter 的输出目标。</p>
+
+<h3 id="go-实现-add-的函数重载">Go 实现 Add 的函数重载</h3>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">sum</span><span class="p">(</span><span class="n">vars</span> <span class="o">...</span><span class="k">interface</span><span class="p">{})</span> <span class="k">interface</span><span class="p">{}</span> <span class="p">{</span>
+	<span class="k">var</span> <span class="n">result</span> <span class="k">interface</span><span class="p">{}</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vars</span><span class="p">)</span> <span class="o">==</span> <span class="m">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="n">result</span>
+	<span class="p">}</span>
+	<span class="n">inferType</span> <span class="o">:=</span> <span class="n">reflect</span><span class="o">.</span><span class="n">TypeOf</span><span class="p">(</span><span class="n">vars</span><span class="p">[</span><span class="m">0</span><span class="p">])</span>
+	<span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">val</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">vars</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="m">0</span> <span class="p">{</span>
+			<span class="n">result</span> <span class="o">=</span> <span class="n">val</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="n">reflect</span><span class="o">.</span><span class="n">TypeOf</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">==</span> <span class="n">inferType</span> <span class="p">{</span>
+			<span class="k">switch</span> <span class="n">inferType</span><span class="o">.</span><span class="n">Name</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">case</span> <span class="s">"int"</span><span class="o">:</span>
+				<span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="o">+</span> <span class="n">val</span><span class="o">.</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span>
+			<span class="k">case</span> <span class="s">"float64"</span><span class="o">:</span>
+				<span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="p">(</span><span class="kt">float64</span><span class="p">)</span> <span class="o">+</span> <span class="n">val</span><span class="o">.</span><span class="p">(</span><span class="kt">float64</span><span class="p">)</span>
+			<span class="k">case</span> <span class="s">"string"</span><span class="o">:</span>
+				<span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="p">(</span><span class="kt">string</span><span class="p">)</span> <span class="o">+</span> <span class="n">val</span><span class="o">.</span><span class="p">(</span><span class="kt">string</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">result</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+
+      
+      </div>
+
+      <footer>
+  <span class="hidden-text">
+  <blockquote>Copyright 2023 Jinhao Hu. Any and all opinions listed here are my own and not representative of my employers; future, past and present.</blockquote>
+  </span>
+  <br />
+</footer>
+
+    </div>
+    <script src="/assets/js/instantpage-3.0.0.js" defer type="module"> </script>
+  </body>
+</html>
