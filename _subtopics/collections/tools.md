@@ -2,8 +2,6 @@
 layout: blog
 title: Tools
 ---
-<span class="hidden-text"># Created: 2021-05-16; Modified: 2021-07-03</span>
-
 - [delta](https://github.com/dandavison/delta): A viewer for git and diff output
 
 - [screen](https://www.gnu.org/software/screen/manual/screen.html): A full-screen window manager that multiplexes a physical terminal between several processes
