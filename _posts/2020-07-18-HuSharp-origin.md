@@ -1,9 +1,8 @@
 ---
 layout: blog
-title:  "HuSharp的由来"
+title:  "HuSharp 的由来"
 date:   2020-07-18 9:00:00 +0800
-categories: life
-author: Hu#
+category: life
 ---
 
 [引用链接](https://www.douban.com/note/210460736/)

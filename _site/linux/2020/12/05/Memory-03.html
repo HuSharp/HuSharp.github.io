@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/assets/css/hack.css">
+    <link rel="stylesheet" href="/assets/css/checkbox-container.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <script type="text/javascript" src="/assets/js/jquery-3.1.1.min.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+
+    <title> 内存管理（三）虚拟内存与物理内存的映射关系 & pagefault</title>
+    <style>
+     .main {
+       padding: 20px 10px;
+     }
+
+     .hack h1 {
+       padding-top: 0;
+     }
+
+     footer.footer {
+       border-top: 1px solid #ccc;
+       margin-top: 80px;
+       margin-top: 5rem;
+       padding: 48px 0;
+       padding: 3rem 0;
+     }
+
+     img {
+       max-width: 100%;
+       padding: 1em;
+     }
+    </style>
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="http://localhost:4000/linux/2020/12/05/Memory-03.html" />
+<meta property="og:url" content="http://localhost:4000/linux/2020/12/05/Memory-03.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-12-05T16:19:51+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2020-12-05T16:19:51+08:00","datePublished":"2020-12-05T16:19:51+08:00","headline":"内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/2020/12/05/Memory-03.html"},"url":"http://localhost:4000/linux/2020/12/05/Memory-03.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+  <body class="snow hack">
+    <script data-goatcounter="https://husharp.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+    <div class="container">
+      <header>
+    <p>
+        <a href="/">HuSharp</a>
+        | <a href="/blogs.html">Blog</a>
+        - <a href="/topics.html">Topic</a>
+        - <a href="/resume.html">Résumé</a>
+        - <a href="/collections.html">Collections</a>
+        | <a href="/feed.xml">RSS</a>
+        | <label class="checkbox-container"><input type="checkbox" id="lightSelected">
+            <b>[<span class="indicator">Light</span>]</b>
+          </label>
+    </p> 
+</header>
+
+
+      <div class="snowframe">
+      
+      <h1> 内存管理（三）虚拟内存与物理内存的映射关系 & pagefault</h1>
+      
+      
+      
+      
+      <p class="hidden-text"># Linux, 2020-12-05</p>
+      
+      <ul id="markdown-toc">
+  <li><a href="#内存映射" id="markdown-toc-内存映射">内存映射</a>    <ul>
+      <li><a href="#用户态内存映射" id="markdown-toc-用户态内存映射">用户态内存映射</a></li>
+      <li><a href="#用户态缺页异常" id="markdown-toc-用户态缺页异常">用户态缺页异常</a>        <ul>
+          <li><a href="#具体过程如下" id="markdown-toc-具体过程如下">具体过程如下</a></li>
+          <li><a href="#如何查看进程发生缺页中断的次数" id="markdown-toc-如何查看进程发生缺页中断的次数">如何查看进程发生缺页中断的次数？</a></li>
+        </ul>
+      </li>
+      <li><a href="#tlb" id="markdown-toc-tlb">TLB</a></li>
+      <li><a href="#内核态内存映射" id="markdown-toc-内核态内存映射">内核态内存映射</a></li>
+      <li><a href="#内核态缺页异常" id="markdown-toc-内核态缺页异常">内核态缺页异常</a></li>
+    </ul>
+  </li>
+  <li><a href="#内存管理总结" id="markdown-toc-内存管理总结">内存管理总结</a>    <ul>
+      <li><a href="#物理地址线性地址虚拟地址逻辑地址" id="markdown-toc-物理地址线性地址虚拟地址逻辑地址">物理地址/线性地址/虚拟地址/逻辑地址</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="内存映射">内存映射</h1>
+
+<p><a href="https://blog.csdn.net/m0_37962600/article/details/81448553?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-2.control&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-2.control">详解缺页中断—–缺页中断处理（内核、用户）</a></p>
+
+<p>我们既看了虚拟内存空间如何组织的，也看了物理页面如何管理的。现在我们需要一些数据结构，将二者关联起来。</p>
+
+<h2 id="用户态内存映射">用户态内存映射</h2>
+
+<p>无论是内核线程还是用户进程，对于内核来说，无非都是 task_struct 这个数据结构的一个实例而已，task_struct 被称为进程描述符（process descriptor),因为它记录了这个进程所有的context。其中有一个被称为 ‘内存描述符’ （memory descriptor)的数据结构  mm_struct，抽象并描述了Linux视角下管理进程地址空间的所有信息。 每一个进程都有一个列表 vm_area_struct，指向虚拟地址空间的不同的内存块，这个变量的名字叫<strong>mmap</strong>。</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">mm_struct</span> <span class="p">{</span>
+	<span class="k">struct</span> <span class="n">vm_area_struct</span> <span class="o">*</span><span class="n">mmap</span><span class="p">;</span>		<span class="cm">/* list of VMAs */</span>
+<span class="p">......</span>
+
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><img src="/assets/blog_image/2020-12-05-HuSharp-Memory-03/image-20201207172335213.png" alt="image-20201207172335213" /></p>
+
+<p>1、brk 是将数据段(.data)的最高地址指针_edata往高地址推；</p>
+
+<p>2、mmap 是在进程的虚拟地址空间中（堆和栈中间，称为文件映射区域的地方）找一块空闲的虚拟内存。</p>
+
+<p>​    这两种方式分配的都是虚拟内存，没有分配物理内存。在第一次访问已分配的虚拟地址空间的时候，发生缺页中断，操作系统负责分配物理内存，然后建立虚拟内存和物理内存之间的映射关系。</p>
+
+<p>内存管理并不直接分配物理内存，因为物理内存相对于虚拟地址空间太宝贵了，只有等你真正用的那一刻才会开始分配。</p>
+
+<p>一旦开始访问虚拟内存的某个地址，如果我们发现，并没有对应的物理页，那就触发缺页中断，调用 do_page_fault。</p>
+
+<p>1）通过mm是否存在判断是否是内核线程，对于内核线程，进程描述符的mm总为NULL，一旦成立，说明是在内核态中发生的异常，跳到no_context</p>
+
+<h2 id="用户态缺页异常">用户态缺页异常</h2>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">​</span>           <span class="k">if</span> <span class="p">(</span><span class="n">in_atomic</span><span class="p">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">mm</span><span class="p">)</span>
+<span class="err">​</span>                <span class="k">goto</span> <span class="n">no_context</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>在 __do_page_fault 里面，先要判断缺页中断是否发生在内核。如果发生在内核则调用  vmalloc_fault，这就和咱们前面学过的虚拟内存的布局对应上了。在内核里面，vmalloc  区域需要内核页表映射到物理页。咱们这里把内核的这部分放放，接着看用户空间的部分。</p>
+
+<p>接下来在用户空间里面，找到你访问的那个地址所在的区域 vm_area_struct，然后调用 handle_mm_fault 来映射这个区域。</p>
+
+<blockquote>
+  <p>当一个进程发生缺页中断的时候，进程会陷入内核态，执行以下操作：</p>
+
+  <ol>
+    <li>检查要访问的虚拟地址是否合法</li>
+    <li>查找/分配一个物理页</li>
+    <li>填充物理页内容（读取磁盘，或者直接置0，或者啥也不干）</li>
+    <li>建立映射关系（虚拟地址到物理地址）
+ 重新执行发生缺页中断的那条指令
+ 如果第3步，需要读取磁盘，那么这次缺页中断就是majflt，否则就是minflt。</li>
+  </ol>
+</blockquote>
+
+<p>每个进程都有独立的地址空间，为了这个进程独立完成映射，每个进程都有独立的进程页表，32 位 就位于 cr3</p>
+
+<h3 id="具体过程如下">具体过程如下</h3>
+
+<p>首先从CPU的控制寄存器CR2中读出出错的地址address，然后调用find_vma(),在进程的虚拟地址空间中找出结束地址大于address的第一个区间，如果找不到的话，则说明中断是由地址越界引起的，转到bad_area执行相关错误处理；</p>
+
+<p>确定并非地址越界后，控制转向标号good_area。在这里，代码首先对页面进行例行权限检查，比如当前的操作是否违反该页面的Read,Write,Exec权限等。如果通过检查，则进入虚拟管理例程handle_mm_fault().否则，将与地址越界一样，转到bad_area继续处理。</p>
+
+<p>handle_mm_fault()用于实现页面分配与交换，它分为两个步骤：首先，如果页表不存在或被交换出，则要首先分配页面给页表；然后才真正实施页面的分配，并在页表上做记录。具体如何分配这个页框是通过调用handle_pte_fault()完成的。</p>
+
+<p>handle_pte_fault()函数根据页表项pte所描述的物理页框是否在物理内存中，分为两大类：</p>
+
+<p>（1）请求调页：被访问的页框不在主存中，那么此时必须分配一个页框，分为线性映射、非线性映射、swap情况下映射</p>
+
+<p>（2）写时复制：被访问的页存在，但是该页是只读的，内核需要对该页进行写操作，此时内核将这个已存在的只读页中的数据复制到一个新的页框中</p>
+
+<p>handle_pte_fault()调用pte_non()检查表项是否为空，即全为0；如果为空就说明映射尚未建立，此时调用do_no_page()来建立内存页面与交换文件的映射；反之，如果表项非空，说明页面已经映射，只要调用do_swap_page()将其换入内存即可；</p>
+
+<h3 id="如何查看进程发生缺页中断的次数">如何查看进程发生缺页中断的次数？</h3>
+
+<pre><code class="language-assembly">用ps -o majflt,minflt -C program命令查看。
+majflt 代表 major fault，中文名叫大错误，minflt 代表 minor fault，中文名叫小错误。
+</code></pre>
+
+<p>这两个数值表示一个进程自启动以来所发生的缺页中断的次数。</p>
+
+<p><strong>发生缺页中断后，执行了那些操作？</strong></p>
+
+<p>当一个进程发生缺页中断的时候，进程会陷入内核态，执行以下操作：</p>
+
+<ol>
+  <li>检查要访问的虚拟地址是否合法</li>
+  <li>查找/分配一个物理页</li>
+  <li>填充物理页内容（读取磁盘，或者直接置0，或者啥也不干）</li>
+  <li>建立映射关系（虚拟地址到物理地址）
+ 重新执行发生缺页中断的那条指令
+ 如果第3步，需要读取磁盘，那么这次缺页中断就是 majflt，否则就是 minflt。</li>
+</ol>
+
+<h2 id="tlb">TLB</h2>
+
+<p>为了提高映射速度，我们引入了<strong>TLB</strong>（Translation Lookaside Buffer），我们经常称为<strong>快表</strong>，专门用来做地址映射的硬件设备。它不在内存中，可存储的数据比较少，但是比内存要快。所以，我们可以想象，TLB 就是页表的 Cache，其中存储了当前最可能被访问到的页表项，其内容是部分页表项的一个副本。</p>
+
+<p>有了 TLB 之后，地址映射的过程就像图中画的。我们先查块表，块表中有映射关系，然后直接转换为物理地址。如果在 TLB 查不到映射关系时，才会到内存中查询页表。</p>
+
+<h2 id="内核态内存映射">内核态内存映射</h2>
+
+<p>在系统初始化的时候，我们就创建内核页表</p>
+
+<p><img src="/assets/blog_image/2020-12-05-HuSharp-Memory-03/image-20201207182152880.png" alt="image-20201207182152880" /></p>
+
+<h2 id="内核态缺页异常">内核态缺页异常</h2>
+
+<p>1）通过mm是否存在判断是否是内核线程，对于内核线程，进程描述符的mm总为NULL，一旦成立，说明是在内核态中发生的异常，跳到no_context</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>           <span class="k">if</span> <span class="p">(</span><span class="n">in_atomic</span><span class="p">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">mm</span><span class="p">)</span>
+                <span class="k">goto</span> <span class="n">no_context</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>如果当前执行流程在内核态，不论是在临界区还是内核进程本身（内核的mm为NULL），说明在内核态出了问题，跳到标号no_context进入内核态异常处理，由函数_do_kernel_fault完成；</p>
+
+<p>2）_do_kernel_fault 这个函数首先尽可能的设法解决这个异常，通过查找异常表中和目前的异常对应的解决办法并调用执行；如果无法通过异常表解决，那么内核就要在打印其页表等内容后退出；</p>
+
+<h1 id="内存管理总结">内存管理总结</h1>
+
+<p>物理内存根据 NUMA 架构分节点。每个节点里面再分区域。每个区域里面再分页。</p>
+
+<p>物理页面通过伙伴系统进行分配。分配的物理页面要变成虚拟地址让上层可以访问，kswapd 可以根据物理页面的使用情况对页面进行换入换出。</p>
+
+<p>对于内存的分配需求，可能来自内核态，也可能来自用户态。</p>
+
+<ul>
+  <li>
+    <p>对于内核态，对于 kmem_cache 以及 kmalloc 分配小内存，则使用 <strong>Slab</strong> 分配器，将伙伴系统分配出来的大块内存切成一小块一小块进行分配。</p>
+
+    <p>vmalloc 分配不连续物理页的时候，直接使用伙伴系统，分配后转换为虚拟地址，访问的时候需要通过内核页表进行映射。</p>
+
+    <p>kmem_cache 和 kmalloc 的部分不会被换出，因为用这两个函数分配的内存多用于保持内核关键的数据结构。内核态中 vmalloc 分配的部分会被换出，因而当访问的时候，发现不在，就会调用 do_page_fault。</p>
+  </li>
+  <li>
+    <p>对于用户态的内存分配，或者直接调用 mmap 系统调用分配，或者调用 malloc。调用 malloc 的时候，如果分配小的内存，就用 <strong>sys_brk</strong>  系统调用；如果分配大的内存，还是用 <strong>sys_mmap</strong> 系统调用。正常情况下，用户态的内存都是可以换出的，因而一旦发现内存中不存在，就会调用  do_page_fault。</p>
+
+    <p>vm_area_struct 是描述进程地址空间的基本管理单元，对于一个进程来说往往需要多个内存区域来描述它的虚拟空间，如何关联这些不同的内存区域呢？大家可能都会想到使用链表，的确vm_area_struct 结构确实是以链表形式链接，不过为了方便查找，内核又以红黑树（以前的内核使用平衡树）的形式组织内存区域，以便降低搜索耗时。并存的两种组织形式，并非冗余：链表用于需要遍历全部节点的时候用，而红黑树适用于在地址空间中定位特定内存区域的时候。内核为了内存区域上的各种不同操作都能获得高性能，所以同时使用了这两种数据结构。</p>
+  </li>
+</ul>
+
+<p><img src="/assets/blog_image/2020-12-05-HuSharp-Memory-03/image-20201207174552644.png" alt="image-20201207174552644" /></p>
+
+<ul>
+  <li>
+    <p>在 __do_page_fault 里面，先要判断缺页中断是否发生在内核。</p>
+
+    <p>如果发生在<strong>内核</strong>则调用 vmalloc_fault</p>
+  </li>
+</ul>
+
+<h2 id="物理地址线性地址虚拟地址逻辑地址">物理地址/线性地址/虚拟地址/逻辑地址</h2>
+
+<p>1）实模式下，”段基址+段内偏移地址”经过段部件的处理，直接输出的就是物理地址，CPU可以直接用此地址访问内存。</p>
+
+<p>2）保护模式下，”段基址+段内偏移地址”经段部件处理后为线性地址。（但此处的段基址不再是真正的地址，而是一个选择子，本质上是个索引，类似于数组下标，通过这个索引便能在GDT中找到相应的段描述符。段描述符记录了该段的起始、大小等信息，这样便得到了段基址。）若没有开启地址分页功能，此线性地址就被当作物理地址来用，可直接访问内存。</p>
+
+<p>3）保护模式+分页机制，若开启了分页功能，线性地址则称为虚拟地址（虚拟地址、线性地址在分页机制下都是一回事）。虚拟地址要经过CPU页部件转换成具体的物理地址，这样CPU才能将其送上地址总线取访问内存。</p>
+
+<p>逻辑地址，无论是在实模式或保护模式下，段内偏移地址又称为有效地址，也称为逻辑地址，这是程序员可见的地址。最终的地址是由段基址和段内偏移地址组合而成。实模式下，段基址在对应的段寄存器中(cs ds es fs gs)；保护模式下，段基址在段选择子寄存器指向的段描述符中。所以，只要给出段内偏移地址就行了，再加上对应的段基址即可。</p>
+
+      
+      </div>
+
+    <!-- Set Content -->
+    <div style="float: right;">
+      <div class="side-content">
+        <div class="wrap">
+            <!-- Content -->
+            <div class="side content">
+                <ul id="content-side" class="content-ul">
+                </ul>
+            </div>
+        </div>
+      </div>
+    </div>
+
+      <footer>
+  <span class="hidden-text">
+  <blockquote>Copyright 2023 HuSharp. Any and all opinions listed here are my own and not representative of my employers; future, past and present.</blockquote>
+  </span>
+  <br />
+</footer>
+
+    </div>
+    <script src="/assets/js/instantpage-3.0.0.js" defer type="module"> </script>
+    <script src="/assets/js/pageContent.js" charset="utf-8"></script>
+  </body>
+</html>

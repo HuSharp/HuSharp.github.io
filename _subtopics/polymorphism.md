@@ -2,8 +2,7 @@
 layout: blog
 title:  " 《冒泡课堂》编程范式 —— 多态 "
 date:   2021-08-20 09:10:19 +0800
-categories: principle 
-author: Hu#
+category: pinciple 
 typora-root-url: ..
 ---
 

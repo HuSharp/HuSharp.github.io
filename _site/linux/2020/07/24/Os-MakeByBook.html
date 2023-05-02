@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/assets/css/hack.css">
+    <link rel="stylesheet" href="/assets/css/checkbox-container.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <script type="text/javascript" src="/assets/js/jquery-3.1.1.min.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+
+    <title>《操作系统真象还原》学习笔记</title>
+    <style>
+     .main {
+       padding: 20px 10px;
+     }
+
+     .hack h1 {
+       padding-top: 0;
+     }
+
+     footer.footer {
+       border-top: 1px solid #ccc;
+       margin-top: 80px;
+       margin-top: 5rem;
+       padding: 48px 0;
+       padding: 3rem 0;
+     }
+
+     img {
+       max-width: 100%;
+       padding: 1em;
+     }
+    </style>
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>《操作系统真象还原》学习笔记</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="《操作系统真象还原》学习笔记" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="http://localhost:4000/linux/2020/07/24/Os-MakeByBook.html" />
+<meta property="og:url" content="http://localhost:4000/linux/2020/07/24/Os-MakeByBook.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-07-24T22:15:02+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="《操作系统真象还原》学习笔记" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2020-07-24T22:15:02+08:00","datePublished":"2020-07-24T22:15:02+08:00","headline":"《操作系统真象还原》学习笔记","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/2020/07/24/Os-MakeByBook.html"},"url":"http://localhost:4000/linux/2020/07/24/Os-MakeByBook.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+  <body class="snow hack">
+    <script data-goatcounter="https://husharp.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+    <div class="container">
+      <header>
+    <p>
+        <a href="/">HuSharp</a>
+        | <a href="/blogs.html">Blog</a>
+        - <a href="/topics.html">Topic</a>
+        - <a href="/resume.html">Résumé</a>
+        - <a href="/collections.html">Collections</a>
+        | <a href="/feed.xml">RSS</a>
+        | <label class="checkbox-container"><input type="checkbox" id="lightSelected">
+            <b>[<span class="indicator">Light</span>]</b>
+          </label>
+    </p> 
+</header>
+
+
+      <div class="snowframe">
+      
+      <h1>《操作系统真象还原》学习笔记</h1>
+      
+      
+      
+      
+      <p class="hidden-text"># Linux, 2020-07-24</p>
+      
+      <ul id="markdown-toc">
+  <li><a href="#内核体系结构图" id="markdown-toc-内核体系结构图">内核体系结构图</a></li>
+  <li><a href="#bochs-的硬盘分布图" id="markdown-toc-bochs-的硬盘分布图">bochs 的：硬盘分布图</a>    <ul>
+      <li><a href="#空间布局大致介绍" id="markdown-toc-空间布局大致介绍">空间布局大致介绍</a></li>
+    </ul>
+  </li>
+  <li><a href="#1实模式" id="markdown-toc-1实模式">1、实模式</a>    <ul>
+      <li><a href="#1bios--mbr" id="markdown-toc-1bios--mbr">1、BIOS &amp; MBR</a></li>
+      <li><a href="#2boot-loader" id="markdown-toc-2boot-loader">2、boot loader</a>        <ul>
+          <li><a href="#1调用bios中断获取内存大小" id="markdown-toc-1调用bios中断获取内存大小">1）调用BIOS中断获取内存大小</a></li>
+          <li><a href="#2构建-gdt开启保护模式" id="markdown-toc-2构建-gdt开启保护模式">2）构建 GDT，开启保护模式</a></li>
+          <li><a href="#3加载-kernel" id="markdown-toc-3加载-kernel">3）加载 kernel</a></li>
+          <li><a href="#4构建页目录表和页表开启分页机制" id="markdown-toc-4构建页目录表和页表开启分页机制">4）构建页目录表和页表，开启分页机制</a></li>
+          <li><a href="#5解析kernel的elf" id="markdown-toc-5解析kernel的elf">5）解析kernel的ELF</a></li>
+          <li><a href="#目前所用空间" id="markdown-toc-目前所用空间">目前所用空间</a></li>
+          <li><a href="#6跳转" id="markdown-toc-6跳转">6）跳转</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#附linux-初始化过程" id="markdown-toc-附linux-初始化过程">附：Linux 初始化过程</a></li>
+  <li><a href="#2husharp_os-----内核线程用户进程" id="markdown-toc-2husharp_os-----内核线程用户进程">2、HuSharp_OS     内核线程/用户进程</a>    <ul>
+      <li><a href="#init-进程" id="markdown-toc-init-进程">init 进程</a></li>
+      <li><a href="#main-线程" id="markdown-toc-main-线程">main 线程</a></li>
+      <li><a href="#idle-进程" id="markdown-toc-idle-进程">idle 进程</a></li>
+    </ul>
+  </li>
+  <li><a href="#3中断和系统调用" id="markdown-toc-3中断和系统调用">3、中断和系统调用</a></li>
+  <li><a href="#4内存管理" id="markdown-toc-4内存管理">4、内存管理</a></li>
+  <li><a href="#5任务调度" id="markdown-toc-5任务调度">5、任务调度</a></li>
+  <li><a href="#6文件系统" id="markdown-toc-6文件系统">6、文件系统</a></li>
+  <li><a href="#7shell" id="markdown-toc-7shell">7、Shell</a></li>
+  <li><a href="#8锁" id="markdown-toc-8锁">8、锁</a></li>
+  <li><a href="#9环形队列" id="markdown-toc-9环形队列">9、环形队列</a>    <ul>
+      <li><a href="#名词解释" id="markdown-toc-名词解释">名词解释</a></li>
+    </ul>
+  </li>
+  <li><a href="#define-k_heap_start-0xc0100000" id="markdown-toc-define-k_heap_start-0xc0100000">define K_HEAP_START 0xc0100000</a>    <ul>
+      <li><a href="#实现的系统调用" id="markdown-toc-实现的系统调用">实现的系统调用</a></li>
+      <li><a href="#实现函数" id="markdown-toc-实现函数">实现函数</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p><a href="https://github.com/HuSharp/HuSharp_Os.git">代码详情见</a></p>
+
+<p>本项目实现的 mini 操作系统，包含：</p>
+
+<p>1）内核线程、用户进程、fork和execv、任务调度；</p>
+
+<p>2）中断(时钟，键盘，硬盘，系统调用等)、内存管理、文件系统、shell、管道；</p>
+
+<p>3）基于二元信号量的锁、环形队列。</p>
+
+<h2 id="内核体系结构图">内核体系结构图</h2>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125105953674.png" alt="image-20201125105953674" /></p>
+
+<h2 id="bochs-的硬盘分布图">bochs 的：硬盘分布图</h2>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201118103520098.png" alt="image-20201118103520098" /></p>
+
+<p>魔数
+栈边界 20000611
+文件系统 20000712</p>
+
+<h3 id="空间布局大致介绍">空间布局大致介绍</h3>
+
+<pre><code class="language-assembly">   ...
+可用空间    &lt;--- 0x9fc00
+栈          &lt;--- 0x9f000
+   ...
+内核文件 kernel.bin     &lt;--- 0x70000
+   ...
+MBR               &lt;--- 0x7c00
+   ...
+内核映像 kernel      &lt;--- 0x1500
+   ...
+loader.bin(GDT所在处)   &lt;--- 0x900
+
+可用空间   &lt;--- 0x500
+BIOS数据区 &lt;---0x400-0x500
+中断向量表 &lt;---0~0x3ff
+</code></pre>
+
+<hr />
+
+<p><a href="http://www.ruanyifeng.com/blog/2013/02/booting.html">计算机是如何启动的？</a></p>
+
+<h2 id="1实模式">1、实模式</h2>
+
+<p><strong>BIOS-&gt;MBR-&gt;loader-&gt;加载内核</strong></p>
+
+<p>BIOS -&gt;1.1 硬件自检-&gt;1.2 启动顺序(有一个外部储存设备的排序，排在前面的设备就是优先转交控制权的设备)-&gt;主引导记录</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206101520087.png" alt="image-20201206101520087" /></p>
+
+<h3 id="1bios--mbr">1、BIOS &amp; MBR</h3>
+
+<blockquote>
+  <p>ROM 中写入”基本输入输出系统”（Basic Input/Output System），简称为<a href="https://en.wikipedia.org/wiki/BIOS">BIOS</a>。</p>
+</blockquote>
+
+<p>首先在开机的一瞬间，CS：IP 强制初始化为 0xF000:0xFFF0即为BIOS入口地址
+BIOS: 0xF0000-0xFFFFF 64KB都为系统 BIOS 范围，被写入ROM中</p>
+
+<ol>
+  <li>
+    <p>FFFF0-FFFFF BIOS的入口地址，16B大小中只有这么一条语句：<code class="language-plaintext highlighter-rouge"> jmp f000:e05b </code>，剩下的作为保留；</p>
+  </li>
+  <li>
+    <p>1）检测、初始化硬件，硬件自己提供了一些初始化的功能调用，BIOS直接调用；</p>
+
+    <p>2）在内存 0x000 - 0x3FF 建立中断向量表 IVT，这样就可以通过”int 中断号”来实现相关的硬件调用。这些功能的实现也是基于对硬件的 IO 操作。不过在保护模式下，中断向量表已经不存在了，取而代之的是中断描述符表IDT(Interrupt Descriptor Table)。</p>
+
+    <p>（因为现在还要用键盘和鼠标，这些都要通过中断进行的。——————此时需要也要给客户输出一些结果，因为需要你自己(os)来，所以你还要充当客户对接人。你做了什么工作，做到了什么程度，都要主动显示给客户，也就是在内存空间映射显存的空间，在显示器上显示一些字符。）</p>
+  </li>
+  <li>
+    <p><strong>检测0盘0道1扇区的内容</strong>（MBR所在处）</p>
+  </li>
+</ol>
+
+<blockquote>
+  <p><a href="https://en.wikipedia.org/wiki/Master_boot_record">“主引导记录”</a>（Master boot record，缩写为MBR）</p>
+</blockquote>
+
+<p>MBR：位于0盘0道1扇区（由于是 CHS扇区表示方法，即为最开始扇区），末尾为 0x55aa，被识别末尾魔数后，被加载到 0x7c00</p>
+
+<p>对于 Linux 而言   MBR 相当于由 grub2 第一个要安装的 boot.img</p>
+
+<ul>
+  <li>大小为 512 字节</li>
+  <li>27c00：历史原因——尽可能留足够的空间给操作系统在 32K 内加载自己
+` 0x7FFF - 512 - 512 + 1 ` // 开机扇区512字节，再留出512字节</li>
+  <li>引导记录由三个部分组成：
+    <ul>
+      <li>第1-446字节：调用操作系统的机器码。</li>
+      <li>第447-510字节：分区表（Partition table）。</li>
+      <li>第511-512字节：主引导记录签名（0x55和0xAA）。</li>
+    </ul>
+  </li>
+</ul>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201118105235835-1630980761455.png" alt="image-20201118105235835" /></p>
+
+<h3 id="2boot-loader">2、boot loader</h3>
+
+<blockquote>
+  <p>小知识</p>
+
+  <p><strong>boot的含义</strong></p>
+
+  <p>先问一个问题，”启动”用英语怎么说？</p>
+
+  <p>回答是boot。可是，boot原来的意思是靴子，”启动”与靴子有什么关系呢？ 原来，这里的boot是bootstrap（鞋带）的缩写，它来自一句谚语：</p>
+
+  <blockquote>
+    <p>　　”pull oneself up by one’s bootstraps”</p>
+  </blockquote>
+
+  <p>字面意思是”拽着鞋带把自己拉起来”，这当然是不可能的事情。最早的时候，工程师们用它来比喻，计算机启动是一个很矛盾的过程：必须先运行程序，然后计算机才能启动，但是计算机不启动就无法运行程序！</p>
+
+  <p>早期真的是这样，必须想尽各种办法，把一小段程序装进内存，然后计算机才能正常运行。所以，工程师们把这个过程叫做”拉鞋带”，久而久之就简称为boot了。</p>
+</blockquote>
+
+<p><strong>载入 LOADER 进入实模式环境</strong></p>
+
+<p>(Linux环境中，目前最流行的启动管理器是<a href="http://en.wikipedia.org/wiki/GNU_GRUB">Grub</a>。相当于 Linux 中加载 grub2 的另一个镜像 core.img。)</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201118110012840.png" alt="image-20201118110012840" /></p>
+
+<p>在loader.S 加载内核时，主要完成以下任务：</p>
+
+<ol>
+  <li>
+    <p>调用 BIOS 中断获取内存大小；</p>
+  </li>
+  <li>
+    <p>构建 GDT，开启保护模式；</p>
+  </li>
+  <li>
+    <p>加载 kernel : 将内核文件先放到内存缓冲区</p>
+  </li>
+  <li>
+    <p>构建页目录表和页表，开启分页机制；</p>
+  </li>
+  <li>
+    <p>初始化内核：解析kernel的ELF，将ELF文件中的段segment拷贝到各段自己被编译的虚拟地址处，再跳去执行</p>
+
+    <p>loader.bin 的加载地址为 0x900，放在第 2 块扇区( <strong>boot.inc</strong>)</p>
+
+    <p>loder.bin 占用 3 个扇区，即使用第 2~4</p>
+
+    <p>至于为啥是 0x900，是由于实模式的内存空间布局下0x500 - 0x7BFF 为可用区域，而为啥不是 0x500 ，是完全个人喜好，隔远点</p>
+  </li>
+</ol>
+
+<h4 id="1调用bios中断获取内存大小">1）调用BIOS中断获取内存大小</h4>
+
+<p>调用 BIOS 中断 0x15 获取内存大小，并将其值存放在 loader.bin头部（地址0x900），内核将会从该位置读取内存大小（kernel/memory.c mem_init()）。</p>
+
+<h4 id="2构建-gdt开启保护模式">2）构建 GDT，开启保护模式</h4>
+
+<p>2.1 构建GDT（全局描述符表）。</p>
+
+<pre><code class="language-assembly">FILE: boot/loader.S
+;构建gdt及其内部的描述符
+   GDT_BASE:   dd    0x00000000 
+            dd    0x00000000
+
+   CODE_DESC:  dd    0x0000FFFF 
+            dd    DESC_CODE_HIGH4
+
+   DATA_STACK_DESC:  dd    0x0000FFFF
+            dd    DESC_DATA_HIGH4
+
+   VIDEO_DESC: dd    0x80000007        ; limit=(0xbffff-0xb8000)/4k=0x7
+            dd    DESC_VIDEO_HIGH4  ; 此时dpl为0
+</code></pre>
+
+<p>2.2 加载GDT。lgdt指令，将 GDT 的基地址、界限值载入至 GDTR 寄存器。</p>
+
+<p>2.3 打开地址线 A20。</p>
+
+<p>第 21 条地址线 A20 ：实模式下，处理器访问内存的方式是将段寄存器的内容左移4位，再加上偏移地址，以形成 20 位的物理地址。实模式下，32位处理器的段寄存器的内容仅低 20 位有效，高  20 位全部为0（即，只能使用 20 根地址线）。故，处理器只能访问1MB内存。（回绕）</p>
+
+<p>2.4 禁止中断。</p>
+
+<p>在设置好保护模式下的中断环境之前，必须关中断(指令cli)。保护模式下的中断机制和实模式不同，原有的中断向量表 IVT 不再适用。而且，保护模式下，BIOS 中断也不能再用，因为它们是实模式下的代码。</p>
+
+<p>2.5 将 CR0 的 PE 位置 1，开启保护模式。</p>
+
+<p><strong>控制实模式/保护模式切换的开关是CR0寄存器。</strong>CR0是处理器内部的控制寄存器(Control  Register)，是 32 位的寄存器，包含了一系列用于控制处理器操作模式和运行状态的标志位。 CR0 的第 1 位(位 0 )是保护模式允许位(Protection Enable, PE)，该位置 1 ，则处理器进入保护模式，按保护模式的规则开始运行。</p>
+
+<pre><code class="language-assembly">   ;-----------------  打开A20  ----------------
+   in al，0x92
+   or al，0000_0010B
+   out 0x92，al
+
+   ;-----------------  加载GDT  ----------------
+   lgdt [gdt_ptr]
+
+   ;-----------------  cr0第0位置1  ----------------
+   mov eax, cr0
+   or eax, 0x00000001
+   mov cr0, eax
+</code></pre>
+
+<h4 id="3加载-kernel">3）加载 kernel</h4>
+
+<p>将内核文件先放到内存缓冲区</p>
+
+<pre><code class="language-assembly">KERNEL_BIN_BASE_ADDR equ 0x70000 ; 自定义kernel被加载到物理内存位置
+KERNEL_START_SECTOR  equ 0x09    ; 自定义kernel位于硬盘的扇区号
+; -------------------------   加载kernel  ----------------------
+   mov eax, KERNEL_START_SECTOR        ; kernel.bin所在的扇区号
+   mov ebx, KERNEL_BIN_BASE_ADDR       ; 从磁盘读出后，写入到ebx指定的地址
+   mov ecx, 200                        ; 读入的扇区数
+   
+   call rd_disk_m_32 ;功能:读取硬盘n个扇区
+</code></pre>
+
+<h4 id="4构建页目录表和页表开启分页机制">4）构建页目录表和页表，开启分页机制</h4>
+
+<p><a href="http://husharp.today/2020/12/01/HuSharp-Memory-01/">详情见作者的此 Blog</a></p>
+
+<blockquote>
+  <p>地址转换，是由处理器和操作系统共同协作完成的，处理器在硬件上提供地址转换部件，操作系统提供转换过程中所需要的页表。</p>
+</blockquote>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206171520147.png" alt="image-20201206171520147" /></p>
+
+<p>开启分页机制之前，加载到 cr3 寄存器中的页目录表基地址是物理地址，页表中页表项的地址自然也是物理地址了。虽然内存分页机制的作用是将虚拟地址转换成物理地址，但其转换过程相当于是在关闭分页机制下进行的，过程中所涉及到的地址都被 CPU 当作物理地址直接送上地址总线，不会被分页机制再次转换(否则会递归转换下去)。</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206171732588.png" alt="image-20201206171732588" /></p>
+
+<p>明显 4 K 大小的页表代表 (4K/4)*4K=4M 大小的物理内存</p>
+
+<p><strong>4.1 物理内存 1MB 之上：</strong></p>
+
+<p>第 1 个4KB， 为页目录表PDT</p>
+
+<p>第 2 个4KB， 为创建的第一个页表（第0和第768(0xc00/4= 768)个页目录项都指向它）</p>
+
+<blockquote>
+  <p>这是由于，操作系统的内核位于物理地址的 1MB 以下，但是 OS 的虚拟地址位于 0xc0000000 以上的 1MB 该地址对应的页目录项取决于前 10 位，即 0xc00，为第 768 个目录项。</p>
+</blockquote>
+
+<p>第769~1022个页目录项一共指向254个页表（即内核空间）</p>
+
+<p>最后一个页目录项(第1023个)指向页目录表PDT本身</p>
+
+<blockquote>
+  <p>为了确保各个用户进程都共享内核，那么需要各个进程第 768~1022 个页目录项均相同，因此在为用户进程创办页表时，应将内核页表中第 768~1022 个页目录项复制到用户进程页目录表相同位置。</p>
+</blockquote>
+
+<p>因此，共 256 个页，正好 1M 。即，物理内存 1MB 之上的 1MB 已用于页目录表和页表。</p>
+
+<p><strong>4.2 控制寄存器 CR3 指向页目录表基地址</strong></p>
+
+<p><strong>4.3 将 CR0 的 PG 位置1，开启分页机制</strong></p>
+
+<h4 id="5解析kernel的elf">5）解析kernel的ELF</h4>
+
+<p>将ELF文件中的段 segment 拷贝到各段自己被编译的虚拟地址处，将这些段单独提取到内存中，这就是所谓的内存中的程序映像。分析程序中的每个段 segment ，如果段类型不是PT_NULL(空程序类型)，就将该段拷贝到编译的地址中</p>
+
+<p>这里将kernel的入口定义为 0xc0001500，对应的在编译内核kernel.bin时需要指定该地址。</p>
+
+<p>0x1500（这是由于 loder.bin +2000=0x10d0 凑个整，到0x1500【2000是由于估摸 loder 不会大于 2000 字节】）</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ld <span class="nt">-m</span> elf_i386 <span class="nt">-Ttext</span> 0xc0001500 <span class="nt">-e</span> main <span class="nt">-o</span> kernel.bin %.o
+</code></pre></div></div>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206175250174.png" alt="image-20201206175250174" /></p>
+
+<p>至于栈选用 0x9f000 是由于首先 0x9fc00 以下为可用区域，但是为了之后放 PCB 取整，因此放在此处。</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206175124408.png" alt="image-20201206175124408" /></p>
+
+<h4 id="目前所用空间">目前所用空间</h4>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   ...
+可用空间       &lt;<span class="nt">---</span> 0x9fc00
+栈            &lt;<span class="nt">---</span> 0x9f000
+   ...
+内核文件 kernel.bin     &lt;<span class="nt">---</span> 0x70000（随便选的
+   ...
+MBR                    &lt;<span class="nt">---</span> 0x7c00
+   ...
+内核映像 kernel         &lt;<span class="nt">---</span> 0x1500（这是由于 loder.bin +2000<span class="o">=</span>0x10d0 凑个整，到0x1500（2000是由于估摸 loder 不会大于 2000 字节））
+   ...
+loader.bin<span class="o">(</span>GDT所在处<span class="o">)</span>   &lt;<span class="nt">---</span> 0x900
+
+可用空间                &lt;<span class="nt">---</span> 0x500
+BIOS数据区              &lt;<span class="nt">---0x400-0x500</span>
+中断向量表              &lt;<span class="nt">---0</span>~0x3ff
+</code></pre></div></div>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206175331991.png" alt="image-20201206175331991" /></p>
+
+<h4 id="6跳转">6）跳转</h4>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">;</span> FILE: boot/loader.asm
+<span class="p">;</span> 截取部分代码
+ 
+KERNEL_ENTRY_POINT equ 0xc0001500
+ 
+mov esp, 0xc009f000     <span class="p">;</span> 自定义内核主线程PCB中的栈顶
+jmp KERNEL_ENTRY_POINT
+</code></pre></div></div>
+
+<p>至此，进入 kernel 即 main。</p>
+
+<h2 id="附linux-初始化过程">附：Linux 初始化过程</h2>
+
+<p><a href="http://www.ruanyifeng.com/blog/2013/08/linux_boot_process.html">Linux 的启动流程</a></p>
+
+<p>我们知道系统是从BIOS加电自检，载入MBR中的引导程序(LILO/GRUB)，再载入linux内核開始执行的，一直到指定shell開始执行告一段落，这时用户開始操作Linux。</p>
+
+<p>首先介绍 Linux 的初始化</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125123403817-1631024252865.png" alt="image-20201125123403817" /></p>
+
+<p>start_kernel  –&gt;rest_init –&gt; init –&gt; kthreadd –&gt; cpu_idle_loop</p>
+
+<p>在操作系统里面，先要有个创始进程，有一行指令 set_task_stack_end_magic(&amp;init_task)。这里面有一个参数 init_task，它的定义是 struct task_struct init_task =  INIT_TASK(init_task)。它是系统创建的第一个进程，我们称为 <strong>0 号进程</strong>。这是唯一一个没有通过 fork 或者 kernel_thread 产生的进程，是进程列表的第一个。即 <strong>idle 进程</strong>。</p>
+
+<p>该进程是内核的一部分，所有进程的根进程，它并不执行任何磁盘上的程序，因此也被称为系统进程。</p>
+
+<p><strong>说明一下 rest_init（）</strong></p>
+
+<ol>
+  <li>
+    <p>**init **</p>
+
+    <p>在 rest_init 的第一大工作是，用 kernel_thread(kernel_init, NULL， CLONE_FS) 创建第二个进程，这个是<strong>1 号进程</strong>。1 号进程的目的是为了作为用户态的总管。系统中所有其它用户进程的祖先进程。<strong>init 进程决不会终止</strong>。它是一个普通的用户进程（与交换进程不同，它不是内核中的系统进程），但是它<strong>以超级用户特权运行</strong>。</p>
+
+    <p>当前执行 kernel_thread 这个函数的时候，我们还在内核态，现在我们就来跨越这道屏障，到用户态去运行一个程序。1 号进程 调用  do_execve  ，访问内核中保存用户态运行上下文的寄存器们，将用户态的代码段 CS 设置为 USER_CS，将用户态的数据段 DS 设置为 USER_DS，以及指令指针寄存器 IP、栈指针寄存器 SP。再通过 iret 返回 pop 出更改的寄存器， 进入用户态。以进行各种系统的初始化。启动系统的服务，启动控制台，用户就可以登录进来了。</p>
+
+    <p>1号进程从0号进程fork出来，然后又切换到用户态，完成控制权从核心态到用户态的转换， 因此<strong>用户交互才能开始</strong>。</p>
+
+    <p>至于 init 为何是 systemd  <a href="http://www.ruanyifeng.com/blog/2016/03/systemd-tutorial-commands.html">Systemd 入门教程：命令篇</a>见此博客</p>
+
+    <p>systemctl</p>
+
+    <p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125150031326-1631025271495.png" alt="image-20201125150031326" /></p>
+  </li>
+  <li>
+    <p><strong>kthreadd</strong> 页守护进程</p>
+
+    <p>rest_init 第二大事情就是第三个进程，就是 2 号进程。这里的函数 kthreadd，负责所有内核态的线程的调度和管理，是内核态所有线程运行的祖先。负责虚拟内存系统的分页操作。</p>
+
+    <p>通过 以下命令进行查看，发现 PID 为 1 是 /sbin/init， 2 为 kthreadd</p>
+
+    <pre><code class="language-assembly">ps -ef
+</code></pre>
+
+    <p>其中用户态的不带中括号，内核态的带中括号。</p>
+
+    <p>进程号依次增大，但是你会看所有带中括号的内核态的进程，祖先都是 2 号进程。而用户态的进程，祖先都是 1 号进程。tty 那一列，是问号的，说明不是前台启动的，一般都是后台的服务。</p>
+
+    <p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125141119291-1631025199027.png" alt="image-20201125141119291" /></p>
+
+    <blockquote>
+      <p>ps -ef 这个命令的父进程是 bash。这样整个链条都比较清晰了。</p>
+
+      <p><code class="language-plaintext highlighter-rouge">husharp  26859  8355  0 14:10 pts/1    00:00:00 ps -ef</code></p>
+
+      <p><code class="language-plaintext highlighter-rouge">husharp   8355  6773  0 10:42 pts/1    00:00:00 bash</code></p>
+
+      <p><code class="language-plaintext highlighter-rouge">husharp   6773  2294  0 10:17 ?        00:00:01 /usr/lib/gnome-terminal/gnome-te</code></p>
+
+      <p><code class="language-plaintext highlighter-rouge">husharp   2294     1  0 09:45 ?        00:00:00 /lib/systemd/systemd --user</code></p>
+
+      <p>从下向上进行索引，发现最后父节点是 init，说明是用户态</p>
+    </blockquote>
+  </li>
+</ol>
+
+<p>因此， idle 实则就是 while ，当没有线程调度时，便运行 idle，在 init 开始后才运行，因此 init 的 pid 为 1 ，而 idle 并非为 1.</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125131132709-1631025411555.png" alt="image-20201125131132709" /></p>
+
+<p>某 ucore 群友做的图</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125134734671-1631025437942.png" alt="image-20201125134734671" /></p>
+
+<p><strong>Linux 相关补充阅读</strong></p>
+
+<p><a href="https://www.cnblogs.com/cynchanpin/p/7323299.html">Linux内核的idle进程分析</a></p>
+
+<p><a href="https://blog.csdn.net/titer1/article/details/44464647">动静结合学内核：linux idle进程和init进程浅析</a></p>
+
+<p><a href="https://www.cnblogs.com/harlanc/p/7774882.html">Linux中main是如何执行的</a></p>
+
+<h2 id="2husharp_os-----内核线程用户进程">2、HuSharp_OS     内核线程/用户进程</h2>
+
+<p>而对于 HuSharp_OS 而言，首先通过 init_all 进行各个初始化 (init.c)</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">init_all</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">put_str</span><span class="p">(</span><span class="s">"init_all start!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+    <span class="n">idt_init</span><span class="p">();</span><span class="c1">// 初始化中断</span>
+    
+    <span class="n">mem_init</span><span class="p">();</span><span class="c1">//初始化内存管理系统</span>
+    <span class="n">thread_environment_init</span><span class="p">();</span><span class="c1">// 初始化线程相关环境</span>
+    <span class="n">timer_init</span><span class="p">();</span>   <span class="c1">// 初始化 PIT</span>
+    <span class="n">console_init</span><span class="p">();</span> <span class="c1">// 初始化 console </span>
+    <span class="n">keyboard_init</span><span class="p">();</span>
+    <span class="n">tss_init</span><span class="p">();</span>
+    <span class="n">syscall_init</span><span class="p">();</span>   <span class="c1">// 初始化系统调用</span>
+    <span class="n">intr_enable</span><span class="p">();</span>      <span class="c1">// 后面的 ide_init 需要打开中断</span>
+    <span class="n">ide_init</span><span class="p">();</span>     <span class="c1">//初始化硬盘</span>
+    <span class="n">filesys_init</span><span class="p">();</span> <span class="c1">// 初始化文件系统</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>在 thread_environment_init (thread.c)中进行相关进程的初始化</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">thread_environment_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">put_str</span><span class="p">(</span><span class="s">"thread_init start!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+    <span class="n">list_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">thread_ready_list</span><span class="p">);</span>
+    <span class="n">list_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">thread_all_list</span><span class="p">);</span>
+    <span class="n">lock_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pid_lock</span><span class="p">);</span>
+
+    <span class="c1">// 创建第一个用户进程 init</span>
+    <span class="c1">// 放在第一个初始化， pid 为 1</span>
+    <span class="n">process_execute</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="s">"init"</span><span class="p">);</span>
+
+    <span class="c1">// 将 main 函数创建为 线程</span>
+    <span class="n">make_main_thread</span><span class="p">();</span>
+    <span class="c1">// 创建 idle 线程</span>
+    <span class="n">idle_thread</span> <span class="o">=</span> <span class="n">thread_start</span><span class="p">(</span><span class="s">"idle"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">idle</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+    <span class="n">put_str</span><span class="p">(</span><span class="s">"thread_init done!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="init-进程">init 进程</h3>
+
+<p>init 是用户级进程，是第一个启动的程序，其 pid 为1。init 是所有进程的父进程。为了抢夺 pid 1，因此我们在 创建主线程的函数 make_main_thread 之前，进行 init 的创建。</p>
+
+<p>init fork 出 shell 程序，以方便用户交互</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// init 进程</span>
+<span class="kt">void</span> <span class="nf">init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">ret_pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">();</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">ret_pid</span><span class="p">)</span>     <span class="c1">// 父进程</span>
+    <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">status</span><span class="p">,</span> <span class="n">child_pid</span><span class="p">;</span>
+        <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1">// init在此处不停地回收过继给它的子进程</span>
+        <span class="p">{</span>
+            <span class="n">child_pid</span> <span class="o">=</span> <span class="n">wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+            <span class="n">printf</span><span class="p">(</span><span class="s">"i am init, my pid is %d, i recieve a child, it's pid is %d, status is %d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">child_pid</span><span class="p">,</span> <span class="n">status</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">else</span>        <span class="c1">// 子进程</span>
+    <span class="p">{</span>
+        <span class="n">my_shell</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="n">panic</span><span class="p">(</span><span class="s">"ERROR: during init, should not be here"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="main-线程">main 线程</h3>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206183533818.png" alt="image-20201206183533818" /></p>
+
+<p>由于在开机到创建第一个线程前，程序都是有个执行流的，这个执行流从 BIOS 到 mbr 到 loader 到 kernel，他是主线程 main   。因为 main 线程早已运行，咱们在loader.S中进入内核时的mov esp，0xc009f000，就是为其预留了tcb，地址为 0xc009e000。</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">init_all</span><span class="p">();</span>     <span class="c1">// kernel/init.c 初始化所有模块</span>
+ 
+    <span class="n">cls_screen</span><span class="p">();</span>
+    <span class="n">console_put_str</span><span class="p">(</span><span class="s">"[husharp@HuSharp_OS /]$ "</span><span class="p">);</span>
+ 
+    <span class="c1">// 主线程完成使命后退出</span>
+    <span class="n">thread_exit</span><span class="p">(</span><span class="n">running_thread</span><span class="p">(),</span> <span class="nb">true</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>内核的 main_thread 完成系统的初始化工作，然后 thread_exit。</p>
+
+<h3 id="idle-进程">idle 进程</h3>
+
+<p>为何会有 idle 进程（<strong>0 号进程</strong>）？</p>
+
+<p>当就绪队列中没有任务时，调度器没有任务可调时，会报错 thread_ready_list is empty!</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="c1">// 实现就绪队列为空时，唤醒 idle</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">list_empty</span><span class="p">(</span><span class="o">&amp;</span><span class="n">thread_ready_list</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">thread_unblock</span><span class="p">(</span><span class="n">idle_thread</span><span class="p">);</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>idle 线程用于系统空闲时，运行（idle ：翻译：懈怠的；懒惰的；闲置的；没有工作的。）</p>
+
+<pre><code class="language-assembly">    内核线程/用户进程
+    |---- FILE: thread/thread.c     thread_init()
+    |       | 初始化线程环境
+    |       | list_init()     初始化就绪/全部队列
+    |       | pid_pool_init() 初始化pid池，指定起始pid为1 (基于bitmap和lock)
+    |       |
+    |       | process_execute(init, "init") 创建第一个用户进程init，其pid为1
+    |       | make_main_thread() 将当前内核main函数创建为线程
+    |       | idle_thread = thread_start("idle", 10, idle, NULL) 创建idle线程 
+    |       |
+    |       | 至此，参与调度的有: init进程、main线程、idle线程
+    |       |
+    |       |---- FILE: user/process.c      process_execute()
+    |       |       | 创建用户进程
+    |       |       | struct task_struct *thread = get_kernel_pages(1) 申请1页内核内存作为用户进程PCB
+    |       |       | init_thread() 在PCB中初始化线程基本信息
+    |       |       |     申请pid allocate_pid()
+    |       |       |         {bitmap_scan(); bitmap_set(); return (index + pid_pool.pid_start);}
+    |       |       |     进程名、状态READY、内核态时的栈顶(PCB顶部)、优先级、嘀嗒时间数
+    |       |       |     初始化文件描述符数组pthread-&gt;fd_table[8]，标准输入/输出/错误012，其余为-1 
+    |       |       |     根目录作为默认工作路径 pthread-&gt;current_work_dir_inode_id = 0
+    |       |       |     父进程pid初始为-1
+    |       |       |     页目录表pgdir初始为NULL，在紧接着的create_page_dir()创建页目表时赋值
+    |       |       | create_user_vaddr_bitmap() 创建用户虚拟内存空间的bitmap
+    |       |       |     指定用户进程虚拟地址起始值; 申请1页内核内存
+    |       |       | 
+    |       |       | thread_create(thread, start_process, filename)
+    |       |       |     初始化PCB中的thread_stack。当处理器进入kernel_thread函数体时
+    |       |       |         栈顶为返回地址、栈顶+4为参数function、栈顶+8为参数func_arg
+    |       |       |         kthread_stack-&gt;eip = kernel_thread      函数kernel_thread
+    |       |       |         kthread_stack-&gt;function = start_process 函数start_process
+    |       |       |         kthread_stack-&gt;func_arg = filename      待创建的进程
+    |       |       |      
+    |       |       | thread-&gt;pgdir = create_page_dir()     创建页目录表
+    |       |       |     在内核空间申请一页内存作为用户进程的页目录表  get_kernel_pages(1)
+    |       |       |     从内核页目录表中拷贝内核空间的页目录项到用户进程的页目录中  memcpy()
+    |       |       |     页目录表物理基地址写入页目录表最后一项
+    |       |       |
+    |       |       | block_desc_init(thread-&gt;u_block_desc) 初始化内存规格信息，为malloc/free做准备
+    |       |       | list_append() 添加到就绪队列和全部队列
+    |       |       
+    |       |---- FILE: thread/thread.c     make_main_thread()
+    |       |       | 将 kernel 中 main 函数完善为主线程
+    |       |       | main 线程早已运行，在LOADER阶段已预留并指定了PCB "mov esp, 0xc009_f000"
+    |       |       | 即，PCB基址为0xc009_e000
+    |       |       |     main_thread = running_thread();
+    |       |       |     init_thread(main_thread, "main", 31);
+    |       |       |     list_append() 添加到全部队列
+    |       |       
+    |       |---- FILE: thread/thread.c     thread_start()
+    |       |       | 创建内核线程
+    |       |       | struct task_struct *thread = get_kernel_pages(1) 申请1页内核内存作为内核线程PCB
+    |       |       | init_thread() 在PCB中初始化线程基本信息
+    |       |       |     初始化PCB底部的线程信息struct task_struct
+    |       |       |     申请pid allocate_pid()    
+    |       |       | thread_create(thread, function, func_arg)
+    |       |       |     初始化PCB中的thread_stack
+    |       |       |     不同于创建进程时的参数function为start_process，这里直接为所要创建的线程
+    |       |       |       即switch_to()任务切换后，将直接执行对应的线程函数
+    |       |       |       kthread_stack-&gt;eip = kernel_thread      函数kernel_thread
+    |       |       |       kthread_stack-&gt;function = function      线程对应的函数
+    |       |       |       kthread_stack-&gt;func_arg = func_arg      线程参数
+    |       |       |
+    |       |       | list_append() 添加到就绪队列和全部队列
+    |
+    |---- FILE: thread/thread.c     idle()
+    |       | 系统空闲时运行的线程(block/unblock)
+    |       | while(1){thread_block(TASK_BLOCKED); asm volatile("sti; hlt" : : : "memory");}    
+    |       | idle线程在创建时会被加入到就绪队列，因此会执行一次，然后阻塞;
+    |       | 当就绪队列为空时，schedule会将idle解除阻塞，也就是唤醒
+    |       |
+    |       |---- thread_block()
+    |       |       | 当前线程将自己阻塞
+    |       |       | 修改线程状态为阻塞、触发调度，切换线程执行
+    |       |       | schedule() 由当前阻塞线程主动触发的任务调度
+    |       |       | 由于idle线程触发调度后没有被加入就绪队列，所以将得不到执行，除非被唤醒
+    |       |
+    |       |---- thread_unblock()
+    |       |       | 将指定的线程解阻塞
+    |       |       | 添加到就绪队列头部，修改状态为READY
+    |       |       | list_push(&amp;thread_ready_list, &amp;pthread-&gt;general_tag)
+    |       |       | pthread-&gt;status = TASK_READY
+    |
+    |---- FILE: kernel/main.c   main()
+    |       | 内核主线程
+    |       | init_all()
+    |       | thread_exit(running_thread(), true);
+    |       | 主线程完成使命后退出 return 0;
+    |
+    |---- FILE: kernel/main.c   init()
+    |       | init进程
+    |       | 第一个用户进程，pid为1
+    |       | init是所有进程的父进程，它还要负责回收过继给它的子进程
+    |       | if(fork())    // 父进程
+    |       | { while(1){wait(&amp;status);} }
+    |       | else          // 子进程
+    |       | { my_shell(); }
+</code></pre>
+
+<h2 id="3中断和系统调用">3、中断和系统调用</h2>
+
+<p>详情见 下列 Blog</p>
+
+<p><a href="http://husharp.today/2020/11/22/Signal/">终端控制和信号</a></p>
+
+<p><a href="http://husharp.today/2020/11/27/interrupt-HuSharpOS/">中断原理详解，以及中断与信号的关系</a></p>
+
+<p>本项目支持的中断有：时钟、键盘、硬盘、int 0x80（系统调用）。</p>
+
+<h2 id="4内存管理">4、内存管理</h2>
+
+<p>详情见下列 Blog</p>
+
+<p><a href="http://husharp.today/2020/12/01/HuSharp-Memory-01/">内存管理（一）前置知识 &amp; 虚拟地址布局</a></p>
+
+<p><a href="http://husharp.today/2020/12/03/HuSharp-Memory-02/">内存管理（二）物理内存管理</a></p>
+
+<p><a href="http://husharp.today/2020/12/05/HuSharp-Memory-03/">内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault</a></p>
+
+<p>这里先从指定位置处读取LOADER写入的物理内存大小。本项目中，物理内存的配置为32M(bochs配置文件bochsrc.cfg中”megs:  32”)，减去低端的1MB、减去LOADER开启分页机制时创建PDT和PT占用的1MB（紧邻低端1MB之上），还有30MB，内核和用户内存池各占15M。所以，内核物理内存池的起始地址为 0x20_0000（2MB）。</p>
+
+<p>以页(4KB)为单位的内存管理，采用bitmap(位图)技术。本项目中，自定义内核物理内存的bitmap存放于0xc009_a000，自定义内核主线程栈顶为0xc009_f000、内核主线程PCB为0xc009_e000。所以，本系统最大支持4个页框的位图（一个页框大小的位图可表示128M内存，4个页框即512M），用于内核/用户物理内存池bitmap、内核虚拟地址池bitmap。</p>
+
+<blockquote>
+  <p>9f000 - 1000 = 9e000 作为主线程的 PCB</p>
+
+  <p>9e000 - 4000 = 9a000 作为位图地址，可以容纳 4 个页框</p>
+</blockquote>
+
+<p>实现方法类似 Linux 中的伙伴系统，在以页(4KB)为单位的内存管理基础上，实现小内存块的管理，可满足任意内存大小的分配与释放(malloc/free)。这里采用arena模型。</p>
+
+<h2 id="5任务调度">5、任务调度</h2>
+
+<p><a href="http://husharp.today/2020/12/09/thread-schedule/">进程管理（四）调度流程 &amp; Linux中的调度相关</a></p>
+
+<p>传统操作系统的调度基于分时(time sharing)技术: 多个进程以”时间多路复用”方式运行，因为CPU的时间被分成”片(slice)”，给每个可运行进程分配一片CPU时间片，当然单处理器在任何给定的时刻只能运行一个进程。</p>
+
+<p>如果当前可运行进程的时限(quantum)到期时(即时间片用尽)，而该进程还没有运行完毕，进程切换就可以发生。</p>
+
+<p>分时依赖于定时中断，因此对进程是透明的，不需要在承租中插入额外的代码来保证CPU分时。</p>
+
+<p>这也是HuSharpOS 的实现策略</p>
+
+<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201207195514895.png" alt="image-20201207195514895" /></p>
+
+<p>详情见 此 Blog</p>
+
+<h2 id="6文件系统">6、文件系统</h2>
+
+<p>详情见 <a href="http://husharp.today/2020/12/12/FileSystem-Thinking/">文件系统总结</a></p>
+
+<h2 id="7shell">7、Shell</h2>
+
+<p>CRT相关</p>
+
+<p>fork 、execv、wait、load、cmd_execute</p>
+
+<p><a href="http://husharp.today/2020/11/18/fork-exec-wait-exit/">fork exec wait exit探究</a></p>
+
+<p>详情见 <a href="http://husharp.today/2020/12/07/process-create/">进程管理（二）shell 是如何运行程序的? &amp; 进程的创建</a></p>
+
+<h2 id="8锁">8、锁</h2>
+
+<p>二元信号量的锁</p>
+
+<pre><code class="language-assembly">锁
+| struct lock pid_lock;        // 申请pid  FILE: thread/thread.c    
+| struct lock console_lock;    // 控制台锁 FILE: device/console.c   console_init()
+|
+|---- FILE: thread/sync.c   lock_init(&amp;console_lock)
+|       | 初始化锁
+|       | 基于二元信号量实现的锁
+|       | struct semaphore{
+|       |     unsigned char value; struct list waiters; };
+|       |     信号量初值，此信号量上阻塞的所有线程    
+|       | struct lock{
+|       |     struct task_struct *holder; struct semaphore sema; unsigned int holder_repeat_num; };
+|       |     锁的持有者，信号量，锁的持有者重复申请锁的次数    
+|       
+|---- FILE: thread/sync.c   lock_acquire()
+|       | 获取锁
+|       | sema_down(&amp;lock-&gt;semaphore)信号量P操作
+|       |     while(sema-&gt;value == 0)   // value为0表明已经被别人持有
+|       |         list_append()当前线程把自己加入该锁的等待队列
+|       |         thread_block()当前线程阻塞自己，并触发调度，切换线程
+|       |         ************************************* 调度 *********
+|       | lock-&gt;holder = running_thread()
+|       |
+|       |---- FILE: thread/thread.c     thread_block()
+|               | 当前线程将自己阻塞
+|               | 修改线程状态为阻塞、触发调度，切换线程执行
+|               |
+|               |---- FILE: thread/thread.c     schedule()
+|                       | 任务调度 (由当前阻塞线程主动触发)    
+|
+|---- FILE: thread/sync.c   lock_release()
+        | 释放锁
+        | lock-&gt;holder = NULL
+        | sema_up(&amp;lock-&gt;semaphore)信号量V操作
+        |     list_pop(&amp;sema-&gt;waiters)从等待队列中取出一个线程
+        |     thread_unblock()唤醒该阻塞线程: 将阻塞线程加入就绪队列，并修改状态为READY
+        |     sema-&gt;value++    
+        |
+        |---- FILE: thread/thread.c     thread_unblock()
+                | 唤醒阻塞线程
+                | 将阻塞线程加入就绪队列，并修改状态为READY
+</code></pre>
+
+<p>信号解析见此 Blog</p>
+
+<h2 id="9环形队列">9、环形队列</h2>
+
+<p>生产者消费者模型</p>
+
+<pre><code class="language-assembly">环形队列
+| struct ioqueue keyboard_buf;  // 键盘
+| struct ioqueue * xxx = xxx;   // 管道
+|
+|---- FILE: device/ioqueue.c    ioqueue_init(&amp;keyboard_buf)
+|       | 初始化环形队列
+|       | 结合锁机制、生产者消费者模型
+|       | struct ioqueue{
+|       |     struct lock lock; // 锁
+|       |     struct task_struct *producer, *consumer; // 睡眠的生产者/消费者
+|       |     char buf[buffersize]; // 缓冲区
+|       |     signed int head, tail; }; // 队首写入，队尾读出
+|
+|---- FILE: device/ioqueue.c    ioq_getchar()
+|       | 消费者消费一个字符
+|       | while(ioq_empty(ioq)) // 缓冲区为空时，消费者睡眠
+|       |     lock_acquire(&amp;ioq-&gt;lock);    // 获取锁，每个锁对应的信号量都会有一个阻塞队列
+|       |     ioq_wait(&amp;ioq-&gt;consumer);    // 消费者睡眠
+|       |     lock_release(&amp;ioq-&gt;lock);    // 释放锁
+|       | char byte = ioq-&gt;buf[ioq-&gt;tail]; // 消费一个字符
+|       | if(ioq-&gt;producer !=NULL) wakeup(&amp;ioq-&gt;producer); // 唤醒生产者(生产者睡眠是因为缓冲区满)    
+|       
+|---- FILE: device/ioqueue.c    ioq_putchar()
+|       | 生产者生产一个字符
+|       | while(ioq_full(ioq)) // 缓冲区满时，生产者睡眠
+|       |     lock_acquire(&amp;ioq-&gt;lock); // 获取锁，每个锁对应的信号量都会有一个阻塞队列
+|       |     ioq_wait(&amp;ioq-&gt;producer); // 生产者睡眠
+|       |     lock_release(&amp;ioq-&gt;lock); // 释放锁
+|       | ioq-&gt;buf[ioq-&gt;head] = byte;   // 生产一个字符
+|       | if(ioq-&gt;consumer !=NULL) wakeup(&amp;ioq-&gt;consumer); // 唤醒消费者(消费者睡眠是因为缓冲区空)
+</code></pre>
+
+<h3 id="名词解释">名词解释</h3>
+
+<p>全局描述符表：保护模式下内存段的登记表 即位于 Loader 0x900处
+描述符desc 占 8 个字节，含有 base，limit，addr等
+选择子：位于段寄存器，是 GDT 的索引
+——–选择子结构———
+15    3  2   0</p>
+
+<p>描述符索引值 TI  RPL</p>
+
+<p>而 total_mem_bytes 与loader.bin 之间还有 4 个段描述符（第 0 个不可用，第 1 个为代码段，第 2 个为数据段和栈，第 3 个为显存段）
+以及 60 个预留段描述符槽位，因此 (60 + 4) * 8 = 512 = 0x200
+total_mem_bytes : 0xb00 (存储获取到的内存变量)</p>
+
+<p>页目录表： （物理地址）0x100000~0x100fff 4KB
+第一个页表：（物理地址）0x101000~0x101fff 4KB
+为映射到 0xc0000000，对应的页目录项为第 768 个，由于一个页表(页表项4字节)表示 4MB = (4GB/4KB)*4字节
+所以第 768 个页目录项对应的虚拟地址 4MB：0xc0000000~0xc003ffff 指向低端 4MB之内的物理地址
+为了实现所有用户共享内核，因此将 各个用户的虚拟地址高 1 GB都指向内核所在的物理内存空间。即每个用户 768~1022（共254个PDE）都与其他进程一致。（即：提前将内核的所有PDE都定下来，在创建用户进程时，直接将内核对应PDE复制，以达到内核共享）。</p>
+
+<p>虚拟地址 0xc0000000~0xc00fffff 映射 物理地址 0x00000000~0x000fffff(低端 1Mb 内存)
+0xc0100000：堆的起始地址（注意：由于0x100000~0x101fff为页目录表和页表，因此 0xc0100000并不映射到此处，需要绕开）
+0xc009f000 内核主线程栈顶
+0xc009e000 内核主线程的pcb. PCB占用 1 页 0x1000
+0xc009a000 位图位置
+0xc0000000 内核从虚拟地址3G起. 0x100000意指跨过低端1M内存</p>
+
+<p>0x9f000：内核主线程栈顶
+内核估计 70 kb 左右。装载到 0x9f000绰绰有余
+因此在 低端 1MB 下所用到的最高地址，即为 main线程的栈顶地址 0x9f000</p>
+
+<p>0xc009a000:位图位置
+一个页框大小的位图可表示128M内存， 位图位置安排在地址0xc009a000</p>
+
+<p>由于 虚拟机配置 32 MB 物理内存，因此需要 1024 字节 bitmap -&gt; 4kb * 1024 * 8 = 32 MB
+即  1/4 页 ，但是我很任性，想搞 4 页，即 0x4000
+又因为 pcb 位于 0xc009e000，所以将位图放在下面 0xc009e000 - 0x4000 = 0xc009a000</p>
+
+<p>堆的起始地址：（为了让虚拟地址连续）</p>
+<h1 id="define-k_heap_start-0xc0100000">define K_HEAP_START 0xc0100000</h1>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">PCB</span> <span class="o">----&gt;</span> <span class="n">task_struct</span>
+<span class="k">struct</span> <span class="n">task_struct</span> <span class="p">{</span>
+   <span class="kt">uint32_t</span><span class="o">*</span> <span class="n">self_kstack</span><span class="p">;</span>     <span class="c1">// 各内核线程都用自己的内核栈，用来记录栈顶指针</span>
+   <span class="n">_pid_t</span> <span class="n">pid</span><span class="p">;</span>
+   <span class="k">enum</span> <span class="n">task_status</span> <span class="n">status</span><span class="p">;</span>
+   <span class="kt">char</span> <span class="n">name</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+   <span class="kt">uint8_t</span> <span class="n">priority</span><span class="p">;</span>
+   <span class="kt">uint8_t</span> <span class="n">ticks</span><span class="p">;</span>             <span class="c1">// 每次在处理器上执行的时间嘀嗒数</span>
+   <span class="kt">uint32_t</span> <span class="n">elapsed_ticks</span><span class="p">;</span>    <span class="c1">// 此任务自上cpu运行后至今占用了多少cpu嘀嗒数，也就是此任务执行了多久</span>
+   <span class="k">struct</span> <span class="n">list_elem</span> <span class="n">general_tag</span><span class="p">;</span><span class="c1">//general_tag的作用是用于线程在一般的队列中的结点    </span>
+   <span class="k">struct</span> <span class="n">list_elem</span> <span class="n">all_list_tag</span><span class="p">;</span><span class="c1">// all_list_tag的作用是用于线程队列thread_all_list中的结点 </span>
+   <span class="kt">uint32_t</span><span class="o">*</span> <span class="n">pgdir</span><span class="p">;</span>              <span class="c1">// 进程自己页表的虚拟地址</span>
+   <span class="k">struct</span> <span class="n">virtual_addr</span> <span class="n">userprog_vaddr</span><span class="p">;</span>   <span class="c1">// 用户进程的虚拟地址</span>
+   <span class="kt">uint32_t</span> <span class="n">stack_magic</span><span class="p">;</span>         <span class="c1">// 用这串数字做栈的边界标记，用于检测栈的溢出</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>寄存器映像     —中断栈 intr_stack:    | kernel.S 中的 intr_exit 的出栈操作为此结构的逆操作
+   1.任务被中断时，保存寄存器映像
+   2.给进程预留，用来填充用户进程上下文，即寄存器环境
+栈         —线程栈 thread_stack：保存待运行的函数，并进行任务切换  | 内核栈 = 中断栈 + 线程栈
+栈指针     —记录线程栈栈顶，因为中断栈不固定 &lt;—-self_kstack
+pid
+进程状态
+优先级
+时间片
+页表
+打开文件描述符
+父进程
+…</p>
+
+<p>系统调用步骤：</p>
+
+<ol>
+  <li>在 syscall.h 的结构 enum SYSCALL_NR 中添加新的子功能号</li>
+  <li>在 syscall.c 中增加系统调用的用户接口</li>
+  <li>在 syscall_init.c 定义子功能处理函数，并在syscall_table 中注册</li>
+</ol>
+
+<p>端口就是位于 IO 控制器上的接口</p>
+
+<p>command 寄存器要最后写入，因此一旦写入，硬盘便开始工作</p>
+
+<h2 id="实现的系统调用">实现的系统调用</h2>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_GETPID</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_getpid</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_WRITE</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_write</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_MALLOC</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_malloc</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_FREE</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_free</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_FORK</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_fork</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_READ</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_read</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_PUTCHAR</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_putchar</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CLEAR</span><span class="p">]</span>   <span class="o">=</span> <span class="n">cls_screen</span><span class="p">;</span> <span class="c1">// 位于 print.S</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_GETCWD</span><span class="p">]</span>     <span class="o">=</span> <span class="n">sys_getcwd</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_OPEN</span><span class="p">]</span>       <span class="o">=</span> <span class="n">sys_open</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CLOSE</span><span class="p">]</span>      <span class="o">=</span> <span class="n">sys_close</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_LSEEK</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_lseek</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_UNLINK</span><span class="p">]</span>   <span class="o">=</span> <span class="n">sys_unlink</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_MKDIR</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_mkdir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_OPENDIR</span><span class="p">]</span>  <span class="o">=</span> <span class="n">sys_opendir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CLOSEDIR</span><span class="p">]</span>   <span class="o">=</span> <span class="n">sys_closedir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CHDIR</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_chdir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_RMDIR</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_rmdir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_READDIR</span><span class="p">]</span>  <span class="o">=</span> <span class="n">sys_readdir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_REWINDDIR</span><span class="p">]</span>   <span class="o">=</span> <span class="n">sys_rewinddir</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_STAT</span><span class="p">]</span>  <span class="o">=</span> <span class="n">sys_stat</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_PS</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_ps</span><span class="p">;</span>
+   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_EXECV</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_execv</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h2 id="实现函数">实现函数</h2>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="kt">uint32_t</span> <span class="nf">getpid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">uint32_t</span> <span class="nf">write</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
+   <span class="kt">void</span><span class="o">*</span> <span class="nf">malloc</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">free</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">ptr</span><span class="p">);</span>
+   <span class="kt">int16_t</span> <span class="nf">fork</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">read</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">putchar</span><span class="p">(</span><span class="kt">char</span> <span class="n">char_asci</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">clear</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">char</span><span class="o">*</span> <span class="nf">getcwd</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">open</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">flag</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">lseek</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int32_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">whence</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">mkdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
+   <span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="nf">opendir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">closedir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">rmdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
+   <span class="k">struct</span> <span class="n">dir_entry</span><span class="o">*</span> <span class="nf">readdir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">rewinddir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">stat</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">,</span> <span class="k">struct</span> <span class="n">file_attr</span><span class="o">*</span> <span class="n">buf</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">chdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">ps</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">);</span><span class="kt">uint32_t</span> <span class="nf">getpid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">uint32_t</span> <span class="nf">write</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
+   <span class="kt">void</span><span class="o">*</span> <span class="nf">malloc</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">free</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">ptr</span><span class="p">);</span>
+   <span class="kt">int16_t</span> <span class="nf">fork</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">read</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">putchar</span><span class="p">(</span><span class="kt">char</span> <span class="n">char_asci</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">clear</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">char</span><span class="o">*</span> <span class="nf">getcwd</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">open</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">flag</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">lseek</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int32_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">whence</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">mkdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
+   <span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="nf">opendir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">closedir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">rmdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
+   <span class="k">struct</span> <span class="n">dir_entry</span><span class="o">*</span> <span class="nf">readdir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">rewinddir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">stat</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">,</span> <span class="k">struct</span> <span class="n">file_attr</span><span class="o">*</span> <span class="n">buf</span><span class="p">);</span>
+   <span class="kt">int32_t</span> <span class="nf">chdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">ps</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+   <span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>over</p>
+
+      
+      </div>
+
+    <!-- Set Content -->
+    <div style="float: right;">
+      <div class="side-content">
+        <div class="wrap">
+            <!-- Content -->
+            <div class="side content">
+                <ul id="content-side" class="content-ul">
+                </ul>
+            </div>
+        </div>
+      </div>
+    </div>
+
+      <footer>
+  <span class="hidden-text">
+  <blockquote>Copyright 2023 HuSharp. Any and all opinions listed here are my own and not representative of my employers; future, past and present.</blockquote>
+  </span>
+  <br />
+</footer>
+
+    </div>
+    <script src="/assets/js/instantpage-3.0.0.js" defer type="module"> </script>
+    <script src="/assets/js/pageContent.js" charset="utf-8"></script>
+  </body>
+</html>

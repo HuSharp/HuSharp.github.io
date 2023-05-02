@@ -7,3 +7,9 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
   - jekyll-feed
+
+# comments
+disqus_shortname: husharp-today
+
+# statistic analysis
+baidu_statistic_analysis_id: 6d368ef895dea4ef8091393d1e3e9408
