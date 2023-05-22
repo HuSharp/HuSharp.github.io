@@ -5,7 +5,7 @@ avatar: /assets/favicon/android-chrome-512x512.png
 avatar_old: /assets/img/vampire.png
 ---
 
-I'm Jinhao Hu, aka HuSharp\*, Hu#.
+I'm Jinhao Hu, aka HuSharp\*, Hu#\*.
 
 I code for a living, specialized in System, currently employed at [PingCAP](https://en.pingcap.com).
 
@@ -25,6 +25,8 @@ I use different languages for writing, please feel free to contact me for possib
 -------
 
 \* Pronounced as /huʃɑrp/.
+
+\* Here is an [introduction](/life/2020/07/18/HuSharp-origin.html) to the origin of the name.
 
 Reach me at [ihusharp@gmail.com](mailto:ihusharp@gmail.com), also available on [Github](https://github.com/HuSharp), [Douban](https://www.douban.com/people/224261882).
 

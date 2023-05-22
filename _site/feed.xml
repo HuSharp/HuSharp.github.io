@@ -1,4 +1,599 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-05-02T16:42:14+08:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">文件系统总结</title><link href="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html" rel="alternate" type="text/html" title="文件系统总结" /><published>2020-12-12T23:32:12+08:00</published><updated>2020-12-12T23:32:12+08:00</updated><id>http://localhost:4000/linux/2020/12/12/FileSystem-Thinking</id><content type="html" xml:base="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html"><![CDATA[<ul id="markdown-toc">
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-05-22T22:09:37+08:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Flashback TiKV</title><link href="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html" rel="alternate" type="text/html" title="Flashback TiKV" /><published>2023-05-20T17:43:28+08:00</published><updated>2023-05-20T17:43:28+08:00</updated><id>http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV</id><content type="html" xml:base="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html"><![CDATA[<ul id="markdown-toc">
+  <li><a href="#背景介绍" id="markdown-toc-背景介绍">背景介绍</a>    <ul>
+      <li><a href="#执行与效果" id="markdown-toc-执行与效果">执行与效果</a></li>
+      <li><a href="#具体实现" id="markdown-toc-具体实现">具体实现</a>        <ul>
+          <li><a href="#采用-region-锁停读写调度" id="markdown-toc-采用-region-锁停读写调度">采用 Region 锁停读写调度</a></li>
+          <li><a href="#大致流程" id="markdown-toc-大致流程">大致流程</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#代码分析" id="markdown-toc-代码分析">代码分析</a>    <ul>
+      <li><a href="#流程概览" id="markdown-toc-流程概览">流程概览</a></li>
+      <li><a href="#phase1-1-prepare" id="markdown-toc-phase1-1-prepare">Phase1-1: Prepare</a>        <ul>
+          <li><a href="#prepare-flashback" id="markdown-toc-prepare-flashback">Prepare Flashback</a></li>
+          <li><a href="#停读" id="markdown-toc-停读">停读</a></li>
+          <li><a href="#readlocal--staleread" id="markdown-toc-readlocal--staleread">ReadLocal &amp; StaleRead</a></li>
+          <li><a href="#停写" id="markdown-toc-停写">停写</a></li>
+        </ul>
+      </li>
+      <li><a href="#phase1-2-prewrite" id="markdown-toc-phase1-2-prewrite">Phase1-2: Prewrite</a>        <ul>
+          <li><a href="#停止-resolved-_ts-的推进" id="markdown-toc-停止-resolved-_ts-的推进">停止 resolved _ts 的推进</a></li>
+          <li><a href="#读写阶段介绍" id="markdown-toc-读写阶段介绍">读写阶段介绍</a></li>
+        </ul>
+      </li>
+      <li><a href="#phase2-1-exec--commit" id="markdown-toc-phase2-1-exec--commit">Phase2-1: Exec &amp; Commit</a></li>
+      <li><a href="#phase2-2-finish" id="markdown-toc-phase2-2-finish">Phase2-2: Finish</a></li>
+    </ul>
+  </li>
+  <li><a href="#appendix" id="markdown-toc-appendix">Appendix</a>    <ul>
+      <li><a href="#一些踩过的坑" id="markdown-toc-一些踩过的坑">一些踩过的坑</a></li>
+      <li><a href="#改进点" id="markdown-toc-改进点">改进点</a></li>
+      <li><a href="#参考文档" id="markdown-toc-参考文档">参考文档</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>这是一篇原本要作为产品介绍的文章，但种种原因搁置了，最近又在完善相关功能，索性就完善一下发出来。感恩 <a href="https://ipotato.me/">JmPotato</a> 哥哥的带飞~</p>
+
+<p>代码请见：<a href="https://github.com/pingcap/tidb/issues/37197">roadmap</a> &amp; <a href="https://github.com/tikv/tikv/issues/13303">TiKV tracking issue</a></p>
+
+<h2 id="背景介绍">背景介绍</h2>
+
+<p>Flashback（通常指 Oracle Flashback）是用于在用户发生误操作的时候，快速回滚至原先版本，避免产生重大损失的特性。</p>
+
+<p>游戏行业中会不时出现版本错误等问题，定期的备份只能回滚到备份时间点，且浪费资源。TiDB v6.4.0 引入了 FLASHBACK CLUSTER TO TIMESTAMP 语法，其功能是将集群、数据库、数据表的数据恢复到特定的时间点。</p>
+
+<p>在 TiDB 中，存在一些相关的功能：</p>
+
+<ul>
+  <li>MVCC &amp; GC：数据更新或删除都是增加新版本，历史版本通过 GC 机制进行清理。存储引擎中保存有一定时间内的历史记录，这为之后的各种恢复数据功能提供了可能。</li>
+  <li>通过系统变量 tidb_snapshot 读取历史数据：指定一个 ts（不能早于 GC safepoint），读取对应时间点的数据，并且保证数据是一致的。</li>
+  <li>FLASHBACK TABLE：恢复被 DROP 或 TRUNCATE 删除的表以及数据。</li>
+</ul>
+
+<p>我们最终采用在多版本并发控制（MVCC）的基础上，取出 TIMESTAMP 之前的最新时间戳数据来覆盖当前的数据。</p>
+
+<h3 id="执行与效果">执行与效果</h3>
+
+<p>『详细操作请参考 <a href="https://docs.pingcap.com/zh/tidb/dev/sql-statement-flashback-to-timestamp">用户文档</a>』</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mysql</span><span class="o">&gt;</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">t</span><span class="p">(</span><span class="n">a</span> <span class="nb">INT</span><span class="p">);</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">09</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">t</span><span class="p">;</span>
+<span class="n">Empty</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">01</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">now</span><span class="p">();</span>
+<span class="o">+</span><span class="c1">---------------------+</span>
+<span class="o">|</span> <span class="n">now</span><span class="p">()</span>               <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------------------+</span>
+<span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">28</span> <span class="mi">17</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mi">16</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------------------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">02</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">t</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">1</span> <span class="k">row</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">02</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">t</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">------+</span>
+<span class="o">|</span> <span class="n">a</span>    <span class="o">|</span>
+<span class="o">+</span><span class="c1">------+</span>
+<span class="o">|</span>    <span class="mi">1</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">01</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="n">FLASHBACK</span> <span class="k">CLUSTER</span> <span class="k">TO</span> <span class="nb">TIMESTAMP</span> <span class="s1">'2022-09-28 17:24:16'</span><span class="p">;</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">20</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">t</span><span class="p">;</span>
+<span class="n">Empty</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="具体实现">具体实现</h3>
+
+<h4 id="采用-region-锁停读写调度">采用 Region 锁停读写调度</h4>
+
+<p>我们在 Flashback 中采用 Region 锁来阻断 Flashback 过程中的所有读写以及调度，避免产生任何可能导致数据不一致的外部因素。</p>
+
+<p><strong>通过给 Region 先上锁再 Flashback，我们可以获得以下好处：</strong></p>
+
+<ul>
+  <li>阻断任何 Flashback 过程中的读写以及调度，避免产生任何可能导致数据不一致的外部因素；</li>
+  <li>由于上锁后的 Region 不会产生额外的数据写入，便于 Flashback 自由地写入和重试；</li>
+  <li>由于上锁后的 Region 不会产生额外的数据写入，不再需要额外维护集群内不同 Store 和不同 Region 当前的 Flashback 成功失败状态，只需要无脑重试直到成功即可；</li>
+  <li>Region 级别更符合 TiKV 内部数据管理的粒度。</li>
+</ul>
+
+<h4 id="大致流程">大致流程</h4>
+
+<p>TiDB 首先会去判断：</p>
+
+<ul>
+  <li>FlashbackTS：是否是未来时间点，是否大于 minSafeTS，是否在 GC Safe time 内</li>
+  <li>是否有非 Flashback ddl job 在时间范围内执行过</li>
+  <li>是否有 DDL 任务正在执行</li>
+  <li>关闭 GC，PD 调度和 auto analyze 然后开始调用 TiKV 的两阶段</li>
+  <li><strong>第一阶段（Region 锁定）</strong>
+    <ol>
+      <li>TiDB 来确定执行 Flashback 请求的 key range；</li>
+      <li>TiDB 以 region 为单位，向不同 region 发送 kv_prepare_flashback_to_version 请求，阻止读、写和调度；</li>
+      <li>调用 PD 接口去拿最新的 TSO，作为执行 Flashback 的 startTS。TiDB 会持久化该 startTS，来保证 TiDB 在失败重启后也能使用相同 TS；</li>
+      <li>用 Region 锁来让每个 Region 独立处理自己的 Flashback 进度
+        <ul>
+          <li>扫描所有的 MVCC Lock 并进行 rollback；</li>
+          <li>TiKV 会在 CF_WRITE 中选择最新的 user key，并以上面提到的 startTS 先 Prewrite 上一个锁，停止 resolved_ts 的推进，将在第二阶段 Commit 上；</li>
+        </ul>
+      </li>
+      <li>TiDB 检查所有请求是否成功返回，并重试失败请求，直到整个锁定阶段完成。</li>
+    </ol>
+  </li>
+  <li><strong>第二阶段（执行 Flashback）</strong>
+    <ol>
+      <li>TiDB 取上面提到的 startTS，以及去 PD 拿最新的 TSO 作为 commitTS，TiDB 同样会持久化该 startTS，并向不同 region 发送 kv_flashback_to_version 请求 ；</li>
+      <li>每个 Region 独立处理自己的 Flashback 进度
+        <ul>
+          <li>扫描出需要 Flashback 到的时间点以后有版本变化的键，为扫描出的键写上旧的 MVCC 版本；</li>
+          <li>Commit 第一阶段中 Prewrite 写入的锁，并在完成后摘掉 Region 锁；</li>
+        </ul>
+      </li>
+      <li>TiDB 检查所有请求是否成功返回，并以相同的 startTS 和 commitTS 重试那些失败的请求，直到整个 Flashback 执行完成。</li>
+    </ol>
+  </li>
+</ul>
+
+<h2 id="代码分析">代码分析</h2>
+
+<p>让我们从 TiKV 启动开始说起 :)</p>
+
+<p>从 cmd/tikv-server/main.rs 开始，TiKV 完成配置一系列参数后，main 函数末尾走到 server::run_tikv(config) 运行 TiKV server，通过 main 中所配置的参数选择对应 Engine，调用 run_impl 函数，在 run_server 中进行绑定，并启动 grpc_server.start(); 服务。具体的绑定启动流程可以查看<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">此文档</a>。</p>
+
+<p>本文关注的 Flashback 位于 <a href="https://github.com/pingcap/kvproto/blob/master/proto/tikvpb.proto#L20">kvproto</a> 对应的此处</p>
+
+<div class="language-protobuf highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">rpc</span> <span class="n">KvPrepareFlashbackToVersion</span><span class="p">(</span><span class="n">kvrpcpb.PrepareFlashbackToVersionRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">kvrpcpb.PrepareFlashbackToVersionResponse</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">rpc</span> <span class="n">KvFlashbackToVersion</span><span class="p">(</span><span class="n">kvrpcpb.FlashbackToVersionRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">kvrpcpb.FlashbackToVersionResponse</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<p>回到 TiKV 代码，TiKV 包含多个 gRPC service。其中最重要的一个是 KvService，位于 src/server/service/kv.rs 文件中。包括 TiKV 的 kv_get，kv_scan，kv_prewrite，kv_commit 等事务操作的 API。本文 Flashback 由于采用事务模型，很自然地放在此文件中。</p>
+
+<h3 id="流程概览">流程概览</h3>
+
+<p>让我们先来纵览一下 Flashback 整体流程，抽出主要代码大致可以看出主要就是四步：</p>
+
+<ol>
+  <li>在开始正式的覆盖写等操作之前，先通过 raft_router 发送一个 Admin 的 PrepareFlashback 指令，完成 region meta 的持久化；</li>
+  <li>在 region 被标识为 Flashback 状态后，prewrite 第一个 user_key 来阻止 resolved_ts 的推进；</li>
+  <li>执行 Flashback并 commit 第 2 步写入的 key；</li>
+  <li>Flashback 执行结束后通过 raft_router 发送一个 FinishFlashback 指令，进行数据清理。</li>
+</ol>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
+<span class="k">fn</span> <span class="nf">future_prepare_flashback_to_version</span><span class="p">()</span> <span class="p">{</span>
+ <span class="c1">// 1. prepare the raftstore for the later flashback.</span>
+ <span class="nf">send_flashback_msg</span><span class="p">(</span><span class="o">..</span><span class="p">,</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">);</span>
+ <span class="c1">// 2.prewrite the first user key to prevent `resolved_ts` from advancing.</span>
+ <span class="k">let</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">=</span> <span class="nf">paired_future_callback</span><span class="p">();</span>
+ <span class="n">res</span> <span class="o">=</span> <span class="n">storage</span><span class="nf">.sched_txn_command</span><span class="p">(</span><span class="n">req</span><span class="nf">.clone</span><span class="p">()</span><span class="nf">.into</span><span class="p">(),</span> <span class="n">cb</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="c1">// Second Phase</span>
+<span class="k">fn</span> <span class="nf">future_flashback_to_version</span><span class="p">()</span> <span class="p">{</span>
+ <span class="c1">// 3. execute overwrite and commit the first user key.</span>
+ <span class="k">let</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">=</span> <span class="nf">paired_future_callback</span><span class="p">();</span>
+ <span class="k">let</span> <span class="n">res</span> <span class="o">=</span> <span class="n">storage_clone</span><span class="nf">.sched_txn_command</span><span class="p">(</span><span class="n">req</span><span class="nf">.into</span><span class="p">(),</span> <span class="n">cb</span><span class="p">);</span>
+ <span class="c1">// 4. notify raftstore flashback has been finished.</span>
+ <span class="nf">send_flashback_msg</span><span class="p">(</span><span class="o">..</span><span class="p">,</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>那就让我们首先进入第一阶段：prepare 模块！</p>
+
+<h3 id="phase1-1-prepare">Phase1-1: Prepare</h3>
+
+<p>Prepare 函数的目的可以概况为：停读停写停调度，持久化 Flashback 状态，停止 resolved_ts 的推进。</p>
+
+<p>首先介绍“停读写停调度”，具体原因已经在背景介绍小节中解释过。为了实现这个目的，直觉上是在所有读写调度任务执行处进行隔断。由于 TiKV 底层采用 Raft 协议，最终会进行 Propose，Commit 然后 Apply 的流程，那么很自然地在进行 Propose 前隔断掉读写调度。</p>
+
+<blockquote>
+  <p>此处剧透 Flashback 实现为：在 Propose 处快速隔断掉 Flashback 过程中的其他读写，在 Apply 处隔断进行兜底。</p>
+</blockquote>
+
+<p>通过此文章可以了解到在 TiKV 处理 Proposal 的大致流程 <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>
+
+<p>一言以蔽之：TiKV 使用了两个线程池来处理 Proposal，并且将一个 Raft Peer 分成了两部分：PeerFsm和 ApplyFsm。在处理 Proposal 的过程中，首先由 PeerFsm获取日志并驱动 Raft 内部的状态机，由 ApplyFsm根据已提交日志修改对应数据的状态机（region 信息和用户数据）。</p>
+
+<blockquote>
+  <p>可通过此文章了解 PeerFsm 和  ApplyFsm <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV 源码解析系列文章（十七）raftstore 概览</a></p>
+</blockquote>
+
+<p>在 “PeerFsm获取日志并驱动 Raft 内部的状态机”时，会走到下面函数：</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">propose_raft_command_internal</span><span class="p">()</span> <span class="p">{</span>
+ <span class="k">match</span> <span class="k">self</span><span class="nf">.pre_propose_raft_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msg</span><span class="p">)</span> <span class="p">{</span> <span class="o">..</span> <span class="p">}</span>
+
+ <span class="k">if</span> <span class="k">self</span><span class="py">.fsm.peer</span><span class="nf">.propose</span><span class="p">(</span><span class="k">self</span><span class="py">.ctx</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">resp</span><span class="p">,</span> <span class="n">diskfullopt</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">self</span><span class="py">.fsm.has_ready</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+ <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>我们发现 PeerFsmDelegate::pre_propose_raft_command 函数会在 propose request 前进行检查。</p>
+
+<p>那么很自然地将判断当前 request 是否为 Flashback 的检查放在此处。</p>
+
+<p>需要关注的一个地方是：</p>
+
+<p>当然不能全盘隔断，Flashback 也需要走 raft 流程，应当给予通行证。</p>
+
+<p>随之我们发现在 RaftCmdRequest 中的 header 里面有个 flags，可以将通行证放在此处。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">fn</span> <span class="nf">pre_propose_raft_command</span><span class="p">(</span>
+     <span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span>
+     <span class="n">req</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">RaftCmdRequest</span><span class="p">,</span>
+ <span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">RaftCmdResponse</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+     <span class="c1">// When in the flashback state, we should not allow any other request to be proposed.</span>
+     <span class="k">if</span> <span class="k">self</span><span class="nf">.region</span><span class="p">()</span><span class="py">.is_in_flashback</span> <span class="p">{</span>
+         <span class="k">let</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_header</span><span class="p">()</span><span class="nf">.get_flags</span><span class="p">();</span>
+         <span class="k">if</span> <span class="o">!</span><span class="n">flags</span><span class="nf">.contains</span><span class="p">(</span><span class="n">FLASHBACK</span><span class="p">)</span> <span class="p">{</span>
+             <span class="k">return</span> <span class="nb">Err</span><span class="p">;</span>
+         <span class="p">}</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="prepare-flashback">Prepare Flashback</h4>
+
+<p>在完成“隔断点”的安插后，为了让 Flashback 相关操作不受隔断顺利通行，我们会在 header 处加上 flag。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
+<span class="k">fn</span> <span class="n">future_prepare_flashback_to_version</span><span class="p">{</span>
+ <span class="c1">// 1. prepare the raftstore for the later flashback. </span>
+ <span class="nf">send_flashback_msg</span><span class="p">(</span><span class="o">..</span><span class="p">,</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>所调用的 start_flashback/end_flashback 函数在加上 flag 后发送 admin req.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">fn</span> <span class="n">start_flashback</span><span class="o">/</span><span class="n">end_flashback</span> <span class="p">{</span>
+ <span class="o">...</span>
+ <span class="n">req</span><span class="nf">.mut_header</span><span class="p">()</span>
+     <span class="nf">.set_flags</span><span class="p">(</span><span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">());</span>
+ <span class="c1">// call admin request directly</span>
+ <span class="k">let</span> <span class="n">raft_router</span> <span class="o">=</span> <span class="n">raft_router</span><span class="nf">.lock</span><span class="p">()</span><span class="k">.await</span><span class="p">;</span>
+ <span class="n">raft_router</span><span class="nf">.send_command</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+ <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Admin request 通过 RaftStoreRouter 构成一条 RaftCommand 发送，会按照 Propose 流程，通过 pre_propose 的检查后到 PeerFsmDelegate.fsm.peer.propose 完成 Propose 一条 Raft Log。</p>
+
+<p>之后PeerFsm会将 Proposal 以及已提交日志发送给对应的 ApplyFsm来到 apply 流程。</p>
+
+<p>ApplyFsm会针对这些日志进行（见 ApplyFsm::handle_apply）：</p>
+
+<ol>
+  <li>完成数据的持久化。</li>
+  <li>向 PeerFsm发送 ApplyRes，用于更新 PeerFsm中的 Region 状态。
+  在 exec_raft_cmd 会加上 check_flashback_state，进行 Flashback 持久态的判断。此处 region 将在下面的 exec 函数中设置上，由于为串行 apply，因此在下条 cmd 来之前，便会设置好 region 信息。</li>
+</ol>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">check_flashback_state</span><span class="p">(</span><span class="k">self</span><span class="py">.region</span><span class="nf">.get_is_in_flashback</span><span class="p">());</span>
+
+<span class="k">pub</span> <span class="k">fn</span> <span class="nf">check_flashback_state</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="c1">// The admin flashback cmd could be proposed/applied under any state.</span>
+    <span class="k">if</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span> <span class="p">||</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">Ok</span><span class="p">(());</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="n">is_flashback_request</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_header</span><span class="p">()</span><span class="nf">.get_flags</span><span class="p">()</span>
+                            <span class="nf">.contains</span><span class="p">(</span><span class="n">FLASHBACK</span><span class="p">);</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>完成 check 后执行 ApplyDelegate::exec_admin_cmd ，最终识别 Flashback 标识，到达我们的目的地 exec_flashback 函数。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span> <span class="p">|</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span> <span class="k">=&gt;</span> 
+    <span class="k">self</span><span class="nf">.exec_flashback</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">request</span><span class="p">),</span>
+</code></pre></div></div>
+
+<p>exec_flashback 放入 region 的元信息中，并完成持久态 RegionLocalState 的更新。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_flashback</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;&gt;</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="n">is_in_flashback</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_cmd_type</span><span class="p">()</span> <span class="o">==</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">;</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">region</span> <span class="o">=</span> <span class="k">self</span><span class="py">.region</span><span class="nf">.clone</span><span class="p">();</span>
+    <span class="n">region</span><span class="nf">.set_is_in_flashback</span><span class="p">(</span><span class="n">is_in_flashback</span><span class="p">);</span>
+
+
+    <span class="nf">put_msg_cf</span><span class="p">(</span><span class="n">CF_RAFT</span><span class="p">,</span> <span class="o">&amp;</span><span class="nn">keys</span><span class="p">::</span><span class="nf">region_state_key</span><span class="p">(</span><span class="n">region_id</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">old_state</span><span class="p">)</span>
+    <span class="nf">Ok</span><span class="p">(</span><span class="nn">ApplyResult</span><span class="p">::</span><span class="nf">Res</span><span class="p">(</span><span class="nn">ExecResult</span><span class="p">::</span><span class="n">SetFlashbackState</span> <span class="p">{</span> <span class="n">region</span> <span class="p">}</span> <span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>ApplyFSM 在应用一批日志之后会发送一条 ApplyRes 的消息到 PeerFsm。</p>
+
+<p>最终又回到 PeerFsm 的PeerFsmDelegate::handle_msgs 函数，走到 PeerMsg::ApplyRes { res } 分支，调用 PeerFsmDelegate::on_apply_res 完成对 Flashback 的持久态更新。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">fn</span> <span class="nf">on_set_flashback_state</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">is_in_flashback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// update flashback state</span>
+        <span class="k">self</span><span class="nf">.update_region</span><span class="p">();</span>
+        <span class="c1">// 此行代码在做的事将在「停读 - ReadLocal &amp; StaleRead 」小节解释</span>
+        <span class="k">self</span><span class="py">.fsm.peer</span><span class="nf">.leader_lease_mut</span><span class="p">()</span><span class="nf">.expire_remote_lease</span><span class="p">();</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>梳理完后，很清晰的看到存在两个对非 Flashback 操作的隔断位置，分别位于 propose 和 apply 处。</p>
+
+<p>那么随之而来的问题便是：在何处加入对 Flashback req 的“通行证”呢？</p>
+
+<p>Flashback 既然可以理解为基于 MVCC 进行实现，那么便也需要通过 MVCC 的读写接口流程。因此溯源一下 MVCC 的读写流程，便能更好地找到“通行证”的放置位置。</p>
+
+<h4 id="停读">停读</h4>
+
+<p>让我们首先来梳理一下读流程，可结合 <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV 源码阅读三部曲（二）读流程 来阅读详细读过程</a>。</p>
+
+<p>在调用到 LocalReader::propose_raft_command 时，发现是通过 LocalReader::pre_propose_raft_command 进行判断 req。</p>
+
+<p>会对 ReadLocal 和 StaleRead 进行特定逻辑处理，其余信息将转发给 RaftStore 来执行，即由 ProposalRouter::send 转发后走到我们之前所提到的 Propose 流程。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">propose_raft_command</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">match</span> <span class="k">self</span><span class="nf">.pre_propose_raft_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">req</span><span class="p">)</span> <span class="p">{</span> 
+        <span class="nn">RequestPolicy</span><span class="p">::</span><span class="n">ReadLocal</span> <span class="k">=&gt;</span> <span class="o">..</span>
+        <span class="nn">RequestPolicy</span><span class="p">::</span><span class="n">StaleRead</span> <span class="k">=&gt;</span> <span class="o">..</span>
+        <span class="c1">// Forward to raftstore.</span>
+        <span class="n">_</span> <span class="k">=&gt;</span> <span class="k">self</span><span class="nf">.redirect</span><span class="p">(</span><span class="nn">RaftCommand</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">cb</span><span class="p">)),</span>     
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>这样很自然地对于除 ReadLocal 和 StaleRead 外的 req，都可以做出以下隔断：</p>
+
+<p>在进入 read 之前，判断一下 req 中是否有 Flashback 参数，便实现了在开启 Flashback 之后，只能让 Flashback 相关的读指令通行。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">ctx</span><span class="py">.for_flashback</span> <span class="p">{</span>
+        <span class="n">flags</span> <span class="p">|</span><span class="o">=</span> <span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="n">header</span><span class="nf">.set_flags</span><span class="p">(</span><span class="n">flags</span><span class="p">);</span>
+    <span class="o">...</span>
+    <span class="k">self</span><span class="py">.router</span><span class="nf">.read</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Flashback 执行时将对 exec_snapshot 进行 ctx.for_flashback 的设置，其中 for_flashback 从哪获取的将在下文 「Phase2-1: Exec - 读取阶段」 解释。</p>
+
+<h4 id="readlocal--staleread">ReadLocal &amp; StaleRead</h4>
+
+<p>正如上小节提到会对 ReadLocal 和 StaleRead 存在着特定逻辑处理，可以作为扩展阅读资料了解 <a href="https://cn.pingcap.com/blog/lease-read">TiKV 功能介绍 - Lease Read</a> &amp;&amp; <a href="https://docs.pingcap.com/zh/tidb/dev/stale-read">Stale Read 功能的使用场景</a>。</p>
+
+<p>首先看看ReadLocal 的特殊处理即对 Peer 中的 leader_lease 进行检查。当发现不在租期内时，便会转发到正常 Propose 流程中。</p>
+
+<p>因此我们采取：在 prepare Flashback 时，对 lease 手动设置超时，来确保 local read 不会执行。</p>
+
+<p>这便是对之前完成 apply res 之后与更新 region 同时所做的事。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">fn</span> <span class="nf">on_set_flashback_state</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">is_in_flashback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Update the region meta.</span>
+        <span class="k">self</span><span class="nf">.update_region</span><span class="p">()</span>
+        <span class="c1">// Let the leader lease to None to ensure that local reads are not executed.</span>
+        <span class="k">self</span><span class="py">.fsm.peer</span><span class="nf">.leader_lease_mut</span><span class="p">()</span><span class="nf">.expire_remote_lease</span><span class="p">();</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>而对于 StaleRead 的运行前提是需要不停推进 safe ts（即 resolved_ts）。会在 TiDB 检查 resolved_ts，保证 Flashback 的版本不会超过 resolved_ts，因此也完成隔断。</p>
+
+<p>至此对于读的隔断介绍完毕。</p>
+
+<h4 id="停写">停写</h4>
+
+<p>可参考 <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV 源码阅读三部曲（三）写流程</a> 阅读写请求全链路的执行流程。</p>
+
+<p>在写的过程中 RaftKv::exec_write_requests 内部将会走向 router 进行 Propose 流程，因此在此处加上类似上文「读请求」的判断，只能让 Flashback 相关的写指令通行。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_write_requests</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">txn_extra</span><span class="py">.for_flashback</span> <span class="p">{</span>
+        <span class="n">flags</span> <span class="p">|</span><span class="o">=</span> <span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="n">header</span><span class="nf">.set_flags</span><span class="p">(</span><span class="n">flags</span><span class="p">);</span>
+    <span class="o">...</span>
+    <span class="k">self</span><span class="py">.router</span><span class="nf">.send_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">extra_opts</span><span class="p">)</span><span class="o">?</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="phase1-2-prewrite">Phase1-2: Prewrite</h3>
+
+<p>完成停读写调度后，我们遇到了一个新的问题，那就是持续推进的 resolved ts 会导致 CDC 的 Panic.</p>
+
+<h4 id="停止-resolved-_ts-的推进">停止 resolved _ts 的推进</h4>
+
+<p>一言蔽之 Resolved TS（TODO: 介绍 Resolved TS），由于以下原因：</p>
+
+<ul>
+  <li>
+    <p>Resolved TS 组件通过观察 LockCF 的修改，维护一个 StartTS 的最小堆，有 ResolvedTS = max(ResolvedTS, min(StartTS))；</p>
+  </li>
+  <li>
+    <p>Flashback 将以 Region 为单位移除掉所有的锁；</p>
+  </li>
+  <li>
+    <p>正在进行 Flashback 的 Region 上将不再存在任何的锁，此时 ResolvedTS 将会正常向前推进，无论是否有数据写入。</p>
+  </li>
+</ul>
+
+<p>那么将会带来：改动的 CommitTS &lt;  ResolvedTS 的情况（Flashback 的改动自始至终都使用同一个 CommitTS，ResolvedTS 随着推进迟早会超过它）。</p>
+
+<p>为防止 resolved_ts 在我们后续执行 Flashback 前被推进，我们采用：TiDB 请求中带上一个 start_ts，TiKV 会在 CF_WRITE 中选择最新的 user key，以此 start_ts prewrite 上一个锁，将在执行完 Flashback 后 commit 清除掉。</p>
+
+<h4 id="读写阶段介绍">读写阶段介绍</h4>
+
+<p>回到最开始的 future_prepare_flashback_to_version 中，首先内部将 req.into。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
+<span class="k">fn</span> <span class="n">future_prepare_flashback_to_version</span><span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">let</span> <span class="n">res</span> <span class="o">=</span> <span class="n">storage_clone</span><span class="nf">.sched_txn_command</span><span class="p">(</span><span class="n">req</span><span class="nf">.into</span><span class="p">(),</span> <span class="n">cb</span><span class="p">);</span>
+    <span class="o">...</span> 
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>在此文件中实现了 PrepareFlashbackToVersionRequest 到 FlashbackToVersionReadPhase 的 from。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">impl</span> <span class="nb">From</span><span class="o">&lt;</span><span class="n">PrepareFlashbackToVersionRequest</span><span class="o">&gt;</span> <span class="k">for</span> <span class="n">TypedCommand</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">fn</span> <span class="nf">from</span><span class="p">(</span><span class="k">mut</span> <span class="n">req</span><span class="p">:</span> <span class="n">PrepareFlashbackToVersionRequest</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="n">FlashbackToVersionReadPhase</span> <span class="p">{</span> <span class="o">..</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>因此此处调度的实则是 FlashbackToVersionReadPhase，也即对于 sched_txn_command 将会走到由 FlashbackToVersionReadPhase 提供的 process_read 处，在执行完该函数后会触发 FlashbackToVersion 的 process_write。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">process_read</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">statistics</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">Statistics</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="n">ProcessResult</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">let</span> <span class="n">next_cmd</span> <span class="o">=</span> <span class="n">FlashbackToVersion</span> <span class="p">{</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+    <span class="nf">Ok</span><span class="p">(</span><span class="nn">ProcessResult</span><span class="p">::</span><span class="n">NextCommand</span> <span class="p">{</span>
+        <span class="n">cmd</span><span class="p">:</span> <span class="nn">Command</span><span class="p">::</span><span class="nf">FlashbackToVersion</span><span class="p">(</span><span class="n">next_cmd</span><span class="p">),</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>大致流程按照如此往复读写读写，直到没有读为止。</p>
+
+<p>由于都是属于 Flashback 操作，需要加上「通行证」后才能被 raftstore 执行。</p>
+
+<p>因此也很合理地在 process_write 加上 Write 的通行证。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">process_write</span><span class="p">(</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">WriteContext</span><span class="o">&lt;</span><span class="nv">'_</span><span class="p">,</span> <span class="n">L</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="n">write_data</span><span class="py">.extra.for_flashback</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">next_lock_key</span><span class="nf">.is_none</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">next_write_key</span><span class="nf">.is_none</span><span class="p">()</span> <span class="p">{</span>    
+        <span class="o">...</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">next_cmd</span> <span class="o">=</span> <span class="n">FlashbackToVersionReadPhase</span> <span class="p">{</span>
+            <span class="o">...</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>而对于 process_read，由于是从 snapshot 中读取，因此会在读取 snapshot 时加上 Read 的通行证。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">ctx</span><span class="py">.for_flashback</span> <span class="p">{</span>
+        <span class="n">flags</span> <span class="p">|</span><span class="o">=</span> <span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="o">...</span>
+    <span class="k">self</span><span class="py">.router</span><span class="nf">.read</span><span class="p">(</span> <span class="o">...</span> <span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>这也便实现了在「停读停写」后能顺利执行 flashback 相关操作。</p>
+
+<p>具体到往复读写的过程，代码位于此处。为了流程更加清晰，我们标识出当前状态：</p>
+
+<ol>
+  <li><strong>RollbackLock</strong>：需要删除所有 start_ts 大于 Flashback version 的锁记录；
+    <ul>
+      <li>由于 Flashback 会把悲观锁清掉，但是清掉之后事务 commit 还是会成功的，阻止的方法是在 Flashback 删掉锁的时候，原地写 Rollback ；</li>
+      <li>Rollback lock ：采用 lock 的 start_ts 写 Rollback 记录，确保时间戳会在 Flashback 之前。</li>
+    </ul>
+  </li>
+  <li><strong>Prewrite</strong>：
+    <ul>
+      <li>TiDB 请求中会带上一个 start_ts， TiKV 会在需要 Flashback 的 key 中选择第一个 key，以此 start_ts 写入一个锁，以防止 resolved_ts 在我们后续进行 Flashback 前被推进。</li>
+    </ul>
+  </li>
+  <li><strong>FlashbackWrite</strong>：
+    <ul>
+      <li>采用攒够一整个 batch 的方式扫描一批（256个）的 CF_WRITE；</li>
+      <li>为了 Flashback 数据，我们需要从 CF_WRITE 中扫描每一个最新且独特的 key，来获得 Flashback timestamp 所对应的旧 MVCC 写记录。具体代码在此处；</li>
+      <li>需要覆写一份 MvccTxn 对象的 Modify 记录，取出读取阶段的数据进行判断：</li>
+    </ul>
+    <ul>
+      <li>如果 key 不存在对应的 version，将放置一个 Delete 标识；</li>
+      <li>如果 key 存在对应的 version，且如果「不是采用 short_val，并为 LockType::Put」 ，那么将：
+        <ul>
+          <li>通过 load_data 获取 old version value，以 start_ts 构建 Modify，放在 CF_DEFAULT 中；</li>
+          <li>通过 commit_ts 构建 Modify，放在 CF_WRITE 中。</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Commit</strong>：
+    <ul>
+      <li>当发现已经完成所有 Write 的写入后，进入 Commit 阶段，通过 commit_flashback_key Commit first user key。</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="phase2-1-exec--commit">Phase2-1: Exec &amp; Commit</h3>
+
+<p>正如 「停止 resolved _ts 的推进」小节中描述的一样，大致流程如下：</p>
+
+<ol>
+  <li>Prepare Flashback 时：
+    <ol>
+      <li>Scan &amp; Rollback all locks.</li>
+      <li>TiDB 请求中会带上一个 start_ts， TiKV 会在需要 Flashback 的 key 中选择第一个 key，以此 start_ts 写入一个锁，以防止 resolved_ts 在我们后续进行 Flashback 前被推进。</li>
+    </ol>
+  </li>
+  <li>执行 Flashback 时：
+    <ol>
+      <li>Scan &amp; flashback the writes.
+        <ul>
+          <li>这部分的改动会带上 1PC 的 flag，让 CDC 等工具将其视为一阶段事务的修改</li>
+        </ul>
+      </li>
+      <li>commit 在 1.b 中写入的锁，完成 Flashback</li>
+    </ol>
+  </li>
+</ol>
+
+<p>回到最开始的 future_flashback_to_version 中，也会内部进行 req.into 后走到 FlashbackToVersionReadPhase 和 FlashbackToVersion 进行读写，大致流程在「读写阶段介绍」小节已经详细介绍，就不再赘述。</p>
+
+<h3 id="phase2-2-finish">Phase2-2: Finish</h3>
+
+<p>在执行完成 Flashback 后，最后需要做的便是 unset 掉所有为 Flashback 服务的配置。那么便回到了经典 future_flashback_to_version 函数。</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">future_flashback_to_version</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="k">impl</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Output</span> <span class="o">=</span> <span class="n">ServerResult</span><span class="o">&lt;</span><span class="n">FlashbackToVersionResponse</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="c1">// 3. notify raftstore the flashback has been finished</span>
+    <span class="n">raft_router_clone</span><span class="nf">.significant_send</span><span class="p">(</span><span class="n">region_id</span><span class="p">,</span> <span class="nn">SignificantMsg</span><span class="p">::</span><span class="n">FinishFlashback</span><span class="p">)</span><span class="o">?</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>流程与 Prepare 大致相同，发送 Admin 指令，完成持久态的取缔。</p>
+
+<p>至此，完成整个 Flashback！</p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="一些踩过的坑">一些踩过的坑</h3>
+
+<p><code class="language-plaintext highlighter-rouge">TODO</code></p>
+
+<h3 id="改进点">改进点</h3>
+
+<p>现有机制在可用性和易用性上有一些不足：</p>
+
+<ul>
+  <li>相关操作仅限于数据被 GC 回收之前，这个窗口期可能比较小，一旦 safepoint 更新过了之后就不能用了；</li>
+  <li>如果把 GC lifetime 调长，历史数据将占用大量的存储空间；</li>
+  <li>GC lifetime 是全局配置，不能针对某些 database 或 table 调整；</li>
+</ul>
+
+<h3 id="参考文档">参考文档</h3>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV 源码阅读三部曲（二）读流程 来阅读详细读过程</a>
+<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV 源码阅读三部曲（三）写流程</a>
+<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">TiKV 源码解析系列文章（七）gRPC Server 的初始化和启动流程</a>
+<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-12/">TiKV 源码解析系列文章（十二）分布式事务</a>
+<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-13">TiKV 源码解析系列文章（十三）MVCC 数据读取</a>
+<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV 源码解析系列文章（十七）raftstore 概览</a>
+<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>]]></content><author><name></name></author><category term="distributed" /></entry><entry><title type="html">文件系统总结</title><link href="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html" rel="alternate" type="text/html" title="文件系统总结" /><published>2020-12-12T23:32:12+08:00</published><updated>2020-12-12T23:32:12+08:00</updated><id>http://localhost:4000/linux/2020/12/12/FileSystem-Thinking</id><content type="html" xml:base="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html"><![CDATA[<ul id="markdown-toc">
   <li><a href="#总览" id="markdown-toc-总览">总览</a></li>
   <li><a href="#获取文件属性" id="markdown-toc-获取文件属性">获取文件属性</a></li>
   <li><a href="#inode-与块" id="markdown-toc-inode-与块">inode 与块</a>    <ul>
@@ -3856,948 +4451,4 @@ Result 为加法器的运算结果输出，此部分核心电路是加法器，�
 
 <p><strong>最终电路展示</strong></p>
 
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005171743029.png" alt="image-20201005171743029" /></p>]]></content><author><name></name></author><category term="principle" /></entry><entry><title type="html">《操作系统真象还原》学习笔记</title><link href="http://localhost:4000/linux/2020/07/24/Os-MakeByBook.html" rel="alternate" type="text/html" title="《操作系统真象还原》学习笔记" /><published>2020-07-24T22:15:02+08:00</published><updated>2020-07-24T22:15:02+08:00</updated><id>http://localhost:4000/linux/2020/07/24/Os-MakeByBook</id><content type="html" xml:base="http://localhost:4000/linux/2020/07/24/Os-MakeByBook.html"><![CDATA[<ul id="markdown-toc">
-  <li><a href="#内核体系结构图" id="markdown-toc-内核体系结构图">内核体系结构图</a></li>
-  <li><a href="#bochs-的硬盘分布图" id="markdown-toc-bochs-的硬盘分布图">bochs 的：硬盘分布图</a>    <ul>
-      <li><a href="#空间布局大致介绍" id="markdown-toc-空间布局大致介绍">空间布局大致介绍</a></li>
-    </ul>
-  </li>
-  <li><a href="#1实模式" id="markdown-toc-1实模式">1、实模式</a>    <ul>
-      <li><a href="#1bios--mbr" id="markdown-toc-1bios--mbr">1、BIOS &amp; MBR</a></li>
-      <li><a href="#2boot-loader" id="markdown-toc-2boot-loader">2、boot loader</a>        <ul>
-          <li><a href="#1调用bios中断获取内存大小" id="markdown-toc-1调用bios中断获取内存大小">1）调用BIOS中断获取内存大小</a></li>
-          <li><a href="#2构建-gdt开启保护模式" id="markdown-toc-2构建-gdt开启保护模式">2）构建 GDT，开启保护模式</a></li>
-          <li><a href="#3加载-kernel" id="markdown-toc-3加载-kernel">3）加载 kernel</a></li>
-          <li><a href="#4构建页目录表和页表开启分页机制" id="markdown-toc-4构建页目录表和页表开启分页机制">4）构建页目录表和页表，开启分页机制</a></li>
-          <li><a href="#5解析kernel的elf" id="markdown-toc-5解析kernel的elf">5）解析kernel的ELF</a></li>
-          <li><a href="#目前所用空间" id="markdown-toc-目前所用空间">目前所用空间</a></li>
-          <li><a href="#6跳转" id="markdown-toc-6跳转">6）跳转</a></li>
-        </ul>
-      </li>
-    </ul>
-  </li>
-  <li><a href="#附linux-初始化过程" id="markdown-toc-附linux-初始化过程">附：Linux 初始化过程</a></li>
-  <li><a href="#2husharp_os-----内核线程用户进程" id="markdown-toc-2husharp_os-----内核线程用户进程">2、HuSharp_OS     内核线程/用户进程</a>    <ul>
-      <li><a href="#init-进程" id="markdown-toc-init-进程">init 进程</a></li>
-      <li><a href="#main-线程" id="markdown-toc-main-线程">main 线程</a></li>
-      <li><a href="#idle-进程" id="markdown-toc-idle-进程">idle 进程</a></li>
-    </ul>
-  </li>
-  <li><a href="#3中断和系统调用" id="markdown-toc-3中断和系统调用">3、中断和系统调用</a></li>
-  <li><a href="#4内存管理" id="markdown-toc-4内存管理">4、内存管理</a></li>
-  <li><a href="#5任务调度" id="markdown-toc-5任务调度">5、任务调度</a></li>
-  <li><a href="#6文件系统" id="markdown-toc-6文件系统">6、文件系统</a></li>
-  <li><a href="#7shell" id="markdown-toc-7shell">7、Shell</a></li>
-  <li><a href="#8锁" id="markdown-toc-8锁">8、锁</a></li>
-  <li><a href="#9环形队列" id="markdown-toc-9环形队列">9、环形队列</a>    <ul>
-      <li><a href="#名词解释" id="markdown-toc-名词解释">名词解释</a></li>
-    </ul>
-  </li>
-  <li><a href="#define-k_heap_start-0xc0100000" id="markdown-toc-define-k_heap_start-0xc0100000">define K_HEAP_START 0xc0100000</a>    <ul>
-      <li><a href="#实现的系统调用" id="markdown-toc-实现的系统调用">实现的系统调用</a></li>
-      <li><a href="#实现函数" id="markdown-toc-实现函数">实现函数</a></li>
-    </ul>
-  </li>
-</ul>
-
-<p><a href="https://github.com/HuSharp/HuSharp_Os.git">代码详情见</a></p>
-
-<p>本项目实现的 mini 操作系统，包含：</p>
-
-<p>1）内核线程、用户进程、fork和execv、任务调度；</p>
-
-<p>2）中断(时钟，键盘，硬盘，系统调用等)、内存管理、文件系统、shell、管道；</p>
-
-<p>3）基于二元信号量的锁、环形队列。</p>
-
-<h2 id="内核体系结构图">内核体系结构图</h2>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125105953674.png" alt="image-20201125105953674" /></p>
-
-<h2 id="bochs-的硬盘分布图">bochs 的：硬盘分布图</h2>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201118103520098.png" alt="image-20201118103520098" /></p>
-
-<p>魔数
-栈边界 20000611
-文件系统 20000712</p>
-
-<h3 id="空间布局大致介绍">空间布局大致介绍</h3>
-
-<pre><code class="language-assembly">   ...
-可用空间    &lt;--- 0x9fc00
-栈          &lt;--- 0x9f000
-   ...
-内核文件 kernel.bin     &lt;--- 0x70000
-   ...
-MBR               &lt;--- 0x7c00
-   ...
-内核映像 kernel      &lt;--- 0x1500
-   ...
-loader.bin(GDT所在处)   &lt;--- 0x900
-
-可用空间   &lt;--- 0x500
-BIOS数据区 &lt;---0x400-0x500
-中断向量表 &lt;---0~0x3ff
-</code></pre>
-
-<hr />
-
-<p><a href="http://www.ruanyifeng.com/blog/2013/02/booting.html">计算机是如何启动的？</a></p>
-
-<h2 id="1实模式">1、实模式</h2>
-
-<p><strong>BIOS-&gt;MBR-&gt;loader-&gt;加载内核</strong></p>
-
-<p>BIOS -&gt;1.1 硬件自检-&gt;1.2 启动顺序(有一个外部储存设备的排序，排在前面的设备就是优先转交控制权的设备)-&gt;主引导记录</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206101520087.png" alt="image-20201206101520087" /></p>
-
-<h3 id="1bios--mbr">1、BIOS &amp; MBR</h3>
-
-<blockquote>
-  <p>ROM 中写入”基本输入输出系统”（Basic Input/Output System），简称为<a href="https://en.wikipedia.org/wiki/BIOS">BIOS</a>。</p>
-</blockquote>
-
-<p>首先在开机的一瞬间，CS：IP 强制初始化为 0xF000:0xFFF0即为BIOS入口地址
-BIOS: 0xF0000-0xFFFFF 64KB都为系统 BIOS 范围，被写入ROM中</p>
-
-<ol>
-  <li>
-    <p>FFFF0-FFFFF BIOS的入口地址，16B大小中只有这么一条语句：<code class="language-plaintext highlighter-rouge"> jmp f000:e05b </code>，剩下的作为保留；</p>
-  </li>
-  <li>
-    <p>1）检测、初始化硬件，硬件自己提供了一些初始化的功能调用，BIOS直接调用；</p>
-
-    <p>2）在内存 0x000 - 0x3FF 建立中断向量表 IVT，这样就可以通过”int 中断号”来实现相关的硬件调用。这些功能的实现也是基于对硬件的 IO 操作。不过在保护模式下，中断向量表已经不存在了，取而代之的是中断描述符表IDT(Interrupt Descriptor Table)。</p>
-
-    <p>（因为现在还要用键盘和鼠标，这些都要通过中断进行的。——————此时需要也要给客户输出一些结果，因为需要你自己(os)来，所以你还要充当客户对接人。你做了什么工作，做到了什么程度，都要主动显示给客户，也就是在内存空间映射显存的空间，在显示器上显示一些字符。）</p>
-  </li>
-  <li>
-    <p><strong>检测0盘0道1扇区的内容</strong>（MBR所在处）</p>
-  </li>
-</ol>
-
-<blockquote>
-  <p><a href="https://en.wikipedia.org/wiki/Master_boot_record">“主引导记录”</a>（Master boot record，缩写为MBR）</p>
-</blockquote>
-
-<p>MBR：位于0盘0道1扇区（由于是 CHS扇区表示方法，即为最开始扇区），末尾为 0x55aa，被识别末尾魔数后，被加载到 0x7c00</p>
-
-<p>对于 Linux 而言   MBR 相当于由 grub2 第一个要安装的 boot.img</p>
-
-<ul>
-  <li>大小为 512 字节</li>
-  <li>27c00：历史原因——尽可能留足够的空间给操作系统在 32K 内加载自己
-` 0x7FFF - 512 - 512 + 1 ` // 开机扇区512字节，再留出512字节</li>
-  <li>引导记录由三个部分组成：
-    <ul>
-      <li>第1-446字节：调用操作系统的机器码。</li>
-      <li>第447-510字节：分区表（Partition table）。</li>
-      <li>第511-512字节：主引导记录签名（0x55和0xAA）。</li>
-    </ul>
-  </li>
-</ul>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201118105235835-1630980761455.png" alt="image-20201118105235835" /></p>
-
-<h3 id="2boot-loader">2、boot loader</h3>
-
-<blockquote>
-  <p>小知识</p>
-
-  <p><strong>boot的含义</strong></p>
-
-  <p>先问一个问题，”启动”用英语怎么说？</p>
-
-  <p>回答是boot。可是，boot原来的意思是靴子，”启动”与靴子有什么关系呢？ 原来，这里的boot是bootstrap（鞋带）的缩写，它来自一句谚语：</p>
-
-  <blockquote>
-    <p>　　”pull oneself up by one’s bootstraps”</p>
-  </blockquote>
-
-  <p>字面意思是”拽着鞋带把自己拉起来”，这当然是不可能的事情。最早的时候，工程师们用它来比喻，计算机启动是一个很矛盾的过程：必须先运行程序，然后计算机才能启动，但是计算机不启动就无法运行程序！</p>
-
-  <p>早期真的是这样，必须想尽各种办法，把一小段程序装进内存，然后计算机才能正常运行。所以，工程师们把这个过程叫做”拉鞋带”，久而久之就简称为boot了。</p>
-</blockquote>
-
-<p><strong>载入 LOADER 进入实模式环境</strong></p>
-
-<p>(Linux环境中，目前最流行的启动管理器是<a href="http://en.wikipedia.org/wiki/GNU_GRUB">Grub</a>。相当于 Linux 中加载 grub2 的另一个镜像 core.img。)</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201118110012840.png" alt="image-20201118110012840" /></p>
-
-<p>在loader.S 加载内核时，主要完成以下任务：</p>
-
-<ol>
-  <li>
-    <p>调用 BIOS 中断获取内存大小；</p>
-  </li>
-  <li>
-    <p>构建 GDT，开启保护模式；</p>
-  </li>
-  <li>
-    <p>加载 kernel : 将内核文件先放到内存缓冲区</p>
-  </li>
-  <li>
-    <p>构建页目录表和页表，开启分页机制；</p>
-  </li>
-  <li>
-    <p>初始化内核：解析kernel的ELF，将ELF文件中的段segment拷贝到各段自己被编译的虚拟地址处，再跳去执行</p>
-
-    <p>loader.bin 的加载地址为 0x900，放在第 2 块扇区( <strong>boot.inc</strong>)</p>
-
-    <p>loder.bin 占用 3 个扇区，即使用第 2~4</p>
-
-    <p>至于为啥是 0x900，是由于实模式的内存空间布局下0x500 - 0x7BFF 为可用区域，而为啥不是 0x500 ，是完全个人喜好，隔远点</p>
-  </li>
-</ol>
-
-<h4 id="1调用bios中断获取内存大小">1）调用BIOS中断获取内存大小</h4>
-
-<p>调用 BIOS 中断 0x15 获取内存大小，并将其值存放在 loader.bin头部（地址0x900），内核将会从该位置读取内存大小（kernel/memory.c mem_init()）。</p>
-
-<h4 id="2构建-gdt开启保护模式">2）构建 GDT，开启保护模式</h4>
-
-<p>2.1 构建GDT（全局描述符表）。</p>
-
-<pre><code class="language-assembly">FILE: boot/loader.S
-;构建gdt及其内部的描述符
-   GDT_BASE:   dd    0x00000000 
-            dd    0x00000000
-
-   CODE_DESC:  dd    0x0000FFFF 
-            dd    DESC_CODE_HIGH4
-
-   DATA_STACK_DESC:  dd    0x0000FFFF
-            dd    DESC_DATA_HIGH4
-
-   VIDEO_DESC: dd    0x80000007        ; limit=(0xbffff-0xb8000)/4k=0x7
-            dd    DESC_VIDEO_HIGH4  ; 此时dpl为0
-</code></pre>
-
-<p>2.2 加载GDT。lgdt指令，将 GDT 的基地址、界限值载入至 GDTR 寄存器。</p>
-
-<p>2.3 打开地址线 A20。</p>
-
-<p>第 21 条地址线 A20 ：实模式下，处理器访问内存的方式是将段寄存器的内容左移4位，再加上偏移地址，以形成 20 位的物理地址。实模式下，32位处理器的段寄存器的内容仅低 20 位有效，高  20 位全部为0（即，只能使用 20 根地址线）。故，处理器只能访问1MB内存。（回绕）</p>
-
-<p>2.4 禁止中断。</p>
-
-<p>在设置好保护模式下的中断环境之前，必须关中断(指令cli)。保护模式下的中断机制和实模式不同，原有的中断向量表 IVT 不再适用。而且，保护模式下，BIOS 中断也不能再用，因为它们是实模式下的代码。</p>
-
-<p>2.5 将 CR0 的 PE 位置 1，开启保护模式。</p>
-
-<p><strong>控制实模式/保护模式切换的开关是CR0寄存器。</strong>CR0是处理器内部的控制寄存器(Control  Register)，是 32 位的寄存器，包含了一系列用于控制处理器操作模式和运行状态的标志位。 CR0 的第 1 位(位 0 )是保护模式允许位(Protection Enable, PE)，该位置 1 ，则处理器进入保护模式，按保护模式的规则开始运行。</p>
-
-<pre><code class="language-assembly">   ;-----------------  打开A20  ----------------
-   in al，0x92
-   or al，0000_0010B
-   out 0x92，al
-
-   ;-----------------  加载GDT  ----------------
-   lgdt [gdt_ptr]
-
-   ;-----------------  cr0第0位置1  ----------------
-   mov eax, cr0
-   or eax, 0x00000001
-   mov cr0, eax
-</code></pre>
-
-<h4 id="3加载-kernel">3）加载 kernel</h4>
-
-<p>将内核文件先放到内存缓冲区</p>
-
-<pre><code class="language-assembly">KERNEL_BIN_BASE_ADDR equ 0x70000 ; 自定义kernel被加载到物理内存位置
-KERNEL_START_SECTOR  equ 0x09    ; 自定义kernel位于硬盘的扇区号
-; -------------------------   加载kernel  ----------------------
-   mov eax, KERNEL_START_SECTOR        ; kernel.bin所在的扇区号
-   mov ebx, KERNEL_BIN_BASE_ADDR       ; 从磁盘读出后，写入到ebx指定的地址
-   mov ecx, 200                        ; 读入的扇区数
-   
-   call rd_disk_m_32 ;功能:读取硬盘n个扇区
-</code></pre>
-
-<h4 id="4构建页目录表和页表开启分页机制">4）构建页目录表和页表，开启分页机制</h4>
-
-<p><a href="http://husharp.today/2020/12/01/HuSharp-Memory-01/">详情见作者的此 Blog</a></p>
-
-<blockquote>
-  <p>地址转换，是由处理器和操作系统共同协作完成的，处理器在硬件上提供地址转换部件，操作系统提供转换过程中所需要的页表。</p>
-</blockquote>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206171520147.png" alt="image-20201206171520147" /></p>
-
-<p>开启分页机制之前，加载到 cr3 寄存器中的页目录表基地址是物理地址，页表中页表项的地址自然也是物理地址了。虽然内存分页机制的作用是将虚拟地址转换成物理地址，但其转换过程相当于是在关闭分页机制下进行的，过程中所涉及到的地址都被 CPU 当作物理地址直接送上地址总线，不会被分页机制再次转换(否则会递归转换下去)。</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206171732588.png" alt="image-20201206171732588" /></p>
-
-<p>明显 4 K 大小的页表代表 (4K/4)*4K=4M 大小的物理内存</p>
-
-<p><strong>4.1 物理内存 1MB 之上：</strong></p>
-
-<p>第 1 个4KB， 为页目录表PDT</p>
-
-<p>第 2 个4KB， 为创建的第一个页表（第0和第768(0xc00/4= 768)个页目录项都指向它）</p>
-
-<blockquote>
-  <p>这是由于，操作系统的内核位于物理地址的 1MB 以下，但是 OS 的虚拟地址位于 0xc0000000 以上的 1MB 该地址对应的页目录项取决于前 10 位，即 0xc00，为第 768 个目录项。</p>
-</blockquote>
-
-<p>第769~1022个页目录项一共指向254个页表（即内核空间）</p>
-
-<p>最后一个页目录项(第1023个)指向页目录表PDT本身</p>
-
-<blockquote>
-  <p>为了确保各个用户进程都共享内核，那么需要各个进程第 768~1022 个页目录项均相同，因此在为用户进程创办页表时，应将内核页表中第 768~1022 个页目录项复制到用户进程页目录表相同位置。</p>
-</blockquote>
-
-<p>因此，共 256 个页，正好 1M 。即，物理内存 1MB 之上的 1MB 已用于页目录表和页表。</p>
-
-<p><strong>4.2 控制寄存器 CR3 指向页目录表基地址</strong></p>
-
-<p><strong>4.3 将 CR0 的 PG 位置1，开启分页机制</strong></p>
-
-<h4 id="5解析kernel的elf">5）解析kernel的ELF</h4>
-
-<p>将ELF文件中的段 segment 拷贝到各段自己被编译的虚拟地址处，将这些段单独提取到内存中，这就是所谓的内存中的程序映像。分析程序中的每个段 segment ，如果段类型不是PT_NULL(空程序类型)，就将该段拷贝到编译的地址中</p>
-
-<p>这里将kernel的入口定义为 0xc0001500，对应的在编译内核kernel.bin时需要指定该地址。</p>
-
-<p>0x1500（这是由于 loder.bin +2000=0x10d0 凑个整，到0x1500【2000是由于估摸 loder 不会大于 2000 字节】）</p>
-
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ld <span class="nt">-m</span> elf_i386 <span class="nt">-Ttext</span> 0xc0001500 <span class="nt">-e</span> main <span class="nt">-o</span> kernel.bin %.o
-</code></pre></div></div>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206175250174.png" alt="image-20201206175250174" /></p>
-
-<p>至于栈选用 0x9f000 是由于首先 0x9fc00 以下为可用区域，但是为了之后放 PCB 取整，因此放在此处。</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206175124408.png" alt="image-20201206175124408" /></p>
-
-<h4 id="目前所用空间">目前所用空间</h4>
-
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   ...
-可用空间       &lt;<span class="nt">---</span> 0x9fc00
-栈            &lt;<span class="nt">---</span> 0x9f000
-   ...
-内核文件 kernel.bin     &lt;<span class="nt">---</span> 0x70000（随便选的
-   ...
-MBR                    &lt;<span class="nt">---</span> 0x7c00
-   ...
-内核映像 kernel         &lt;<span class="nt">---</span> 0x1500（这是由于 loder.bin +2000<span class="o">=</span>0x10d0 凑个整，到0x1500（2000是由于估摸 loder 不会大于 2000 字节））
-   ...
-loader.bin<span class="o">(</span>GDT所在处<span class="o">)</span>   &lt;<span class="nt">---</span> 0x900
-
-可用空间                &lt;<span class="nt">---</span> 0x500
-BIOS数据区              &lt;<span class="nt">---0x400-0x500</span>
-中断向量表              &lt;<span class="nt">---0</span>~0x3ff
-</code></pre></div></div>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206175331991.png" alt="image-20201206175331991" /></p>
-
-<h4 id="6跳转">6）跳转</h4>
-
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">;</span> FILE: boot/loader.asm
-<span class="p">;</span> 截取部分代码
- 
-KERNEL_ENTRY_POINT equ 0xc0001500
- 
-mov esp, 0xc009f000     <span class="p">;</span> 自定义内核主线程PCB中的栈顶
-jmp KERNEL_ENTRY_POINT
-</code></pre></div></div>
-
-<p>至此，进入 kernel 即 main。</p>
-
-<h2 id="附linux-初始化过程">附：Linux 初始化过程</h2>
-
-<p><a href="http://www.ruanyifeng.com/blog/2013/08/linux_boot_process.html">Linux 的启动流程</a></p>
-
-<p>我们知道系统是从BIOS加电自检，载入MBR中的引导程序(LILO/GRUB)，再载入linux内核開始执行的，一直到指定shell開始执行告一段落，这时用户開始操作Linux。</p>
-
-<p>首先介绍 Linux 的初始化</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125123403817-1631024252865.png" alt="image-20201125123403817" /></p>
-
-<p>start_kernel  –&gt;rest_init –&gt; init –&gt; kthreadd –&gt; cpu_idle_loop</p>
-
-<p>在操作系统里面，先要有个创始进程，有一行指令 set_task_stack_end_magic(&amp;init_task)。这里面有一个参数 init_task，它的定义是 struct task_struct init_task =  INIT_TASK(init_task)。它是系统创建的第一个进程，我们称为 <strong>0 号进程</strong>。这是唯一一个没有通过 fork 或者 kernel_thread 产生的进程，是进程列表的第一个。即 <strong>idle 进程</strong>。</p>
-
-<p>该进程是内核的一部分，所有进程的根进程，它并不执行任何磁盘上的程序，因此也被称为系统进程。</p>
-
-<p><strong>说明一下 rest_init（）</strong></p>
-
-<ol>
-  <li>
-    <p>**init **</p>
-
-    <p>在 rest_init 的第一大工作是，用 kernel_thread(kernel_init, NULL， CLONE_FS) 创建第二个进程，这个是<strong>1 号进程</strong>。1 号进程的目的是为了作为用户态的总管。系统中所有其它用户进程的祖先进程。<strong>init 进程决不会终止</strong>。它是一个普通的用户进程（与交换进程不同，它不是内核中的系统进程），但是它<strong>以超级用户特权运行</strong>。</p>
-
-    <p>当前执行 kernel_thread 这个函数的时候，我们还在内核态，现在我们就来跨越这道屏障，到用户态去运行一个程序。1 号进程 调用  do_execve  ，访问内核中保存用户态运行上下文的寄存器们，将用户态的代码段 CS 设置为 USER_CS，将用户态的数据段 DS 设置为 USER_DS，以及指令指针寄存器 IP、栈指针寄存器 SP。再通过 iret 返回 pop 出更改的寄存器， 进入用户态。以进行各种系统的初始化。启动系统的服务，启动控制台，用户就可以登录进来了。</p>
-
-    <p>1号进程从0号进程fork出来，然后又切换到用户态，完成控制权从核心态到用户态的转换， 因此<strong>用户交互才能开始</strong>。</p>
-
-    <p>至于 init 为何是 systemd  <a href="http://www.ruanyifeng.com/blog/2016/03/systemd-tutorial-commands.html">Systemd 入门教程：命令篇</a>见此博客</p>
-
-    <p>systemctl</p>
-
-    <p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125150031326-1631025271495.png" alt="image-20201125150031326" /></p>
-  </li>
-  <li>
-    <p><strong>kthreadd</strong> 页守护进程</p>
-
-    <p>rest_init 第二大事情就是第三个进程，就是 2 号进程。这里的函数 kthreadd，负责所有内核态的线程的调度和管理，是内核态所有线程运行的祖先。负责虚拟内存系统的分页操作。</p>
-
-    <p>通过 以下命令进行查看，发现 PID 为 1 是 /sbin/init， 2 为 kthreadd</p>
-
-    <pre><code class="language-assembly">ps -ef
-</code></pre>
-
-    <p>其中用户态的不带中括号，内核态的带中括号。</p>
-
-    <p>进程号依次增大，但是你会看所有带中括号的内核态的进程，祖先都是 2 号进程。而用户态的进程，祖先都是 1 号进程。tty 那一列，是问号的，说明不是前台启动的，一般都是后台的服务。</p>
-
-    <p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125141119291-1631025199027.png" alt="image-20201125141119291" /></p>
-
-    <blockquote>
-      <p>ps -ef 这个命令的父进程是 bash。这样整个链条都比较清晰了。</p>
-
-      <p><code class="language-plaintext highlighter-rouge">husharp  26859  8355  0 14:10 pts/1    00:00:00 ps -ef</code></p>
-
-      <p><code class="language-plaintext highlighter-rouge">husharp   8355  6773  0 10:42 pts/1    00:00:00 bash</code></p>
-
-      <p><code class="language-plaintext highlighter-rouge">husharp   6773  2294  0 10:17 ?        00:00:01 /usr/lib/gnome-terminal/gnome-te</code></p>
-
-      <p><code class="language-plaintext highlighter-rouge">husharp   2294     1  0 09:45 ?        00:00:00 /lib/systemd/systemd --user</code></p>
-
-      <p>从下向上进行索引，发现最后父节点是 init，说明是用户态</p>
-    </blockquote>
-  </li>
-</ol>
-
-<p>因此， idle 实则就是 while ，当没有线程调度时，便运行 idle，在 init 开始后才运行，因此 init 的 pid 为 1 ，而 idle 并非为 1.</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125131132709-1631025411555.png" alt="image-20201125131132709" /></p>
-
-<p>某 ucore 群友做的图</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201125134734671-1631025437942.png" alt="image-20201125134734671" /></p>
-
-<p><strong>Linux 相关补充阅读</strong></p>
-
-<p><a href="https://www.cnblogs.com/cynchanpin/p/7323299.html">Linux内核的idle进程分析</a></p>
-
-<p><a href="https://blog.csdn.net/titer1/article/details/44464647">动静结合学内核：linux idle进程和init进程浅析</a></p>
-
-<p><a href="https://www.cnblogs.com/harlanc/p/7774882.html">Linux中main是如何执行的</a></p>
-
-<h2 id="2husharp_os-----内核线程用户进程">2、HuSharp_OS     内核线程/用户进程</h2>
-
-<p>而对于 HuSharp_OS 而言，首先通过 init_all 进行各个初始化 (init.c)</p>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">init_all</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">put_str</span><span class="p">(</span><span class="s">"init_all start!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
-    <span class="n">idt_init</span><span class="p">();</span><span class="c1">// 初始化中断</span>
-    
-    <span class="n">mem_init</span><span class="p">();</span><span class="c1">//初始化内存管理系统</span>
-    <span class="n">thread_environment_init</span><span class="p">();</span><span class="c1">// 初始化线程相关环境</span>
-    <span class="n">timer_init</span><span class="p">();</span>   <span class="c1">// 初始化 PIT</span>
-    <span class="n">console_init</span><span class="p">();</span> <span class="c1">// 初始化 console </span>
-    <span class="n">keyboard_init</span><span class="p">();</span>
-    <span class="n">tss_init</span><span class="p">();</span>
-    <span class="n">syscall_init</span><span class="p">();</span>   <span class="c1">// 初始化系统调用</span>
-    <span class="n">intr_enable</span><span class="p">();</span>      <span class="c1">// 后面的 ide_init 需要打开中断</span>
-    <span class="n">ide_init</span><span class="p">();</span>     <span class="c1">//初始化硬盘</span>
-    <span class="n">filesys_init</span><span class="p">();</span> <span class="c1">// 初始化文件系统</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>在 thread_environment_init (thread.c)中进行相关进程的初始化</p>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">thread_environment_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">put_str</span><span class="p">(</span><span class="s">"thread_init start!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
-    <span class="n">list_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">thread_ready_list</span><span class="p">);</span>
-    <span class="n">list_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">thread_all_list</span><span class="p">);</span>
-    <span class="n">lock_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pid_lock</span><span class="p">);</span>
-
-    <span class="c1">// 创建第一个用户进程 init</span>
-    <span class="c1">// 放在第一个初始化， pid 为 1</span>
-    <span class="n">process_execute</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="s">"init"</span><span class="p">);</span>
-
-    <span class="c1">// 将 main 函数创建为 线程</span>
-    <span class="n">make_main_thread</span><span class="p">();</span>
-    <span class="c1">// 创建 idle 线程</span>
-    <span class="n">idle_thread</span> <span class="o">=</span> <span class="n">thread_start</span><span class="p">(</span><span class="s">"idle"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">idle</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
-    <span class="n">put_str</span><span class="p">(</span><span class="s">"thread_init done!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="init-进程">init 进程</h3>
-
-<p>init 是用户级进程，是第一个启动的程序，其 pid 为1。init 是所有进程的父进程。为了抢夺 pid 1，因此我们在 创建主线程的函数 make_main_thread 之前，进行 init 的创建。</p>
-
-<p>init fork 出 shell 程序，以方便用户交互</p>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// init 进程</span>
-<span class="kt">void</span> <span class="nf">init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">ret_pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">();</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">ret_pid</span><span class="p">)</span>     <span class="c1">// 父进程</span>
-    <span class="p">{</span>
-        <span class="kt">int</span> <span class="n">status</span><span class="p">,</span> <span class="n">child_pid</span><span class="p">;</span>
-        <span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1">// init在此处不停地回收过继给它的子进程</span>
-        <span class="p">{</span>
-            <span class="n">child_pid</span> <span class="o">=</span> <span class="n">wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-            <span class="n">printf</span><span class="p">(</span><span class="s">"i am init, my pid is %d, i recieve a child, it's pid is %d, status is %d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">child_pid</span><span class="p">,</span> <span class="n">status</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">else</span>        <span class="c1">// 子进程</span>
-    <span class="p">{</span>
-        <span class="n">my_shell</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="n">panic</span><span class="p">(</span><span class="s">"ERROR: during init, should not be here"</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<h3 id="main-线程">main 线程</h3>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201206183533818.png" alt="image-20201206183533818" /></p>
-
-<p>由于在开机到创建第一个线程前，程序都是有个执行流的，这个执行流从 BIOS 到 mbr 到 loader 到 kernel，他是主线程 main   。因为 main 线程早已运行，咱们在loader.S中进入内核时的mov esp，0xc009f000，就是为其预留了tcb，地址为 0xc009e000。</p>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">init_all</span><span class="p">();</span>     <span class="c1">// kernel/init.c 初始化所有模块</span>
- 
-    <span class="n">cls_screen</span><span class="p">();</span>
-    <span class="n">console_put_str</span><span class="p">(</span><span class="s">"[husharp@HuSharp_OS /]$ "</span><span class="p">);</span>
- 
-    <span class="c1">// 主线程完成使命后退出</span>
-    <span class="n">thread_exit</span><span class="p">(</span><span class="n">running_thread</span><span class="p">(),</span> <span class="nb">true</span><span class="p">);</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p>内核的 main_thread 完成系统的初始化工作，然后 thread_exit。</p>
-
-<h3 id="idle-进程">idle 进程</h3>
-
-<p>为何会有 idle 进程（<strong>0 号进程</strong>）？</p>
-
-<p>当就绪队列中没有任务时，调度器没有任务可调时，会报错 thread_ready_list is empty!</p>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="c1">// 实现就绪队列为空时，唤醒 idle</span>
-   <span class="k">if</span> <span class="p">(</span><span class="n">list_empty</span><span class="p">(</span><span class="o">&amp;</span><span class="n">thread_ready_list</span><span class="p">))</span> <span class="p">{</span>
-        <span class="n">thread_unblock</span><span class="p">(</span><span class="n">idle_thread</span><span class="p">);</span>
-    <span class="p">}</span>
-</code></pre></div></div>
-
-<p>idle 线程用于系统空闲时，运行（idle ：翻译：懈怠的；懒惰的；闲置的；没有工作的。）</p>
-
-<pre><code class="language-assembly">    内核线程/用户进程
-    |---- FILE: thread/thread.c     thread_init()
-    |       | 初始化线程环境
-    |       | list_init()     初始化就绪/全部队列
-    |       | pid_pool_init() 初始化pid池，指定起始pid为1 (基于bitmap和lock)
-    |       |
-    |       | process_execute(init, "init") 创建第一个用户进程init，其pid为1
-    |       | make_main_thread() 将当前内核main函数创建为线程
-    |       | idle_thread = thread_start("idle", 10, idle, NULL) 创建idle线程 
-    |       |
-    |       | 至此，参与调度的有: init进程、main线程、idle线程
-    |       |
-    |       |---- FILE: user/process.c      process_execute()
-    |       |       | 创建用户进程
-    |       |       | struct task_struct *thread = get_kernel_pages(1) 申请1页内核内存作为用户进程PCB
-    |       |       | init_thread() 在PCB中初始化线程基本信息
-    |       |       |     申请pid allocate_pid()
-    |       |       |         {bitmap_scan(); bitmap_set(); return (index + pid_pool.pid_start);}
-    |       |       |     进程名、状态READY、内核态时的栈顶(PCB顶部)、优先级、嘀嗒时间数
-    |       |       |     初始化文件描述符数组pthread-&gt;fd_table[8]，标准输入/输出/错误012，其余为-1 
-    |       |       |     根目录作为默认工作路径 pthread-&gt;current_work_dir_inode_id = 0
-    |       |       |     父进程pid初始为-1
-    |       |       |     页目录表pgdir初始为NULL，在紧接着的create_page_dir()创建页目表时赋值
-    |       |       | create_user_vaddr_bitmap() 创建用户虚拟内存空间的bitmap
-    |       |       |     指定用户进程虚拟地址起始值; 申请1页内核内存
-    |       |       | 
-    |       |       | thread_create(thread, start_process, filename)
-    |       |       |     初始化PCB中的thread_stack。当处理器进入kernel_thread函数体时
-    |       |       |         栈顶为返回地址、栈顶+4为参数function、栈顶+8为参数func_arg
-    |       |       |         kthread_stack-&gt;eip = kernel_thread      函数kernel_thread
-    |       |       |         kthread_stack-&gt;function = start_process 函数start_process
-    |       |       |         kthread_stack-&gt;func_arg = filename      待创建的进程
-    |       |       |      
-    |       |       | thread-&gt;pgdir = create_page_dir()     创建页目录表
-    |       |       |     在内核空间申请一页内存作为用户进程的页目录表  get_kernel_pages(1)
-    |       |       |     从内核页目录表中拷贝内核空间的页目录项到用户进程的页目录中  memcpy()
-    |       |       |     页目录表物理基地址写入页目录表最后一项
-    |       |       |
-    |       |       | block_desc_init(thread-&gt;u_block_desc) 初始化内存规格信息，为malloc/free做准备
-    |       |       | list_append() 添加到就绪队列和全部队列
-    |       |       
-    |       |---- FILE: thread/thread.c     make_main_thread()
-    |       |       | 将 kernel 中 main 函数完善为主线程
-    |       |       | main 线程早已运行，在LOADER阶段已预留并指定了PCB "mov esp, 0xc009_f000"
-    |       |       | 即，PCB基址为0xc009_e000
-    |       |       |     main_thread = running_thread();
-    |       |       |     init_thread(main_thread, "main", 31);
-    |       |       |     list_append() 添加到全部队列
-    |       |       
-    |       |---- FILE: thread/thread.c     thread_start()
-    |       |       | 创建内核线程
-    |       |       | struct task_struct *thread = get_kernel_pages(1) 申请1页内核内存作为内核线程PCB
-    |       |       | init_thread() 在PCB中初始化线程基本信息
-    |       |       |     初始化PCB底部的线程信息struct task_struct
-    |       |       |     申请pid allocate_pid()    
-    |       |       | thread_create(thread, function, func_arg)
-    |       |       |     初始化PCB中的thread_stack
-    |       |       |     不同于创建进程时的参数function为start_process，这里直接为所要创建的线程
-    |       |       |       即switch_to()任务切换后，将直接执行对应的线程函数
-    |       |       |       kthread_stack-&gt;eip = kernel_thread      函数kernel_thread
-    |       |       |       kthread_stack-&gt;function = function      线程对应的函数
-    |       |       |       kthread_stack-&gt;func_arg = func_arg      线程参数
-    |       |       |
-    |       |       | list_append() 添加到就绪队列和全部队列
-    |
-    |---- FILE: thread/thread.c     idle()
-    |       | 系统空闲时运行的线程(block/unblock)
-    |       | while(1){thread_block(TASK_BLOCKED); asm volatile("sti; hlt" : : : "memory");}    
-    |       | idle线程在创建时会被加入到就绪队列，因此会执行一次，然后阻塞;
-    |       | 当就绪队列为空时，schedule会将idle解除阻塞，也就是唤醒
-    |       |
-    |       |---- thread_block()
-    |       |       | 当前线程将自己阻塞
-    |       |       | 修改线程状态为阻塞、触发调度，切换线程执行
-    |       |       | schedule() 由当前阻塞线程主动触发的任务调度
-    |       |       | 由于idle线程触发调度后没有被加入就绪队列，所以将得不到执行，除非被唤醒
-    |       |
-    |       |---- thread_unblock()
-    |       |       | 将指定的线程解阻塞
-    |       |       | 添加到就绪队列头部，修改状态为READY
-    |       |       | list_push(&amp;thread_ready_list, &amp;pthread-&gt;general_tag)
-    |       |       | pthread-&gt;status = TASK_READY
-    |
-    |---- FILE: kernel/main.c   main()
-    |       | 内核主线程
-    |       | init_all()
-    |       | thread_exit(running_thread(), true);
-    |       | 主线程完成使命后退出 return 0;
-    |
-    |---- FILE: kernel/main.c   init()
-    |       | init进程
-    |       | 第一个用户进程，pid为1
-    |       | init是所有进程的父进程，它还要负责回收过继给它的子进程
-    |       | if(fork())    // 父进程
-    |       | { while(1){wait(&amp;status);} }
-    |       | else          // 子进程
-    |       | { my_shell(); }
-</code></pre>
-
-<h2 id="3中断和系统调用">3、中断和系统调用</h2>
-
-<p>详情见 下列 Blog</p>
-
-<p><a href="http://husharp.today/2020/11/22/Signal/">终端控制和信号</a></p>
-
-<p><a href="http://husharp.today/2020/11/27/interrupt-HuSharpOS/">中断原理详解，以及中断与信号的关系</a></p>
-
-<p>本项目支持的中断有：时钟、键盘、硬盘、int 0x80（系统调用）。</p>
-
-<h2 id="4内存管理">4、内存管理</h2>
-
-<p>详情见下列 Blog</p>
-
-<p><a href="http://husharp.today/2020/12/01/HuSharp-Memory-01/">内存管理（一）前置知识 &amp; 虚拟地址布局</a></p>
-
-<p><a href="http://husharp.today/2020/12/03/HuSharp-Memory-02/">内存管理（二）物理内存管理</a></p>
-
-<p><a href="http://husharp.today/2020/12/05/HuSharp-Memory-03/">内存管理（三）虚拟内存与物理内存的映射关系 &amp; pagefault</a></p>
-
-<p>这里先从指定位置处读取LOADER写入的物理内存大小。本项目中，物理内存的配置为32M(bochs配置文件bochsrc.cfg中”megs:  32”)，减去低端的1MB、减去LOADER开启分页机制时创建PDT和PT占用的1MB（紧邻低端1MB之上），还有30MB，内核和用户内存池各占15M。所以，内核物理内存池的起始地址为 0x20_0000（2MB）。</p>
-
-<p>以页(4KB)为单位的内存管理，采用bitmap(位图)技术。本项目中，自定义内核物理内存的bitmap存放于0xc009_a000，自定义内核主线程栈顶为0xc009_f000、内核主线程PCB为0xc009_e000。所以，本系统最大支持4个页框的位图（一个页框大小的位图可表示128M内存，4个页框即512M），用于内核/用户物理内存池bitmap、内核虚拟地址池bitmap。</p>
-
-<blockquote>
-  <p>9f000 - 1000 = 9e000 作为主线程的 PCB</p>
-
-  <p>9e000 - 4000 = 9a000 作为位图地址，可以容纳 4 个页框</p>
-</blockquote>
-
-<p>实现方法类似 Linux 中的伙伴系统，在以页(4KB)为单位的内存管理基础上，实现小内存块的管理，可满足任意内存大小的分配与释放(malloc/free)。这里采用arena模型。</p>
-
-<h2 id="5任务调度">5、任务调度</h2>
-
-<p><a href="http://husharp.today/2020/12/09/thread-schedule/">进程管理（四）调度流程 &amp; Linux中的调度相关</a></p>
-
-<p>传统操作系统的调度基于分时(time sharing)技术: 多个进程以”时间多路复用”方式运行，因为CPU的时间被分成”片(slice)”，给每个可运行进程分配一片CPU时间片，当然单处理器在任何给定的时刻只能运行一个进程。</p>
-
-<p>如果当前可运行进程的时限(quantum)到期时(即时间片用尽)，而该进程还没有运行完毕，进程切换就可以发生。</p>
-
-<p>分时依赖于定时中断，因此对进程是透明的，不需要在承租中插入额外的代码来保证CPU分时。</p>
-
-<p>这也是HuSharpOS 的实现策略</p>
-
-<p><img src="/assets/blog_image/2020-07-24-Os-MakeByBook/image-20201207195514895.png" alt="image-20201207195514895" /></p>
-
-<p>详情见 此 Blog</p>
-
-<h2 id="6文件系统">6、文件系统</h2>
-
-<p>详情见 <a href="http://husharp.today/2020/12/12/FileSystem-Thinking/">文件系统总结</a></p>
-
-<h2 id="7shell">7、Shell</h2>
-
-<p>CRT相关</p>
-
-<p>fork 、execv、wait、load、cmd_execute</p>
-
-<p><a href="http://husharp.today/2020/11/18/fork-exec-wait-exit/">fork exec wait exit探究</a></p>
-
-<p>详情见 <a href="http://husharp.today/2020/12/07/process-create/">进程管理（二）shell 是如何运行程序的? &amp; 进程的创建</a></p>
-
-<h2 id="8锁">8、锁</h2>
-
-<p>二元信号量的锁</p>
-
-<pre><code class="language-assembly">锁
-| struct lock pid_lock;        // 申请pid  FILE: thread/thread.c    
-| struct lock console_lock;    // 控制台锁 FILE: device/console.c   console_init()
-|
-|---- FILE: thread/sync.c   lock_init(&amp;console_lock)
-|       | 初始化锁
-|       | 基于二元信号量实现的锁
-|       | struct semaphore{
-|       |     unsigned char value; struct list waiters; };
-|       |     信号量初值，此信号量上阻塞的所有线程    
-|       | struct lock{
-|       |     struct task_struct *holder; struct semaphore sema; unsigned int holder_repeat_num; };
-|       |     锁的持有者，信号量，锁的持有者重复申请锁的次数    
-|       
-|---- FILE: thread/sync.c   lock_acquire()
-|       | 获取锁
-|       | sema_down(&amp;lock-&gt;semaphore)信号量P操作
-|       |     while(sema-&gt;value == 0)   // value为0表明已经被别人持有
-|       |         list_append()当前线程把自己加入该锁的等待队列
-|       |         thread_block()当前线程阻塞自己，并触发调度，切换线程
-|       |         ************************************* 调度 *********
-|       | lock-&gt;holder = running_thread()
-|       |
-|       |---- FILE: thread/thread.c     thread_block()
-|               | 当前线程将自己阻塞
-|               | 修改线程状态为阻塞、触发调度，切换线程执行
-|               |
-|               |---- FILE: thread/thread.c     schedule()
-|                       | 任务调度 (由当前阻塞线程主动触发)    
-|
-|---- FILE: thread/sync.c   lock_release()
-        | 释放锁
-        | lock-&gt;holder = NULL
-        | sema_up(&amp;lock-&gt;semaphore)信号量V操作
-        |     list_pop(&amp;sema-&gt;waiters)从等待队列中取出一个线程
-        |     thread_unblock()唤醒该阻塞线程: 将阻塞线程加入就绪队列，并修改状态为READY
-        |     sema-&gt;value++    
-        |
-        |---- FILE: thread/thread.c     thread_unblock()
-                | 唤醒阻塞线程
-                | 将阻塞线程加入就绪队列，并修改状态为READY
-</code></pre>
-
-<p>信号解析见此 Blog</p>
-
-<h2 id="9环形队列">9、环形队列</h2>
-
-<p>生产者消费者模型</p>
-
-<pre><code class="language-assembly">环形队列
-| struct ioqueue keyboard_buf;  // 键盘
-| struct ioqueue * xxx = xxx;   // 管道
-|
-|---- FILE: device/ioqueue.c    ioqueue_init(&amp;keyboard_buf)
-|       | 初始化环形队列
-|       | 结合锁机制、生产者消费者模型
-|       | struct ioqueue{
-|       |     struct lock lock; // 锁
-|       |     struct task_struct *producer, *consumer; // 睡眠的生产者/消费者
-|       |     char buf[buffersize]; // 缓冲区
-|       |     signed int head, tail; }; // 队首写入，队尾读出
-|
-|---- FILE: device/ioqueue.c    ioq_getchar()
-|       | 消费者消费一个字符
-|       | while(ioq_empty(ioq)) // 缓冲区为空时，消费者睡眠
-|       |     lock_acquire(&amp;ioq-&gt;lock);    // 获取锁，每个锁对应的信号量都会有一个阻塞队列
-|       |     ioq_wait(&amp;ioq-&gt;consumer);    // 消费者睡眠
-|       |     lock_release(&amp;ioq-&gt;lock);    // 释放锁
-|       | char byte = ioq-&gt;buf[ioq-&gt;tail]; // 消费一个字符
-|       | if(ioq-&gt;producer !=NULL) wakeup(&amp;ioq-&gt;producer); // 唤醒生产者(生产者睡眠是因为缓冲区满)    
-|       
-|---- FILE: device/ioqueue.c    ioq_putchar()
-|       | 生产者生产一个字符
-|       | while(ioq_full(ioq)) // 缓冲区满时，生产者睡眠
-|       |     lock_acquire(&amp;ioq-&gt;lock); // 获取锁，每个锁对应的信号量都会有一个阻塞队列
-|       |     ioq_wait(&amp;ioq-&gt;producer); // 生产者睡眠
-|       |     lock_release(&amp;ioq-&gt;lock); // 释放锁
-|       | ioq-&gt;buf[ioq-&gt;head] = byte;   // 生产一个字符
-|       | if(ioq-&gt;consumer !=NULL) wakeup(&amp;ioq-&gt;consumer); // 唤醒消费者(消费者睡眠是因为缓冲区空)
-</code></pre>
-
-<h3 id="名词解释">名词解释</h3>
-
-<p>全局描述符表：保护模式下内存段的登记表 即位于 Loader 0x900处
-描述符desc 占 8 个字节，含有 base，limit，addr等
-选择子：位于段寄存器，是 GDT 的索引
-——–选择子结构———
-15    3  2   0</p>
-
-<p>描述符索引值 TI  RPL</p>
-
-<p>而 total_mem_bytes 与loader.bin 之间还有 4 个段描述符（第 0 个不可用，第 1 个为代码段，第 2 个为数据段和栈，第 3 个为显存段）
-以及 60 个预留段描述符槽位，因此 (60 + 4) * 8 = 512 = 0x200
-total_mem_bytes : 0xb00 (存储获取到的内存变量)</p>
-
-<p>页目录表： （物理地址）0x100000~0x100fff 4KB
-第一个页表：（物理地址）0x101000~0x101fff 4KB
-为映射到 0xc0000000，对应的页目录项为第 768 个，由于一个页表(页表项4字节)表示 4MB = (4GB/4KB)*4字节
-所以第 768 个页目录项对应的虚拟地址 4MB：0xc0000000~0xc003ffff 指向低端 4MB之内的物理地址
-为了实现所有用户共享内核，因此将 各个用户的虚拟地址高 1 GB都指向内核所在的物理内存空间。即每个用户 768~1022（共254个PDE）都与其他进程一致。（即：提前将内核的所有PDE都定下来，在创建用户进程时，直接将内核对应PDE复制，以达到内核共享）。</p>
-
-<p>虚拟地址 0xc0000000~0xc00fffff 映射 物理地址 0x00000000~0x000fffff(低端 1Mb 内存)
-0xc0100000：堆的起始地址（注意：由于0x100000~0x101fff为页目录表和页表，因此 0xc0100000并不映射到此处，需要绕开）
-0xc009f000 内核主线程栈顶
-0xc009e000 内核主线程的pcb. PCB占用 1 页 0x1000
-0xc009a000 位图位置
-0xc0000000 内核从虚拟地址3G起. 0x100000意指跨过低端1M内存</p>
-
-<p>0x9f000：内核主线程栈顶
-内核估计 70 kb 左右。装载到 0x9f000绰绰有余
-因此在 低端 1MB 下所用到的最高地址，即为 main线程的栈顶地址 0x9f000</p>
-
-<p>0xc009a000:位图位置
-一个页框大小的位图可表示128M内存， 位图位置安排在地址0xc009a000</p>
-
-<p>由于 虚拟机配置 32 MB 物理内存，因此需要 1024 字节 bitmap -&gt; 4kb * 1024 * 8 = 32 MB
-即  1/4 页 ，但是我很任性，想搞 4 页，即 0x4000
-又因为 pcb 位于 0xc009e000，所以将位图放在下面 0xc009e000 - 0x4000 = 0xc009a000</p>
-
-<p>堆的起始地址：（为了让虚拟地址连续）</p>
-<h1 id="define-k_heap_start-0xc0100000">define K_HEAP_START 0xc0100000</h1>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">PCB</span> <span class="o">----&gt;</span> <span class="n">task_struct</span>
-<span class="k">struct</span> <span class="n">task_struct</span> <span class="p">{</span>
-   <span class="kt">uint32_t</span><span class="o">*</span> <span class="n">self_kstack</span><span class="p">;</span>     <span class="c1">// 各内核线程都用自己的内核栈，用来记录栈顶指针</span>
-   <span class="n">_pid_t</span> <span class="n">pid</span><span class="p">;</span>
-   <span class="k">enum</span> <span class="n">task_status</span> <span class="n">status</span><span class="p">;</span>
-   <span class="kt">char</span> <span class="n">name</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-   <span class="kt">uint8_t</span> <span class="n">priority</span><span class="p">;</span>
-   <span class="kt">uint8_t</span> <span class="n">ticks</span><span class="p">;</span>             <span class="c1">// 每次在处理器上执行的时间嘀嗒数</span>
-   <span class="kt">uint32_t</span> <span class="n">elapsed_ticks</span><span class="p">;</span>    <span class="c1">// 此任务自上cpu运行后至今占用了多少cpu嘀嗒数，也就是此任务执行了多久</span>
-   <span class="k">struct</span> <span class="n">list_elem</span> <span class="n">general_tag</span><span class="p">;</span><span class="c1">//general_tag的作用是用于线程在一般的队列中的结点    </span>
-   <span class="k">struct</span> <span class="n">list_elem</span> <span class="n">all_list_tag</span><span class="p">;</span><span class="c1">// all_list_tag的作用是用于线程队列thread_all_list中的结点 </span>
-   <span class="kt">uint32_t</span><span class="o">*</span> <span class="n">pgdir</span><span class="p">;</span>              <span class="c1">// 进程自己页表的虚拟地址</span>
-   <span class="k">struct</span> <span class="n">virtual_addr</span> <span class="n">userprog_vaddr</span><span class="p">;</span>   <span class="c1">// 用户进程的虚拟地址</span>
-   <span class="kt">uint32_t</span> <span class="n">stack_magic</span><span class="p">;</span>         <span class="c1">// 用这串数字做栈的边界标记，用于检测栈的溢出</span>
-<span class="p">};</span>
-</code></pre></div></div>
-
-<p>寄存器映像     —中断栈 intr_stack:    | kernel.S 中的 intr_exit 的出栈操作为此结构的逆操作
-   1.任务被中断时，保存寄存器映像
-   2.给进程预留，用来填充用户进程上下文，即寄存器环境
-栈         —线程栈 thread_stack：保存待运行的函数，并进行任务切换  | 内核栈 = 中断栈 + 线程栈
-栈指针     —记录线程栈栈顶，因为中断栈不固定 &lt;—-self_kstack
-pid
-进程状态
-优先级
-时间片
-页表
-打开文件描述符
-父进程
-…</p>
-
-<p>系统调用步骤：</p>
-
-<ol>
-  <li>在 syscall.h 的结构 enum SYSCALL_NR 中添加新的子功能号</li>
-  <li>在 syscall.c 中增加系统调用的用户接口</li>
-  <li>在 syscall_init.c 定义子功能处理函数，并在syscall_table 中注册</li>
-</ol>
-
-<p>端口就是位于 IO 控制器上的接口</p>
-
-<p>command 寄存器要最后写入，因此一旦写入，硬盘便开始工作</p>
-
-<h2 id="实现的系统调用">实现的系统调用</h2>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_GETPID</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_getpid</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_WRITE</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_write</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_MALLOC</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_malloc</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_FREE</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_free</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_FORK</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_fork</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_READ</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_read</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_PUTCHAR</span><span class="p">]</span> <span class="o">=</span> <span class="n">sys_putchar</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CLEAR</span><span class="p">]</span>   <span class="o">=</span> <span class="n">cls_screen</span><span class="p">;</span> <span class="c1">// 位于 print.S</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_GETCWD</span><span class="p">]</span>     <span class="o">=</span> <span class="n">sys_getcwd</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_OPEN</span><span class="p">]</span>       <span class="o">=</span> <span class="n">sys_open</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CLOSE</span><span class="p">]</span>      <span class="o">=</span> <span class="n">sys_close</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_LSEEK</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_lseek</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_UNLINK</span><span class="p">]</span>   <span class="o">=</span> <span class="n">sys_unlink</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_MKDIR</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_mkdir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_OPENDIR</span><span class="p">]</span>  <span class="o">=</span> <span class="n">sys_opendir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CLOSEDIR</span><span class="p">]</span>   <span class="o">=</span> <span class="n">sys_closedir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_CHDIR</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_chdir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_RMDIR</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_rmdir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_READDIR</span><span class="p">]</span>  <span class="o">=</span> <span class="n">sys_readdir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_REWINDDIR</span><span class="p">]</span>   <span class="o">=</span> <span class="n">sys_rewinddir</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_STAT</span><span class="p">]</span>  <span class="o">=</span> <span class="n">sys_stat</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_PS</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_ps</span><span class="p">;</span>
-   <span class="n">syscall_table</span><span class="p">[</span><span class="n">SYS_EXECV</span><span class="p">]</span>    <span class="o">=</span> <span class="n">sys_execv</span><span class="p">;</span>
-</code></pre></div></div>
-
-<h2 id="实现函数">实现函数</h2>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="kt">uint32_t</span> <span class="nf">getpid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">uint32_t</span> <span class="nf">write</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
-   <span class="kt">void</span><span class="o">*</span> <span class="nf">malloc</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">free</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">ptr</span><span class="p">);</span>
-   <span class="kt">int16_t</span> <span class="nf">fork</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">read</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">putchar</span><span class="p">(</span><span class="kt">char</span> <span class="n">char_asci</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">clear</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">char</span><span class="o">*</span> <span class="nf">getcwd</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">open</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">flag</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">lseek</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int32_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">whence</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">mkdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
-   <span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="nf">opendir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">closedir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">rmdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
-   <span class="k">struct</span> <span class="n">dir_entry</span><span class="o">*</span> <span class="nf">readdir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">rewinddir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">stat</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">,</span> <span class="k">struct</span> <span class="n">file_attr</span><span class="o">*</span> <span class="n">buf</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">chdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">ps</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">);</span><span class="kt">uint32_t</span> <span class="nf">getpid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">uint32_t</span> <span class="nf">write</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
-   <span class="kt">void</span><span class="o">*</span> <span class="nf">malloc</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">free</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">ptr</span><span class="p">);</span>
-   <span class="kt">int16_t</span> <span class="nf">fork</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">read</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">count</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">putchar</span><span class="p">(</span><span class="kt">char</span> <span class="n">char_asci</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">clear</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">char</span><span class="o">*</span> <span class="nf">getcwd</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">size</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">open</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">flag</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">close</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">lseek</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int32_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">whence</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">mkdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
-   <span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="nf">opendir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">closedir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">rmdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">);</span>
-   <span class="k">struct</span> <span class="n">dir_entry</span><span class="o">*</span> <span class="nf">readdir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">rewinddir</span><span class="p">(</span><span class="k">struct</span> <span class="n">dir</span><span class="o">*</span> <span class="n">dir</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">stat</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">,</span> <span class="k">struct</span> <span class="n">file_attr</span><span class="o">*</span> <span class="n">buf</span><span class="p">);</span>
-   <span class="kt">int32_t</span> <span class="nf">chdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">path</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="nf">ps</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-   <span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">);</span>
-</code></pre></div></div>
-
-<p>over</p>]]></content><author><name></name></author><category term="Linux" /></entry></feed>
+<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005171743029.png" alt="image-20201005171743029" /></p>]]></content><author><name></name></author><category term="principle" /></entry></feed>

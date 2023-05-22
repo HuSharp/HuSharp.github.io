@@ -2,7 +2,7 @@
 
 Personal site. A remake of [Xinye Tao's Page](https://tabokie.github.io/) with jekyll.
 
-Run `bundle install` followed by `bundle exec jekyll serve` to serve locally.
+Run `bundle install` followed by `jekyll serve` to serve locally.
 
 ## Memo
 
