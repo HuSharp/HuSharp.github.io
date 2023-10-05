@@ -7,11 +7,11 @@ avatar_old: /assets/img/vampire.png
 
 I'm Jinhao Hu, aka HuSharp\*, Hu#\*.
 
-I code for a living, specialized in System, currently employed at [PingCAP](https://en.pingcap.com).
+I code with joy and I am interested in various fields including but not limited to: distributed systems, databases, and operating systems.
 
-I'm a lifelong learner. This site exists to accompany me through the journey ahead.
+Currently employed at [PingCAP](https://en.pingcap.com).
 
-I use different languages for writing, please feel free to contact me for possible translation.
+I'm a lifelong learner. This site exists to document my past and accompany me on the journey forward.
 
 <br />
 <br />
