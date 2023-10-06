@@ -8,7 +8,7 @@ override_title: true
 
 ## Skills
 
-- **Programming Language**: **multilingual**(not limited to any specific language) experienced in Golang/Rust/Python.
+- **Programming Language**: **multilingual**(not limited to any specific language) experienced in Golang/Rust/C&C++/Java/Python.
 - **Distributed System/Database**: contribute to TiKV/PD/TiDB, taken course MIT 6.824 and PingCAP's Talent Plan.
 - **Developing Tool**: familiar with Linux-based programming, have experience with team tools like Git.
 
@@ -21,8 +21,8 @@ override_title: true
 
 **PingCAP – Storage Team** (Database Engineer; Jul, 2022 ~ till now)
 
-- Resource Control: Achieve the isolation of multiple applications deployed on the same cluster. The TiDB layer will perform traffic control on users' read and write requests based on quotas, while the TiKV layer will schedule requests based on priorities. By implementing control through these two layers of traffic control and scheduling, resource isolation for applications can be achieved.
-- Flashback: Enable fast rollback of data to a specified time when users make mistakes. Based on the multi-version concurrency control (MVCC), the data with the latest timestamp before the TIMESTAMP will be retrieved to overwrite the current data.
+- Resource Control: Achieve the isolation of multiple applications deployed on the same cluster. The TiDB layer will perform traffic control on users' read and write requests based on quotas, while the TiKV layer will schedule requests based on priorities. By implementing control and scheduling through these two layers, resource isolation for applications can be achieved.
+- Flashback: Enable fast rollback of data to a specified time when users make mistakes. Based on the Multiversion concurrency control(MVCC), the data with the latest timestamp before the TIMESTAMP will be retrieved to overwrite the current data.
 
 ## Education
 
