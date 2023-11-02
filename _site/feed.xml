@@ -1,4 +1,608 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-05-22T22:09:37+08:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Flashback TiKV</title><link href="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html" rel="alternate" type="text/html" title="Flashback TiKV" /><published>2023-05-20T17:43:28+08:00</published><updated>2023-05-20T17:43:28+08:00</updated><id>http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV</id><content type="html" xml:base="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html"><![CDATA[<ul id="markdown-toc">
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-11-02T21:08:04+08:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Flashback TiKV</title><link href="http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en.html" rel="alternate" type="text/html" title="Flashback TiKV" /><published>2023-10-25T19:43:28+08:00</published><updated>2023-10-25T19:43:28+08:00</updated><id>http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en</id><content type="html" xml:base="http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en.html"><![CDATA[<ul id="markdown-toc">
+  <li><a href="#background-introduction" id="markdown-toc-background-introduction">Background Introduction</a>    <ul>
+      <li><a href="#execution-and-effect" id="markdown-toc-execution-and-effect">Execution and effect</a></li>
+      <li><a href="#specific-implementation" id="markdown-toc-specific-implementation">Specific Implementation</a>        <ul>
+          <li><a href="#adopting-region-lock-to-halt-readwrite-scheduling" id="markdown-toc-adopting-region-lock-to-halt-readwrite-scheduling">Adopting Region Lock to Halt Read/Write Scheduling</a></li>
+          <li><a href="#general-process" id="markdown-toc-general-process">General Process</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#code-analysis" id="markdown-toc-code-analysis">Code Analysis</a>    <ul>
+      <li><a href="#overview-of-the-process" id="markdown-toc-overview-of-the-process">Overview of the Process</a></li>
+      <li><a href="#phase-1-1-prepare" id="markdown-toc-phase-1-1-prepare">Phase 1-1: Prepare</a>        <ul>
+          <li><a href="#prepare-flashback" id="markdown-toc-prepare-flashback">Prepare Flashback</a></li>
+          <li><a href="#halting-reads" id="markdown-toc-halting-reads">Halting Reads</a></li>
+          <li><a href="#readlocal--staleread" id="markdown-toc-readlocal--staleread">ReadLocal &amp; StaleRead</a></li>
+          <li><a href="#halting-write" id="markdown-toc-halting-write">Halting Write</a></li>
+        </ul>
+      </li>
+      <li><a href="#phase1-2-prewrite" id="markdown-toc-phase1-2-prewrite">Phase1-2: Prewrite</a></li>
+      <li><a href="#halting-the-advancement-of-resolved_ts" id="markdown-toc-halting-the-advancement-of-resolved_ts">Halting the Advancement of resolved_ts</a>        <ul>
+          <li><a href="#introduction-to-the-read-and-write-phase" id="markdown-toc-introduction-to-the-read-and-write-phase">Introduction to the Read and Write Phase</a></li>
+        </ul>
+      </li>
+      <li><a href="#phase2-1-exec--commit" id="markdown-toc-phase2-1-exec--commit">Phase2-1: Exec &amp; Commit</a></li>
+      <li><a href="#phase2-2-finish" id="markdown-toc-phase2-2-finish">Phase2-2: Finish</a></li>
+    </ul>
+  </li>
+  <li><a href="#appendix" id="markdown-toc-appendix">Appendix</a>    <ul>
+      <li><a href="#some-potholes" id="markdown-toc-some-potholes">Some potholes</a></li>
+      <li><a href="#improvement-points" id="markdown-toc-improvement-points">Improvement points</a></li>
+      <li><a href="#reference" id="markdown-toc-reference">Reference</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>This is an article originally intended as a product introduction, but was shelved for various reasons. Recently, as we have been improving related features, we decided to refine it and release it. Very excited to implement this with <a href="https://ipotato.me/">JmPotato</a>~</p>
+
+<p>For the code, please see: <a href="https://github.com/pingcap/tidb/issues/37197">roadmap</a> &amp; <a href="https://github.com/tikv/tikv/issues/13303">TiKV tracking issue</a></p>
+
+<h2 id="background-introduction">Background Introduction</h2>
+
+<p>Flashback (usually referring to Oracle Flashback) is a feature used to quickly revert to a previous version in case of user errors, to avoid significant losses.</p>
+
+<p>In the gaming industry, issues like version errors occur from time to time, and regular backups can only revert to the backup point in time, which is also a waste of resources. <a href="https://docs.pingcap.com/tidb/stable/release-6.4.0">TiDB v6.4.0</a> introduced the <code class="language-plaintext highlighter-rouge">FLASHBACK CLUSTER TO TIMESTAMP</code> syntax, which allows the data of a cluster, database, or data table to be restored to a specific point in time.</p>
+
+<p>In TiDB, there are some related features:</p>
+
+<ul>
+  <li>MVCC &amp; GC: Data updates or deletions are adding new versions, and the historical versions are cleared through the GC mechanism. The storage engine maintains historical records for a certain period, which makes various data recovery functions possible later.</li>
+  <li>Reading historical data through the system variable tidb_snapshot: Specify a ts (cannot be earlier than the GC safepoint) to read the data at that time point, and ensure the data is consistent.</li>
+  <li>FLASHBACK TABLE: Restores tables and data that have been dropped or truncated.
+Ultimately, we adopted the approach of using Multiversion Concurrency Control (MVCC) to take the latest timestamp data before TIMESTAMP and overwrite the current data.</li>
+</ul>
+
+<h3 id="execution-and-effect">Execution and effect</h3>
+
+<p>「For details, please refer to <a href="https://docs.pingcap.com/zh/tidb/dev/sql-statement-flashback-to-timestamp">User documentation</a>.」</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mysql</span><span class="o">&gt;</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">t</span><span class="p">(</span><span class="n">a</span> <span class="nb">INT</span><span class="p">);</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">09</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">t</span><span class="p">;</span>
+<span class="n">Empty</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">01</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="n">now</span><span class="p">();</span>
+<span class="o">+</span><span class="c1">---------------------+</span>
+<span class="o">|</span> <span class="n">now</span><span class="p">()</span>               <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------------------+</span>
+<span class="o">|</span> <span class="mi">2022</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">28</span> <span class="mi">17</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mi">16</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">---------------------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">02</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">t</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">1</span> <span class="k">row</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">02</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">t</span><span class="p">;</span>
+<span class="o">+</span><span class="c1">------+</span>
+<span class="o">|</span> <span class="n">a</span>    <span class="o">|</span>
+<span class="o">+</span><span class="c1">------+</span>
+<span class="o">|</span>    <span class="mi">1</span> <span class="o">|</span>
+<span class="o">+</span><span class="c1">------+</span>
+<span class="mi">1</span> <span class="k">row</span> <span class="k">in</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">01</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="n">FLASHBACK</span> <span class="k">CLUSTER</span> <span class="k">TO</span> <span class="nb">TIMESTAMP</span> <span class="s1">'2022-09-28 17:24:16'</span><span class="p">;</span>
+<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">20</span> <span class="n">sec</span><span class="p">)</span>
+
+<span class="n">mysql</span><span class="o">&gt;</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">t</span><span class="p">;</span>
+<span class="n">Empty</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="specific-implementation">Specific Implementation</h3>
+
+<h4 id="adopting-region-lock-to-halt-readwrite-scheduling">Adopting Region Lock to Halt Read/Write Scheduling</h4>
+
+<p>In Flashback, we use Region locks to block all read/write operations and scheduling during the Flashback process to avoid any external factors that might cause data inconsistencies.</p>
+
+<p><strong>By locking the Region before performing Flashback, we can gain the following benefits:</strong></p>
+
+<ul>
+  <li>Blocking any read/write operations and scheduling during the Flashback process, avoiding any potential external factors that could cause data inconsistencies;</li>
+  <li>Since locked Regions will not produce additional data writes, it is convenient for Flashback to freely write and retry;</li>
+  <li>Since locked Regions will not produce additional data writes, there is no need to maintain the Flashback success or failure status of different Stores and Regions within the cluster, simply retrying until successful is sufficient;</li>
+  <li>Region-level operations are more in line with the granularity of TiKV’s internal data management.</li>
+</ul>
+
+<h4 id="general-process">General Process</h4>
+
+<p>First, TiDB will determine:</p>
+
+<ul>
+  <li>FlashbackTS: Whether it is a future time point, whether it is greater than minSafeTS, and whether it is within the GC Safe time</li>
+  <li>Whether any non-Flashback ddl jobs have been executed within the time range</li>
+  <li>Whether any DDL tasks are currently being executed</li>
+  <li>Close GC, PD scheduling, and auto analyze, then start calling TiKV’s two-phase process</li>
+  <li><strong>First Phase (Region Locking)</strong>
+    <ol>
+      <li>TiDB determines the key range for the Flashback request;</li>
+      <li>TiDB sends a kv_prepare_flashback_to_version request to different regions on a per-region basis, blocking reads, writes, and scheduling;</li>
+      <li>Call the PD interface to get the latest TSO as the startTS for executing Flashback. TiDB will persist this startTS to ensure that it can use the same TS after a failure and restart;</li>
+      <li>Use Region locks to independently handle each Region’s Flashback progress
+        <ul>
+          <li>Scan all MVCC Locks and perform rollbacks;</li>
+          <li>TiKV will select the latest user key in CF_WRITE and prewrite a previous lock with the aforementioned startTS to halt the advancement of resolved_ts, which will be committed in the second phase;</li>
+        </ul>
+      </li>
+      <li>TiDB checks if all requests have returned successfully and retries failed requests until the entire locking phase is completed.</li>
+    </ol>
+  </li>
+  <li><strong>Second Phase (Executing Flashback)</strong>
+    <ol>
+      <li>TiDB takes the aforementioned startTS and obtains the latest TSO from PD as the commitTS. TiDB will also persist this commitTS and send kv_flashback_to_version requests to different regions;</li>
+      <li>Each Region independently processes its own Flashback progress
+        <ul>
+          <li>Scan for keys that have had version changes after the point in time to which you want to Flashback and write the old MVCC version for the scanned keys;</li>
+          <li>Commit the locks written in the prewrite phase of the first stage and remove the Region locks after completion;</li>
+        </ul>
+      </li>
+      <li>TiDB checks if all requests have been successfully returned and retries the failed requests with the same startTS and commitTS until the entire Flashback execution is completed.</li>
+    </ol>
+  </li>
+</ul>
+
+<h2 id="code-analysis">Code Analysis</h2>
+
+<p>Let’s start from the beginning of TiKV startup. :)</p>
+
+<p>Beginning with cmd/tikv-server/main.rs, after TiKV finishes configuring a series of parameters, the main function culminates with server::run_tikv(config) to run the TiKV server. The main function selects the corresponding Engine based on the configured parameters and calls the run_impl function. Inside run_server, it performs binding and initiates the grpc_server.start(); service. You can view the specific binding and startup process in this <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">document</a>.</p>
+
+<p>The focus of this article, Flashback, is located at the following place in kvproto:</p>
+
+<div class="language-protobuf highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">rpc</span> <span class="n">KvPrepareFlashbackToVersion</span><span class="p">(</span><span class="n">kvrpcpb.PrepareFlashbackToVersionRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">kvrpcpb.PrepareFlashbackToVersionResponse</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">rpc</span> <span class="n">KvFlashbackToVersion</span><span class="p">(</span><span class="n">kvrpcpb.FlashbackToVersionRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">kvrpcpb.FlashbackToVersionResponse</span><span class="p">)</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<p>Returning to the TiKV code, TiKV includes multiple gRPC services. One of the most important is the KvService, located in the src/server/service/kv.rs file. It includes the APIs for transaction operations in TiKV, such as kv_get, kv_scan, kv_prewrite, kv_commit, etc. The Flashback feature in this article, since it uses the transaction model, is quite naturally placed in this file.</p>
+
+<h3 id="overview-of-the-process">Overview of the Process</h3>
+<p>Before we delve deeper into the specific code, let’s take a broad look at the overall Flashback process. We can distill it into four main steps based on the key code components:</p>
+
+<ol>
+  <li>Preparation: Before starting the actual overwrite operations, an Admin PrepareFlashback command is sent via the raft_router. This step accomplishes the persistence of region metadata.</li>
+  <li>Locking: After a region is marked for Flashback, the first prewrite is done on a user_key to prevent the advancement of resolved_ts.</li>
+  <li>Execution: Perform the Flashback and commit the key that was written in step 2.</li>
+  <li>Completion: After the execution of Flashback, a FinishFlashback command is sent through the raft_router to clean up the data.</li>
+</ol>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
+<span class="k">fn</span> <span class="nf">future_prepare_flashback_to_version</span><span class="p">()</span> <span class="p">{</span>
+ <span class="c1">// 1. prepare the raftstore for the later flashback.</span>
+ <span class="nf">send_flashback_msg</span><span class="p">(</span><span class="o">..</span><span class="p">,</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">);</span>
+ <span class="c1">// 2.prewrite the first user key to prevent `resolved_ts` from advancing.</span>
+ <span class="k">let</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">=</span> <span class="nf">paired_future_callback</span><span class="p">();</span>
+ <span class="n">res</span> <span class="o">=</span> <span class="n">storage</span><span class="nf">.sched_txn_command</span><span class="p">(</span><span class="n">req</span><span class="nf">.clone</span><span class="p">()</span><span class="nf">.into</span><span class="p">(),</span> <span class="n">cb</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="c1">// Second Phase</span>
+<span class="k">fn</span> <span class="nf">future_flashback_to_version</span><span class="p">()</span> <span class="p">{</span>
+ <span class="c1">// 3. execute overwrite and commit the first user key.</span>
+ <span class="k">let</span> <span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">=</span> <span class="nf">paired_future_callback</span><span class="p">();</span>
+ <span class="k">let</span> <span class="n">res</span> <span class="o">=</span> <span class="n">storage_clone</span><span class="nf">.sched_txn_command</span><span class="p">(</span><span class="n">req</span><span class="nf">.into</span><span class="p">(),</span> <span class="n">cb</span><span class="p">);</span>
+ <span class="c1">// 4. notify raftstore flashback has been finished.</span>
+ <span class="nf">send_flashback_msg</span><span class="p">(</span><span class="o">..</span><span class="p">,</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Entering the first phase of Flashback operation, the preparation module is critical.</p>
+
+<h3 id="phase-1-1-prepare">Phase 1-1: Prepare</h3>
+
+<p>The primary goal of the Prepare function is to halt reads and writes, prevent scheduling, and persist the Flashback state, as well as stop the advancement of resolved_ts.</p>
+
+<p>In the “Preparation” phase, the necessity of stopping all reads, writes, and scheduling operations has already been explained in the Background Introduction section. To achieve this, one would intuitively block these operations at the point of execution. With TiKV using the Raft consensus protocol, the operations eventually go through a Propose, Commit, then Apply process, so it makes sense to intercept reads and writes before Propose.</p>
+
+<blockquote>
+  <p>Spoiler Alert for Flashback Implementation: The interception is done quickly at the Propose to block other reads and writes during the Flashback process, with the Apply step acting as a safety net.</p>
+</blockquote>
+
+<p>To understand the process of handling a proposal in TiKV, you can refer to this <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">article</a>.</p>
+
+<p>In short, TiKV utilizes two thread pools to handle proposals, and a Raft peer is divided into two parts: PeerFsm and ApplyFsm. During the proposal processing, PeerFsm fetches logs and drives the internal state machine of Raft, while ApplyFsm updates the state machine according to the committed logs, which includes both region information and user data.</p>
+
+<blockquote>
+  <p>For more details on PeerFsm and ApplyFsm, you can refer to this <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">article</a></p>
+</blockquote>
+
+<p>During the process where “PeerFsm fetches logs and drives the internal state machine of Raft” it encounters the following function:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">propose_raft_command_internal</span><span class="p">()</span> <span class="p">{</span>
+ <span class="k">match</span> <span class="k">self</span><span class="nf">.pre_propose_raft_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msg</span><span class="p">)</span> <span class="p">{</span> <span class="o">..</span> <span class="p">}</span>
+
+ <span class="k">if</span> <span class="k">self</span><span class="py">.fsm.peer</span><span class="nf">.propose</span><span class="p">(</span><span class="k">self</span><span class="py">.ctx</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">resp</span><span class="p">,</span> <span class="n">diskfullopt</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">self</span><span class="py">.fsm.has_ready</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+ <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Upon examining the codebase, we find that the PeerFsmDelegate::pre_propose_raft_command function is indeed the checkpoint where a request is examined before a propose is allowed to proceed.</p>
+
+<p>It’s logical to place the check to determine if the current request is related to Flashback right at this stage.</p>
+
+<p><strong>Key Consideration:</strong></p>
+
+<p>However, we cannot block all operations indiscriminately. Flashback operations themselves need to pass through the Raft process without hindrance. Thus, we should issue a sort of ‘pass’ for them.</p>
+
+<p>Utilizing flags in RaftCmdRequest Header:</p>
+
+<p>We then notice that the RaftCmdRequest structure has a header field that includes flags. This is a suitable place to set flags that can be used as a ‘pass’ for Flashback-related commands, allowing them to be distinguished from regular operations.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">fn</span> <span class="nf">pre_propose_raft_command</span><span class="p">(</span>
+     <span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span>
+     <span class="n">req</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">RaftCmdRequest</span><span class="p">,</span>
+ <span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">RaftCmdResponse</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+     <span class="c1">// When in the flashback state, we should not allow any other request to be proposed.</span>
+     <span class="k">if</span> <span class="k">self</span><span class="nf">.region</span><span class="p">()</span><span class="py">.is_in_flashback</span> <span class="p">{</span>
+         <span class="k">let</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_header</span><span class="p">()</span><span class="nf">.get_flags</span><span class="p">();</span>
+         <span class="k">if</span> <span class="o">!</span><span class="n">flags</span><span class="nf">.contains</span><span class="p">(</span><span class="n">FLASHBACK</span><span class="p">)</span> <span class="p">{</span>
+             <span class="k">return</span> <span class="nb">Err</span><span class="p">;</span>
+         <span class="p">}</span>
+     <span class="p">}</span>
+ <span class="p">}</span>
+</code></pre></div></div>
+
+<h4 id="prepare-flashback">Prepare Flashback</h4>
+
+<p>After implementing the “block points” to prevent non-Flashback operations, to ensure that Flashback-related operations proceed smoothly and are not blocked, we add a flag to the header.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
+<span class="k">fn</span> <span class="n">future_prepare_flashback_to_version</span><span class="p">{</span>
+ <span class="c1">// 1. prepare the raftstore for the later flashback. </span>
+ <span class="nf">send_flashback_msg</span><span class="p">(</span><span class="o">..</span><span class="p">,</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The functions start_flashback/end_flashback that are invoked will send an admin request after the flag is added.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">fn</span> <span class="n">start_flashback</span><span class="o">/</span><span class="n">end_flashback</span> <span class="p">{</span>
+ <span class="o">...</span>
+ <span class="n">req</span><span class="nf">.mut_header</span><span class="p">()</span>
+     <span class="nf">.set_flags</span><span class="p">(</span><span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">());</span>
+ <span class="c1">// call admin request directly</span>
+ <span class="k">let</span> <span class="n">raft_router</span> <span class="o">=</span> <span class="n">raft_router</span><span class="nf">.lock</span><span class="p">()</span><span class="k">.await</span><span class="p">;</span>
+ <span class="n">raft_router</span><span class="nf">.send_command</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+ <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The Admin request is formed into a RaftCommand via the RaftStoreRouter and sent along. It goes through the proposing process, passing through the pre_propose check, and arrives at PeerFsmDelegate.fsm.peer.propose to complete the proposal of a Raft log.</p>
+
+<p>Subsequently, the PeerFsm will send the Proposal and committed logs to the corresponding ApplyFsm for the apply process.</p>
+
+<p>The ApplyFsm will, for these logs (see ApplyFsm::handle_apply):</p>
+
+<ol>
+  <li>Ensure the data is durably stored.</li>
+  <li>Communicate ApplyRes to PeerFsm, which is necessary for updating the Region’s status within PeerFsm.
+ In the execution of exec_raft_cmd, a check_flashback_state is incorporated to verify the persistence of the Flashback state. Here, the region is configured in the subsequent exec function, and due to the serial nature of apply operations, the region’s details are established before the arrival of the following command.</li>
+</ol>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">check_flashback_state</span><span class="p">(</span><span class="k">self</span><span class="py">.region</span><span class="nf">.get_is_in_flashback</span><span class="p">());</span>
+
+<span class="k">pub</span> <span class="k">fn</span> <span class="nf">check_flashback_state</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="c1">// The admin flashback cmd could be proposed/applied under any state.</span>
+    <span class="k">if</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span> <span class="p">||</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">Ok</span><span class="p">(());</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="n">is_flashback_request</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_header</span><span class="p">()</span><span class="nf">.get_flags</span><span class="p">()</span>
+                            <span class="nf">.contains</span><span class="p">(</span><span class="n">FLASHBACK</span><span class="p">);</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>After the checks are passed, the process executes ApplyDelegate::exec_admin_cmd, which ultimately recognizes the Flashback identifier and reaches our target function exec_flashback.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span> <span class="p">|</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span> <span class="k">=&gt;</span> 
+    <span class="k">self</span><span class="nf">.exec_flashback</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">request</span><span class="p">),</span>
+</code></pre></div></div>
+
+<p>When the exec_flashback function is invoked, it performs the necessary operations to alter the Region’s metadata to reflect the state of the system as it should be after the Flashback process. This usually involves the following steps:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_flashback</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;&gt;</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="n">is_in_flashback</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_cmd_type</span><span class="p">()</span> <span class="o">==</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">;</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">region</span> <span class="o">=</span> <span class="k">self</span><span class="py">.region</span><span class="nf">.clone</span><span class="p">();</span>
+    <span class="n">region</span><span class="nf">.set_is_in_flashback</span><span class="p">(</span><span class="n">is_in_flashback</span><span class="p">);</span>
+
+
+    <span class="nf">put_msg_cf</span><span class="p">(</span><span class="n">CF_RAFT</span><span class="p">,</span> <span class="o">&amp;</span><span class="nn">keys</span><span class="p">::</span><span class="nf">region_state_key</span><span class="p">(</span><span class="n">region_id</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">old_state</span><span class="p">)</span>
+    <span class="nf">Ok</span><span class="p">(</span><span class="nn">ApplyResult</span><span class="p">::</span><span class="nf">Res</span><span class="p">(</span><span class="nn">ExecResult</span><span class="p">::</span><span class="n">SetFlashbackState</span> <span class="p">{</span> <span class="n">region</span> <span class="p">}</span> <span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>After the ApplyFsm applies a series of Raft logs, it generates an ApplyRes message that encapsulates the outcomes of this apply process. This message is dispatched to the corresponding PeerFsm.</p>
+
+<p>Once received, the PeerFsm processes the message through the PeerFsmDelegate::handle_msgs function, specifically within the PeerMsg::ApplyRes { res } case. It is here that PeerFsmDelegate::on_apply_res is invoked, thereby updating the durable state to reflect the effects of the Flashback operation, ensuring that the persistent view of the region’s state is consistent with the Flashback’s target historical state.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">fn</span> <span class="nf">on_set_flashback_state</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">is_in_flashback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// update flashback state</span>
+        <span class="k">self</span><span class="nf">.update_region</span><span class="p">();</span>
+        <span class="c1">// 此行代码在做的事将在「停读 - ReadLocal &amp; StaleRead 」小节解释</span>
+        <span class="k">self</span><span class="py">.fsm.peer</span><span class="nf">.leader_lease_mut</span><span class="p">()</span><span class="nf">.expire_remote_lease</span><span class="p">();</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>After a comprehensive analysis, we observe that there are two critical blocks that act as barriers to non-Flashback operations, located at the propose and apply stages, respectively.</p>
+
+<p>This leads to the ensuing inquiry: where should we integrate the ‘pass’ that permits Flashback requests to proceed unhindered?</p>
+
+<p>Considering that Flashback is conceptually an operation built upon Multi-Version Concurrency Control (MVCC) mechanisms, it inherently requires traversal through the established read-write interfaces of MVCC. By retracing the MVCC read-write process, we can better ascertain the strategic location to embed this ‘pass’, ensuring that Flashback requests are granted seamless continuity through the system.</p>
+
+<h4 id="halting-reads">Halting Reads</h4>
+
+<p>Firstly, let’s comb through the read process, which can be studied in detail in conjunction with <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV Source Code Reading Part Two: The Read Process</a>.</p>
+
+<p>When LocalReader::propose_raft_command is invoked, it’s discerned that the request is judged through LocalReader::pre_propose_raft_command.</p>
+
+<p>Specific logic is applied to ReadLocal and StaleRead, while other requests are forwarded to RaftStore for execution. This forwarding is done via ProposalRouter::send, after which the process enters the Propose flow we previously mentioned.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">propose_raft_command</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">match</span> <span class="k">self</span><span class="nf">.pre_propose_raft_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">req</span><span class="p">)</span> <span class="p">{</span> 
+        <span class="nn">RequestPolicy</span><span class="p">::</span><span class="n">ReadLocal</span> <span class="k">=&gt;</span> <span class="o">..</span>
+        <span class="nn">RequestPolicy</span><span class="p">::</span><span class="n">StaleRead</span> <span class="k">=&gt;</span> <span class="o">..</span>
+        <span class="c1">// Forward to raftstore.</span>
+        <span class="n">_</span> <span class="k">=&gt;</span> <span class="k">self</span><span class="nf">.redirect</span><span class="p">(</span><span class="nn">RaftCommand</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">cb</span><span class="p">)),</span>     
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Thus, for requests other than ReadLocal and StaleRead, the following interruption can be naturally implemented:</p>
+
+<p>Before entering the read process, check whether the request contains the Flashback flag. This achieves the goal that after Flashback is initiated, only read commands related to Flashback are allowed to pass through.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">ctx</span><span class="py">.for_flashback</span> <span class="p">{</span>
+        <span class="n">flags</span> <span class="p">|</span><span class="o">=</span> <span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="n">header</span><span class="nf">.set_flags</span><span class="p">(</span><span class="n">flags</span><span class="p">);</span>
+    <span class="o">...</span>
+    <span class="k">self</span><span class="py">.router</span><span class="nf">.read</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>When Flashback is executed, the exec_snapshot is set with ctx.for_flashback, where for_flashback is obtained will be explained in the following section 「Phase2-1: Exec - Read Stage」.</p>
+
+<h4 id="readlocal--staleread">ReadLocal &amp; StaleRead</h4>
+
+<p>As mentioned in the previous section, ReadLocal and StaleRead have specific logic that can be understood further through the reading materials about <a href="https://cn.pingcap.com/blog/lease-read">TiKV’s Lease Read feature</a> &amp;&amp; <a href="https://docs.pingcap.com/zh/tidb/dev/stale-read">use cases for Stale Read functionality</a>.</p>
+
+<p>The special handling for ReadLocal involves checking the leader_lease in the Peer. If it is found to be outside of the lease period, it will be forwarded to the regular Propose process.</p>
+
+<p>Therefore, our approach is: during the preparation of Flashback, to manually set the lease to expire to ensure that local reads will not execute.</p>
+
+<p>This is what is done simultaneously with the lease update after completing the apply res and updating the region.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">fn</span> <span class="nf">on_set_flashback_state</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">is_in_flashback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Update the region meta.</span>
+        <span class="k">self</span><span class="nf">.update_region</span><span class="p">()</span>
+        <span class="c1">// Let the leader lease to None to ensure that local reads are not executed.</span>
+        <span class="k">self</span><span class="py">.fsm.peer</span><span class="nf">.leader_lease_mut</span><span class="p">()</span><span class="nf">.expire_remote_lease</span><span class="p">();</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Regarding StaleRead, its prerequisite for operation is the continuous advancement of safe ts (also known as resolved_ts). This check is performed in TiDB to ensure that the version used by Flashback will not exceed resolved_ts, therefore providing a cutoff.</p>
+
+<p>With this, the explanation for the interruption of read operations during Flashback is complete.</p>
+
+<h4 id="halting-write">Halting Write</h4>
+
+<p>For further details on the execution process of write requests in TiKV, one can refer to <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV Source Code Reading (Part III) Write Process</a>.</p>
+
+<p>During the write process, the RaftKv::exec_write_requests internally moves towards the router to initiate the Propose process. Therefore, similar to the “read request” discussed previously, a checkpoint is added at this stage to only allow Flashback-related write commands to pass through.</p>
+
+<p>This ensures that during the execution of Flashback, only write operations associated with it can proceed, and all other write requests are effectively halted, preserving the integrity of the Flashback operation.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_write_requests</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">txn_extra</span><span class="py">.for_flashback</span> <span class="p">{</span>
+        <span class="n">flags</span> <span class="p">|</span><span class="o">=</span> <span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="n">header</span><span class="nf">.set_flags</span><span class="p">(</span><span class="n">flags</span><span class="p">);</span>
+    <span class="o">...</span>
+    <span class="k">self</span><span class="py">.router</span><span class="nf">.send_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">extra_opts</span><span class="p">)</span><span class="o">?</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="phase1-2-prewrite">Phase1-2: Prewrite</h3>
+
+<p>After halting read and write operations, we are faced with a new issue: the continuously advancing resolved timestamp (resolved_ts) could cause a panic in Change Data Capture (CDC).</p>
+
+<h3 id="halting-the-advancement-of-resolved_ts">Halting the Advancement of resolved_ts</h3>
+
+<p>In short, resolved_ts is an internal mechanism of TiKV (TODO: introduce resolved_ts). It’s maintained due to the following reasons:</p>
+
+<ul>
+  <li>
+    <p>The Resolved TS component maintains a minimum heap of StartTS by observing changes in the LockCF, with the rule ResolvedTS = max(ResolvedTS, min(StartTS)).</p>
+  </li>
+  <li>
+    <p>Flashback will remove all locks at the granularity of a Region.</p>
+  </li>
+  <li>
+    <p>For a Region undergoing Flashback, there will no longer be any locks, meaning the ResolvedTS will continue to advance as normal, regardless of whether data is being written.</p>
+  </li>
+</ul>
+
+<p>This would lead to a scenario where the CommitTS of the changes is less than the ResolvedTS (since Flashback uses the same CommitTS for all changes, and eventually, the ResolvedTS would surpass it).</p>
+
+<p>To prevent resolved_ts from advancing before we execute Flashback, we employ the following strategy: TiDB includes a start_ts with its requests, and TiKV selects the latest user key in the CF_WRITE. A lock is prewritten with this start_ts, which will be committed and cleared after Flashback execution is complete.</p>
+
+<h4 id="introduction-to-the-read-and-write-phase">Introduction to the Read and Write Phase</h4>
+
+<p>Returning to the initial future_prepare_flashback_to_version function, it begins by internally converting the request using req.into.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
+<span class="k">fn</span> <span class="n">future_prepare_flashback_to_version</span><span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">let</span> <span class="n">res</span> <span class="o">=</span> <span class="n">storage_clone</span><span class="nf">.sched_txn_command</span><span class="p">(</span><span class="n">req</span><span class="nf">.into</span><span class="p">(),</span> <span class="n">cb</span><span class="p">);</span>
+    <span class="o">...</span> 
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The from of PrepareFlashbackToVersionRequest to FlashbackToVersionReadPhase is implemented here.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">impl</span> <span class="nb">From</span><span class="o">&lt;</span><span class="n">PrepareFlashbackToVersionRequest</span><span class="o">&gt;</span> <span class="k">for</span> <span class="n">TypedCommand</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">fn</span> <span class="nf">from</span><span class="p">(</span><span class="k">mut</span> <span class="n">req</span><span class="p">:</span> <span class="n">PrepareFlashbackToVersionRequest</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="n">FlashbackToVersionReadPhase</span> <span class="p">{</span> <span class="o">..</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Therefore, what is actually being scheduled here is FlashbackToVersionReadPhase, which means that for sched_txn_command, the process will proceed to the process_read provided by FlashbackToVersionReadPhase. After this function is executed, it will trigger the process_write of FlashbackToVersion.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">process_read</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">statistics</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">Statistics</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="n">ProcessResult</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">let</span> <span class="n">next_cmd</span> <span class="o">=</span> <span class="n">FlashbackToVersion</span> <span class="p">{</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+    <span class="nf">Ok</span><span class="p">(</span><span class="nn">ProcessResult</span><span class="p">::</span><span class="n">NextCommand</span> <span class="p">{</span>
+        <span class="n">cmd</span><span class="p">:</span> <span class="nn">Command</span><span class="p">::</span><span class="nf">FlashbackToVersion</span><span class="p">(</span><span class="n">next_cmd</span><span class="p">),</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The general process follows a repetitive read-write-read-write sequence until there are no more reads to perform.</p>
+
+<p>Since all these operations are part of the Flashback process, they must be marked with a “pass” to be executed by raftstore.</p>
+
+<p>Therefore, it is also quite reasonable to add a Write “pass” during the process_write.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">process_write</span><span class="p">(</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">WriteContext</span><span class="o">&lt;</span><span class="nv">'_</span><span class="p">,</span> <span class="n">L</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="n">write_data</span><span class="py">.extra.for_flashback</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">next_lock_key</span><span class="nf">.is_none</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">next_write_key</span><span class="nf">.is_none</span><span class="p">()</span> <span class="p">{</span>    
+        <span class="o">...</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">next_cmd</span> <span class="o">=</span> <span class="n">FlashbackToVersionReadPhase</span> <span class="p">{</span>
+            <span class="o">...</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>For process_read, since it is reading from a snapshot, a Read pass is added when reading the snapshot.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="k">if</span> <span class="n">ctx</span><span class="py">.for_flashback</span> <span class="p">{</span>
+        <span class="n">flags</span> <span class="p">|</span><span class="o">=</span> <span class="nn">WriteBatchFlags</span><span class="p">::</span><span class="n">FLASHBACK</span><span class="nf">.bits</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="o">...</span>
+    <span class="k">self</span><span class="py">.router</span><span class="nf">.read</span><span class="p">(</span> <span class="o">...</span> <span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This also ensures that after the “read and write suspension,” Flashback-related operations can be smoothly executed.</p>
+
+<p>Specifically, the process of repetitive reading and writing’s code is here. To make the process clearer, we have marked the current status:</p>
+
+<ol>
+  <li><strong>RollbackLock</strong>: It is necessary to delete all lock records where the start_ts is greater than the Flashback version;
+    <ul>
+      <li>Since Flashback will clear pessimistic locks, but the transaction commit will still succeed after that, one way to prevent this is to write a Rollback at the same place where the lock is deleted during Flashback;</li>
+      <li>Rollback lock: Use the lock’s start_ts to write a Rollback record, ensuring the timestamp is before Flashback.</li>
+    </ul>
+  </li>
+  <li><strong>Prewrite</strong>:
+    <ul>
+      <li>The TiDB request will carry a start_ts, and TiKV will choose the first key that needs Flashback, writing a lock with this start_ts to prevent the resolved_ts from being advanced before we perform Flashback.</li>
+    </ul>
+  </li>
+  <li><strong>FlashbackWrite</strong>:
+    <ul>
+      <li>The method of accumulating a whole batch to scan a batch(256) of CF_WRITE;</li>
+      <li>To Flashback the data, we need to scan each latest and unique key from CF_WRITE to obtain the old MVCC write record corresponding to the Flashback timestamp. The specific code is here;</li>
+      <li>It is necessary to overwrite a copy of the MvccTxn object’s Modify record, taking out the data from the reading stage for judgment:
+        <ul>
+          <li>If the key does not have a corresponding version, a Delete flag will be placed;</li>
+          <li>If the key has a corresponding version, and if “it does not use short_val, and is of LockType::Put”, then it will:
+            <ul>
+              <li>Obtain the old version value through load_data, build Modify with start_ts, and place it in CF_DEFAULT;</li>
+              <li>Build Modify with commit_ts, and place it in CF_WRITE.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Commit</strong>:
+    <ul>
+      <li>When it is found that all Writes have been written, enter the Commit phase, commit the first user key through commit_flashback_key.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="phase2-1-exec--commit">Phase2-1: Exec &amp; Commit</h3>
+
+<p>Just as described in the section 「Halting the Advancement of resolved_ts」 the general process is as follows:</p>
+
+<ol>
+  <li>During Flashback Preparation:
+    <ol>
+      <li>Scan &amp; Rollback all locks.</li>
+      <li>A start_ts is included in the TiDB request, and TiKV selects the first key that needs Flashback, writing a lock with this start_ts to prevent the advancement of resolved_ts before Flashback is performed.</li>
+    </ol>
+  </li>
+  <li>During Flashback Execution:
+    <ol>
+      <li>Scan &amp; Flashback the writes.
+        <ul>
+          <li>Modifications in this part will carry a 1PC flag, making tools such as CDC treat it as a modification of a one-phase commit transaction.</li>
+        </ul>
+      </li>
+      <li>Commit the lock written in 1.b to complete the Flashback.</li>
+    </ol>
+  </li>
+</ol>
+
+<p>Returning to the initial future_flashback_to_version, the process also internally goes through req.into and proceeds to FlashbackToVersionReadPhase and FlashbackToVersion for reading and writing. The detailed process has been introduced in the section 「Introduction to the Read and Write Phase」 so it is not repeated here.</p>
+
+<h3 id="phase2-2-finish">Phase2-2: Finish</h3>
+
+<p>After the Flashback is executed, the last thing we need to do is to unset all the configurations for the Flashback service. This brings us back to the classic future_flashback_to_version function.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">future_flashback_to_version</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="k">impl</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Output</span> <span class="o">=</span> <span class="n">ServerResult</span><span class="o">&lt;</span><span class="n">FlashbackToVersionResponse</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+    <span class="o">...</span>
+    <span class="c1">// 3. notify raftstore the flashback has been finished</span>
+    <span class="n">raft_router_clone</span><span class="nf">.significant_send</span><span class="p">(</span><span class="n">region_id</span><span class="p">,</span> <span class="nn">SignificantMsg</span><span class="p">::</span><span class="n">FinishFlashback</span><span class="p">)</span><span class="o">?</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The process is similar to that of Prepare, and the Admin command is sent to complete the persistence takedown.</p>
+
+<p>At this point, the entire Flashback is complete!</p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="some-potholes">Some potholes</h3>
+
+<p><code class="language-plaintext highlighter-rouge">TODO</code></p>
+
+<h3 id="improvement-points">Improvement points</h3>
+
+<p>The existing mechanism has some shortcomings in terms of usability and ease of use:</p>
+
+<ul>
+  <li>The operations are limited to the time before the data is recovered by GC, which may be a small window, and once the safepoint has been updated, it will not be usable.</li>
+  <li>If the GC lifetime is extended, historical data will take up a lot of storage space.</li>
+  <li>GC lifetime is a global configuration and cannot be adjusted for certain database or table.</li>
+</ul>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV Source Code reading</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV Source Code writing</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">TiKV Source Code startup grpc</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-12/">TiKV Source Code distributed transaction</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-13">TiKV Source Code MVCC</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV Source Code raftstore</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV Source Code raft propose apply&amp;commit</a></p>]]></content><author><name></name></author><category term="distributed" /></entry><entry><title type="html">Flashback TiKV Chinese</title><link href="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html" rel="alternate" type="text/html" title="Flashback TiKV Chinese" /><published>2023-05-20T17:43:28+08:00</published><updated>2023-05-20T17:43:28+08:00</updated><id>http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV</id><content type="html" xml:base="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html"><![CDATA[<ul id="markdown-toc">
   <li><a href="#背景介绍" id="markdown-toc-背景介绍">背景介绍</a>    <ul>
       <li><a href="#执行与效果" id="markdown-toc-执行与效果">执行与效果</a></li>
       <li><a href="#具体实现" id="markdown-toc-具体实现">具体实现</a>        <ul>
@@ -266,14 +870,14 @@
 
 <p>Admin request 通过 RaftStoreRouter 构成一条 RaftCommand 发送，会按照 Propose 流程，通过 pre_propose 的检查后到 PeerFsmDelegate.fsm.peer.propose 完成 Propose 一条 Raft Log。</p>
 
-<p>之后PeerFsm会将 Proposal 以及已提交日志发送给对应的 ApplyFsm来到 apply 流程。</p>
+<p>之后 PeerFsm 会将 Proposal 以及已提交日志发送给对应的 ApplyFsm 来到 apply 流程。</p>
 
-<p>ApplyFsm会针对这些日志进行（见 ApplyFsm::handle_apply）：</p>
+<p>ApplyFsm 会针对这些日志进行（见 ApplyFsm::handle_apply）：</p>
 
 <ol>
   <li>完成数据的持久化。</li>
   <li>向 PeerFsm发送 ApplyRes，用于更新 PeerFsm中的 Region 状态。
-  在 exec_raft_cmd 会加上 check_flashback_state，进行 Flashback 持久态的判断。此处 region 将在下面的 exec 函数中设置上，由于为串行 apply，因此在下条 cmd 来之前，便会设置好 region 信息。</li>
+ 在 exec_raft_cmd 会加上 check_flashback_state，进行 Flashback 持久态的判断。此处 region 将在下面的 exec 函数中设置上，由于为串行 apply，因此在下条 cmd 来之前，便会设置好 region 信息。</li>
 </ol>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">check_flashback_state</span><span class="p">(</span><span class="k">self</span><span class="py">.region</span><span class="nf">.get_is_in_flashback</span><span class="p">());</span>
@@ -346,7 +950,7 @@
 
 <p>这样很自然地对于除 ReadLocal 和 StaleRead 外的 req，都可以做出以下隔断：</p>
 
-<p>在进入 read 之前，判断一下 req 中是否有 Flashback 参数，便实现了在开启 Flashback 之后，只能让 Flashback 相关的读指令通行。</p>
+<p>在进入 read 之前，判断一下 req 中是否有 Flashback flag，便实现了在开启 Flashback 之后，只能让 Flashback 相关的读指令通行。</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -587,13 +1191,19 @@
 
 <h3 id="参考文档">参考文档</h3>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV 源码阅读三部曲（二）读流程 来阅读详细读过程</a>
-<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV 源码阅读三部曲（三）写流程</a>
-<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">TiKV 源码解析系列文章（七）gRPC Server 的初始化和启动流程</a>
-<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-12/">TiKV 源码解析系列文章（十二）分布式事务</a>
-<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-13">TiKV 源码解析系列文章（十三）MVCC 数据读取</a>
-<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV 源码解析系列文章（十七）raftstore 概览</a>
-<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>]]></content><author><name></name></author><category term="distributed" /></entry><entry><title type="html">文件系统总结</title><link href="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html" rel="alternate" type="text/html" title="文件系统总结" /><published>2020-12-12T23:32:12+08:00</published><updated>2020-12-12T23:32:12+08:00</updated><id>http://localhost:4000/linux/2020/12/12/FileSystem-Thinking</id><content type="html" xml:base="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html"><![CDATA[<ul id="markdown-toc">
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV 源码阅读三部曲（二）读流程 来阅读详细读过程</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV 源码阅读三部曲（三）写流程</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">TiKV 源码解析系列文章（七）gRPC Server 的初始化和启动流程</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-12/">TiKV 源码解析系列文章（十二）分布式事务</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-13">TiKV 源码解析系列文章（十三）MVCC 数据读取</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV 源码解析系列文章（十七）raftstore 概览</a></p>
+
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>]]></content><author><name></name></author><category term="distributed" /></entry><entry><title type="html">文件系统总结</title><link href="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html" rel="alternate" type="text/html" title="文件系统总结" /><published>2020-12-12T23:32:12+08:00</published><updated>2020-12-12T23:32:12+08:00</updated><id>http://localhost:4000/linux/2020/12/12/FileSystem-Thinking</id><content type="html" xml:base="http://localhost:4000/linux/2020/12/12/FileSystem-Thinking.html"><![CDATA[<ul id="markdown-toc">
   <li><a href="#总览" id="markdown-toc-总览">总览</a></li>
   <li><a href="#获取文件属性" id="markdown-toc-获取文件属性">获取文件属性</a></li>
   <li><a href="#inode-与块" id="markdown-toc-inode-与块">inode 与块</a>    <ul>
@@ -3955,500 +4565,4 @@ Result 为加法器的运算结果输出，此部分核心电路是加法器，�
 
 <p>最终电路实现如下：（思路大致与原码 1 位一样）</p>
 
-<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019224823463.png" alt="image-20201019224823463" /></p>]]></content><author><name></name></author><category term="principle" /></entry><entry><title type="html">自己动手画 CPU《计算机组织与结构实验》（一）</title><link href="http://localhost:4000/principle/2020/09/28/hust-cpu-study.html" rel="alternate" type="text/html" title="自己动手画 CPU《计算机组织与结构实验》（一）" /><published>2020-09-28T13:56:10+08:00</published><updated>2020-09-28T13:56:10+08:00</updated><id>http://localhost:4000/principle/2020/09/28/hust-cpu-study</id><content type="html" xml:base="http://localhost:4000/principle/2020/09/28/hust-cpu-study.html"><![CDATA[<ul id="markdown-toc">
-  <li><a href="#一计算机数据表示" id="markdown-toc-一计算机数据表示">一、计算机数据表示</a>    <ul>
-      <li><a href="#1汉字国标码转区位码实验" id="markdown-toc-1汉字国标码转区位码实验">1、汉字国标码转区位码实验</a></li>
-      <li><a href="#2汉字机内码获取实验" id="markdown-toc-2汉字机内码获取实验">2、汉字机内码获取实验</a></li>
-      <li><a href="#3偶校验编码设计" id="markdown-toc-3偶校验编码设计">3、偶校验编码设计</a></li>
-      <li><a href="#4偶校验检错电路设计" id="markdown-toc-4偶校验检错电路设计">4、偶校验检错电路设计</a></li>
-      <li><a href="#516位海明编码电路设计" id="markdown-toc-516位海明编码电路设计">5、16位海明编码电路设计</a></li>
-      <li><a href="#616位海明解码电路设计" id="markdown-toc-616位海明解码电路设计">6、16位海明解码电路设计</a></li>
-      <li><a href="#716位crc并行编解码电路设计" id="markdown-toc-716位crc并行编解码电路设计">7、16位CRC并行编解码电路设计</a>        <ul>
-          <li><a href="#1crc串行编码电路" id="markdown-toc-1crc串行编码电路">1.CRC串行编码电路</a></li>
-          <li><a href="#2crc并行编码电路" id="markdown-toc-2crc并行编码电路">2.CRC并行编码电路</a></li>
-          <li><a href="#3crc并行解码电路" id="markdown-toc-3crc并行解码电路">3.CRC并行解码电路</a></li>
-        </ul>
-      </li>
-      <li><a href="#8流水传输实验海明码与crc思路一致" id="markdown-toc-8流水传输实验海明码与crc思路一致">8、流水传输实验（海明码与CRC思路一致）</a></li>
-    </ul>
-  </li>
-</ul>
-
-<p><a href="https://www.icourse163.org/course/HUST-1205809816">配套慕课</a></p>
-
-<h2 id="一计算机数据表示">一、计算机数据表示</h2>
-
-<h3 id="1汉字国标码转区位码实验">1、汉字国标码转区位码实验</h3>
-
-<p>【实验要求】</p>
-
-<p>理解汉字机内码、区位码，最终能利用相关工具批量获取一段文字的 GB2312 机内码，并利用简单电路实现 GB2312 编码与区位码的转换；</p>
-
-<p>输入引脚为16位的 GB2312 双字节国标码；输出为区号和位号（<strong>区号位号均从1开始计数</strong>），请在电路中复制对应隧道标签信号使用，注意不要增改引脚，不要修改子电路封装，以免影响子电路在其它电路模块中的正常调用。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928154753459.png" alt="image-20200928154753459" /></p>
-
-<p>原理：</p>
-
-<p><strong>区位码 = GB2312 汉字机内码 - 0xA0A0</strong></p>
-
-<table>
-  <thead>
-    <tr>
-      <th>信号</th>
-      <th>输入/输出</th>
-      <th>位宽</th>
-      <th>说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>GB2312</td>
-      <td>输入</td>
-      <td>16 位</td>
-      <td>汉字机内码</td>
-    </tr>
-    <tr>
-      <td>区号</td>
-      <td>输出</td>
-      <td>7 位</td>
-      <td>汉字区位码中的区号—行号 ROW</td>
-    </tr>
-    <tr>
-      <td>位号</td>
-      <td>输出</td>
-      <td>7 位</td>
-      <td>汉字区位码中的位号—列号 COL</td>
-    </tr>
-  </tbody>
-</table>
-
-<p>用到求补器，或者手算[0xA0A0]补。</p>
-
-<p>注意：5f60 即为 A0A0 的补码，至于 dfe0 也能通过，是由于第 8 位 和第 16 位 不用考虑</p>
-
-<h3 id="2汉字机内码获取实验">2、汉字机内码获取实验</h3>
-
-<p>【实验要求】</p>
-
-<p>​完成国标码到区位码的转换电路后，可以在汉字显示电路中进行测试，尝试在下图所示电路中的 ROM 存储器中存入下面给出的指定句子，注意这里不允许使用逐字查码表的方式获得编码，应掌握批量转换的方法和原理。</p>
-
-<p>​指定句子如下：请思考数字，英文字符怎么输入和显示的。
-​ １２３４５ＡＢＣＤＥＦＧａｂｃｄｅｆｇ轻轻的我走了，正如我轻轻的来；我轻轻的招手，作别西天的云彩。那河畔的金柳，是夕阳中的新娘；波光里的艳影，在我的心头荡漾。</p>
-
-<p>【思路】</p>
-
-<p>可通过编写程序方法从计算机中得到汉字的机内码，
- C语言规定符%x显示<strong>无符号</strong>以十六进制表示的整数。</p>
-
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include</span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
-</span><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-<span class="p">{</span>
-  <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">temp</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
-  <span class="n">printf</span><span class="p">(</span><span class="s">"请输入汉字：</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
-  <span class="n">scanf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span><span class="n">temp</span><span class="p">);</span>
-  <span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">其区位码为：</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
-  <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
-  <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">!=</span><span class="sc">'\0'</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> 
-  <span class="p">{</span>
-    <span class="n">printf</span><span class="p">(</span><span class="s">"%.2x"</span><span class="p">,</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
-    <span class="k">if</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">16</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span> <span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
-    <span class="k">else</span> <span class="k">if</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">8</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span> <span class="n">printf</span><span class="p">(</span><span class="s">"  "</span><span class="p">);</span>
-    <span class="k">else</span> <span class="k">if</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="mi">2</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span> <span class="n">printf</span><span class="p">(</span><span class="s">" "</span><span class="p">);</span>
-    <span class="k">else</span> <span class="k">continue</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div></div>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928155921478.png" alt="image-20200928155921478" /></p>
-
-<p>将区位码复制到保存ROM数据的txt文本</p>
-
-<p>标注开头为 v2.0 raw</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928160011121.png" alt="image-20200928160011121" /></p>
-
-<p>导入 txt 文件数据到 ROM</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928160102594.png" alt="image-20200928160102594" /></p>
-
-<p>最终完成电路</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928155358761.png" alt="image-20200928155358761" /></p>
-
-<h3 id="3偶校验编码设计">3、偶校验编码设计</h3>
-
-<p>【实验要求】</p>
-
-<p>掌握奇偶校验基本原理和特性，能在 Logisim 中实现偶校验编码电路，检错电路,理解校验码传输的原理。</p>
-
-<p>【思路】</p>
-
-<p>偶校验，即加上校验位，一共有偶数个1；而校验位由原始数据的 1 的个数异或决定——当实际数据中“1”的个数为偶数的时候，这个校验位就是“0”，否则这个校验位就是“1”。</p>
-
-<p>0100101 偶校验码就是 01001011</p>
-
-<p>可用异或门求校验位。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928160753056.png" alt="image-20200928160753056" /></p>
-
-<h3 id="4偶校验检错电路设计">4、偶校验检错电路设计</h3>
-
-<p>【实验目的】</p>
-
-<p>检错码为将原始 数据位+校验位 异或后构成 17 位的校验码进行异或，得到检错位。1 表示有错，0 表示无错。</p>
-
-<p>原理是：校验码是 1 的个数为 偶数就为 0，因此，若</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>信号</th>
-      <th>输入/输出</th>
-      <th>位宽</th>
-      <th>说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>校验码</td>
-      <td>输入</td>
-      <td>17 位</td>
-      <td>最高位为偶校验位的偶校验数据</td>
-    </tr>
-    <tr>
-      <td>检错位</td>
-      <td>输出</td>
-      <td>1 位</td>
-      <td>1 表示有错，0 表示无错</td>
-    </tr>
-    <tr>
-      <td>数据位</td>
-      <td>输出</td>
-      <td>16 位</td>
-      <td>无冗余信息的原始数据</td>
-    </tr>
-  </tbody>
-</table>
-
-<p>没有干扰时，显示字体一致。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928162400494.png" alt="image-20200928162400494" /></p>
-
-<p>由于发生两位错，因此无法检验出错误，显示误报</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928162521383.png" alt="image-20200928162521383" /></p>
-
-<p>发生三位错（奇数位），检测出错误。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928162712934.png" alt="image-20200928162712934" /></p>
-
-<p>当干扰码是让第 8 位 和第 16 位变化时，不会变化（取决于A0A0的补码取得是值是否考虑了第 8 位 和 第 16 位。</p>
-
-<p>现在情况为：</p>
-
-<p>1.dfe0 即 8 位 和 16 位 始终为 1，随机干扰为 8080 时不会变化</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928170332374.png" alt="image-20200928170332374" /></p>
-
-<p>2.5f60 即 8 位 和 16 位 始终为 0，随机干扰为 8080 时会变化</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928170452176.png" alt="image-20200928170452176" /></p>
-
-<p>另外两种情况就不贴出来了，通过一小时思考（555），终于明白一个问题：</p>
-
-<p>即要想明白补码加法和异或运算发生时刻。以及进位的发生。</p>
-
-<p><strong>先说明一开始困扰我半小时的错误思路：</strong></p>
-
-<pre><code class="language-assembly">一开始认为：
-发现规律为：当为0x80时，df60 5f60 会变化，dfe0 5fe0 不会变化。即 —— 第 8 位的变化改变字符。
-这是由于补码去参与加法运算，若补码为 1 ，那么会发生进位（dfe0 5fe0），区号 +1；若补码为 0，不发生进位（df60 5f60）。
-而随机干扰是异或运算（改变数据），当为0x80的干扰码时，区位码为 0 会变为 1 后，再发生进位。
-
-但是在验证这个规律时：突然发现没有考虑除了 第 8 位 以外的 其他位进位情况：（以下是没考虑时错误思路）
-若此时为 dfe0 5fe0，由于区位码第 8 位为 1，0x80异或之前会发生进位，0x80异或之后变为 0 ，不会发生进位。
-若此时为 df60 5f60，由于区位码第 8 位为 1，0x80异或之前不会发生进位，0x80异或之后变为 1 ，不会发生进位。
-
-</code></pre>
-
-<p><strong>现在便明白了：第 8 位是否发生进位才是最终问题所在。（进位取决于A0A0补码的取值）</strong></p>
-
-<p>比如此时 a393: 100 0110 1001 0110，与 第 5-8位：0110必然不会发生进位</p>
-
-<p>而上图 bfc6:1011 1111 1100 0110  与第 5-8位 0110 发生进位，因此会变化。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20200928180931268.png" alt="image-20200928180931268" /></p>
-
-<h3 id="516位海明编码电路设计">5、16位海明编码电路设计</h3>
-
-<p>【实验目的】</p>
-
-<p>掌握海明码设计原理与检错纠错性能，能独立设计实现汉字 GB2312 编码的海明校验编码体系，并最终在实验环境中利用硬件电路实现对应的编解码电路。</p>
-
-<p>原理是：</p>
-
-<p>​	k+n&lt;=2^r-1,此时k=16，r=5（有5位的校验位），因此总的数据位数有16+5+1（总的奇偶校验位）=22位。设校验位为Pi（i=1，2，3，4，5）,分别位于22位数据的<strong>第2的i-1次方</strong>的位置上，故分别位于第1，2，4，8，16位上。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003153924941.png" alt="image-20201003153924941" /></p>
-
-<p>​	为区分一位错和两位错，需要额外引入总偶校验位P——在海明码检错码报错时，如果总检错码为 0 ，则表示 2 位错；如果总检错码为  1，则表示出现 1 位错。（这是在假定没有出现 3 位以上错的情况）</p>
-
-<p>思路很简单，就是对于</p>
-
-<p>类似<img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003162846379.png" alt="image-20201003162846379" /></p>
-
-<p>进行异或处理</p>
-
-<p>总检测位则是对全部进行检测</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003162821169.png" alt="image-20201003162821169" /></p>
-
-<h3 id="616位海明解码电路设计">6、16位海明解码电路设计</h3>
-
-<p>引入 G6 进行错误位数判断。是由于当发生 2 位错时：假设 H3 （0011）、H5（0101） 同时发生错误，由于 H3 参与 G1G2，H5参与G1G3，G1发生两位错因此无法检错，G3、G5发生一位错，因此构成纠错码为 0110，与 发生一位错 H6 的检错码一致，因此产生矛盾。</p>
-
-<p>至于 G6 为何选择全部数据的异或，是为区分是 1 位错，还是 2 位错，当 发生 1 位错时，那么G6则为 1，发生 2 位错时，G6 为 0。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003232234022.png" alt="image-20201003232234022" /></p>
-
-<ul>
-  <li>当G5G4G3G2G1=0,G6=0,表示数据无出错；</li>
-  <li>G5G4G3G2G1 !=0,G6=1,表示发生一位数据出错；</li>
-  <li>G5G4G3G2GG1=0,G6=1,表示该奇偶校验位出错，即发生一位出错；</li>
-  <li>G5G4G3G2G1 !=0,G6=0,表示发生两位数据出错。</li>
-</ul>
-
-<p>首先介绍解码器</p>
-
-<p>当为 全 0 时， 0 位输出 1.</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003223817970.png" alt="image-20201003223817970" /></p>
-
-<p>当选择位为 1000 即表示 8 时，那么第 8 位便会置为 1。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003223925770.png" alt="image-20201003223925770" /></p>
-
-<p>因此现在  G5G4G3G2G1 就表示是第 x 位错误。</p>
-
-<p>且 G5G4G3G2G1 的电路图就是 P1 异或上 得到 P1 的电路。</p>
-
-<p>eg G5：</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003231945406.png" alt="image-20201003231945406" /></p>
-
-<ul>
-  <li>当G5G4G3G2G1=0,G6=0,表示数据无出错；此时 0 位为 1，G6由于全部为 0 则为 0。</li>
-  <li>G5G4G3G2G1 !=0,G6=1,表示发生一位数据出错；此时 0 位为 0，G6 由于有 1 位错误则为 1。</li>
-  <li>G5G4G3G2GG1=0,G6=1,表示该奇偶校验位出错，即发生一位出错；此时 0 位为 1，G6 由于有 1 位错误则为 1。</li>
-  <li>G5G4G3G2G1 !=0,G6=0,表示发生两位数据出错。此时 0 位 为 0，G6 由于两位错误则为 1。</li>
-</ul>
-
-<p>采取与门进行错误位数选择。</p>
-
-<p>完成核心电路如图。</p>
-
-<p><strong>纠正数据功能</strong>：将输入数据换成G5G4G3G2G1，将该解码器的第1位至23位用分离器连接起来，如下图所示（此时，如果G5G4G3G2G1等于某个不为0的数据时，该数据对应数位将会输出为1）。将该22位数据与原来的海明码进行按位异或，则可得到原来无出错的数据，即进行纠正。也因此错 1 位可以纠正，错 2 位不能纠正。因为错 1 位可以指示出那一位，而错 2 位会指示两位的和。
-（提示：x异或0=x，x异或1=x的非）</p>
-
-<p><strong>注意</strong>：由于要获得纠正后的数据，即16位数据，由于该数据是从0开始的，故其检验位分别位于0，1，3，7，15，21上，因此要去掉这些位置的数据，即可得到原来的16位数据。因此采用分离器输出的时候，位宽仍然是22位，但是位0，位1，位3，位7，位15，位21，是无的。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201003231503413.png" alt="image-20201003231503413" /></p>
-
-<h3 id="716位crc并行编解码电路设计">7、16位CRC并行编解码电路设计</h3>
-
-<p>首先，了解实验的大体要求，该实验要求我们对16位数据进行CRC编码，生成22位数据；再将22位CRC编码进行解码成16位数据，且判断数据是否在传输过程中发生一位错，两位错的情况，若出错，则必须对数据进行纠正。因此该实验要进行两个的电路图的设计。</p>
-
-<p><strong>任务</strong>：实现16位原始数据的CRC编码，假定没有三位错，能纠正一位错</p>
-
-<ul>
-  <li>步骤1：选择生成多项式
-    <ul>
-      <li>不是任意的表达式都可以做生成多项式，见教材中表格</li>
-      <li>构成的编码体系能否区分一位错，两位错，如不能，如何解决？</li>
-    </ul>
-  </li>
-  <li>步骤2：利用余数循环特点求解16个特殊常量的CRC余数
-    <ul>
-      <li>0000000000000001 00000的CRC余数R1</li>
-      <li>0000000000000010 00000的CRC余数R2，R1左移一位除生成多项式得到R2</li>
-      <li>0000000000000100 00000的CRC余数R3，R2左移一位除生成多项式得到R3</li>
-      <li>以此类推直至R1~R16全部求解完毕</li>
-    </ul>
-  </li>
-  <li>步骤3：根据R1~R16构建并行编解码电路
-    <ul>
-      <li>纯组合逻辑，根据待编码每一位的值决定选择是否选择对应的余数是否参与运算</li>
-    </ul>
-  </li>
-</ul>
-
-<p><strong>1.解题思路</strong></p>
-
-<p>① 已知该实验输入的是16位数据，输出22位CRC编码数据，其中包括16位原始数据，6位校验位，其中一位为总的奇偶校验位（校验位的位数也可由k+r&lt;=2^r-1得到）。因此此时的 r=5（不包含奇偶校验位），选择的多项式G(x)位数则为 r+1=6位，此时我选择的多项式是 G(x)=100101（该多项式不固定，选择其它六位的多项式也可以）。</p>
-
-<p>② CRC编码原理：原始16位数据Q(X),<strong>左移</strong> r=5 位成<strong>21位Q’(x)</strong>（即后面补r个0），再与多项式 100101 做模 2 运算，得到的 r 位的余数，将该余数替换掉 Q’(X) 后面的 r 位，即将它后面的 r 个 0 替换成该余数。如图所示 r5r4r3r2r1 便是得到的余数，而r6是总的奇偶校验位，<strong>对所有数据进行异或便可得到该偶校验位 r6。</strong></p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004195840800.png" alt="image-20201004195840800" /></p>
-
-<p><strong>首先进行串行编码电路的介绍：</strong></p>
-
-<h4 id="1crc串行编码电路">1.CRC串行编码电路</h4>
-
-<p>D触发器作用为 锁存。即保存输入值。</p>
-
-<p>serial_in 慢慢进入触发器，位数向左移动，与模 2 的除法步骤一致。最终当serial_in 全部输入完成时，D4D3D2D1 即为所求余数。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004170716133.png" alt="image-20201004170716133" /></p>
-
-<p>时间复杂度较高，需要 n-1 个时钟周期才能完成。因此运算速度慢，高速设备普遍采用并行CRC编解码</p>
-
-<h4 id="2crc并行编码电路">2.CRC并行编码电路</h4>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004194501717.png" alt="image-20201004194501717" /></p>
-
-<p>因此可先对该 <strong>16 位数据</strong>按位与<strong>该多项式 （此处为 100101）</strong>进行模 2 除运算，再根据其实际数据进行异或操作。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004194524455.png" alt="image-20201004194524455" /></p>
-
-<p><strong>因此</strong>根据该思路，先将 16 位原始数据所对应位置上取 1 时，与G(x)进行模2除运算<strong>得到各自的5位余数</strong>，再用<strong>选择器</strong>根据每一位数据选择输入的是余数还是0，最后将16个输入数据进行异或，即可得到5位最终的余数。</p>
-
-<p>③选择器的使用原理：</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004200933116.png" alt="image-20201004200933116" /></p>
-
-<p>因此各位取 1 时与多项式模2除运算后的余数如下所示：</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004220650902.png" alt="image-20201004220650902" /></p>
-
-<p><strong>编码电路总览</strong></p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004220603149.png" alt="image-20201004220603149" /></p>
-
-<h4 id="3crc并行解码电路">3.CRC并行解码电路</h4>
-
-<p>该电路会比较难理解，要进行检错以及数据纠正得到原始的16位数据。</p>
-
-<p>1.检错原理</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004205823945.png" alt="image-20201004205823945" /></p>
-
-<p>1、接收方在接受到 CRC 编码后，将该编码与多项式进行模2除运算，得到余数r’，再根据 r6（ r6 为总的奇偶检验位,将所有数据进行异或可得）的值进行判断数据是否产生错误，及产生错误后是一位错还是两位错。其检查原理同海明码的检错原理相同。
-<strong>有以下情况：</strong></p>
-<ul>
-  <li>r5r4r3r2r1 = 0,r6 = 0,表示数据无出错；此时 0 位为 1，r6由于全部为 0 则为 0。</li>
-  <li>r5r4r3r2r1 ! = 0,r6 = 1,表示发生一位数据出错；此时 0 位为 0，r6 由于有 1 位错误则为 1。</li>
-  <li>r5r4r3r2rr1 = 0,r6 = 1,表示该奇偶校验位出错，即发生一位出错；此时 0 位为 1，r6 由于有 1 位错误则为 1。</li>
-  <li>r5r4r3r2r1 ! = 0,r6 = 0,表示发生两位数据出错。此时 0 位 为 0，r6 由于两位错误则为 1。</li>
-</ul>
-
-<p>由上图可知，CRC 编码最后的 r 位少于多项式位数，因此可将最后 r 位看作一个整体，让它与多项式进行模 2 除运算后，得到的余数显然是它本身，因此让它与其它16位数据与G(x)模2除后所得的余数进行异或，即可得最后接收方检验的余数。</p>
-
-<p>下图箭头所指位置得到的便是最终 5 位余数。</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004210942193.png" alt="image-20201004210942193" /></p>
-
-<p>2.纠错，得原始16位数据</p>
-
-<p>① 若CRC编码发生出错，而它的出错位可能为第 7，8，9…22位（不考虑第1到6位，因为我们要得的原始16位数据处于第7…22位上，因此只需要判断这些位是否出错，若出错对它们进行纠正，再输出即可）。</p>
-
-<p>​因此将CRC编码按照每一位取反后再与G(x)进行模2除运算（如下图），若余数为0，则说明该位出错，因此将余数取反为1，再与该位数据进行异或从而纠正该位的数据；若余数不为0，则说明该数据位并未发生传输错误，因此对该余数取反为0，再与该位的数据进行异或得到的数据仍为该数据位。（<strong>x 异或 0 = x，x 异或 1 = x 反</strong>）</p>
-
-<p>​若采用或门，那么：若余数为 1 则为 1，而余数为 0 则说明该位错误，需要取反，为 1 则不变</p>
-
-<p>​因此需要采用或非门 + 异或门进行判断</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201004213813453.png" alt="image-20201004213813453" /></p>
-
-<p>② CRC编码按位取反（即按位异或1）后再与G(x)进行模2除运算，根据公式可化成
- CRC编码%G(x) <strong>异或</strong> 该数据位取1%G(x)。</p>
-
-<p>例如：假设第 7 位出错
- （CRC%100101）异或（100 0000%100101） = （CRC%100101）异或 0a。</p>
-
-<p><strong>最终电路总览</strong></p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005150355384.png" alt="image-20201005150355384" /></p>
-
-<h3 id="8流水传输实验海明码与crc思路一致">8、流水传输实验（海明码与CRC思路一致）</h3>
-
-<p>1.五段流水线模拟</p>
-
-<p>同步清零，气泡，高电平有效</p>
-
-<p>使能端，低电平有效，stall，高电平有效</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005162854350.png" alt="image-20201005162854350" /></p>
-
-<p>流水线演示：分为多个阶段</p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005162958819.png" alt="image-20201005162958819" /></p>
-
-<p>主要目的是：增加 两位错重传机制。类似指令流水线中的分支指令
-作用：保证接收端接收顺序和ROM中一致</p>
-
-<p><strong>实现：</strong></p>
-
-<ol>
-  <li>让发送端地址回滚。（类似指令流水线分支处理的分支跳转）</li>
-  <li>清空除最后一个外流水接口中的所有数据。（类似指令流水线分支处理的清空误取指令）</li>
-  <li>最后一个流水接口停止接受数据。（类似指令流水线数据处理的流水线暂停）</li>
-</ol>
-
-<p><strong>解题思路：</strong></p>
-
-<ol>
-  <li>
-    <p>发送端地址回滚，类似指令流水线分支处理的分支跳转</p>
-
-    <p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005170649250.png" alt="image-20201005170649250" /></p>
-
-    <p>​	在这里选用<strong>选择器</strong>，当无发生两位错误时，此时箭头所指的输入端为 0 ，此时选择器选择第 0 位的数据输入即将01输入，常量和加法器，寄存器够成的电路实现的是 x=x+01 的功能，即类似于计数器。因此无发生两位错时，不需要进行地址回滚。
-​	当发生两位数据的出错时，此时输入的是 fd ，即-3（8位二进制）的补码表示，因为此时是加法器，因此减3，要用补码进行表示成 fd ，从而实现地址回滚。</p>
-
-    <p><strong>为什么是减3，这里解释一下：</strong>
-	假设华字发生两位错，且其他数据的传送都如下图所示</p>
-
-    <p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005171046679.png" alt="image-20201005171046679" /></p>
-
-    <p>​	此时，要将华字回滚到取数阶段，然而此时的取数阶段的对应序号为 4 ，而华字的对应序号为1，因此 4-3=1，故此时的加法器的输入端应该为 -3（八位二进制），则其对应补码为fd。</p>
-  </li>
-  <li>
-    <p>清空前段数据(气泡逻辑)            类似指令流水线分支处理的清空误取指令</p>
-
-    <p>由于流水线存在：同步清零，气泡，高电平有效</p>
-
-    <p>因此对全部步骤采用清零即可</p>
-
-    <p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005171416289.png" alt="image-20201005171416289" /></p>
-
-    <p>进行同步清0，必须在两种状态都满足的条件下进行，该两种状态是：</p>
-
-    <ul>
-      <li>发生两位错</li>
-      <li>
-        <p>传送数据有效。</p>
-
-        <p>发生两位错再进行同步清0是不言而喻的；数据有效，表明当前传送的数据是有效的。如果数据无效的话，数据都无效了，有无发生两位错和是否重传都是没有必要的。</p>
-      </li>
-    </ul>
-  </li>
-  <li>
-    <p>暂停显示阶段的动作( Stall 信号控制)                 类似指令流水线数据相关处理的流水线暂停</p>
-
-    <p>此时数据发生两位错误时，该数据不应该传入显示阶段中，显示阶段应该继续显示上个数据，即暂停显示阶段的动作。</p>
-
-    <p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005171603991.png" alt="image-20201005171603991" /></p>
-
-    <p>至于标签 en5 所连接的便是该 16 位流水接口的使能端（高电平有效），当使能端为 1 时，忽略时钟的输入，即错误数据不会传入该阶段，仍然继续显示上个数据。
- 有两种情况应该暂停显示阶段的动作：
- ①发生两位的错误时
- ②数据无效时
- 这两种情况，若其中有一种情况发生，都应该暂停显示阶段的动作。</p>
-  </li>
-</ol>
-
-<p><strong>最终电路展示</strong></p>
-
-<p><img src="/assets/blog_image/2020-09-28-hust-cpu-study/image-20201005171743029.png" alt="image-20201005171743029" /></p>]]></content><author><name></name></author><category term="principle" /></entry></feed>
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019224823463.png" alt="image-20201019224823463" /></p>]]></content><author><name></name></author><category term="principle" /></entry></feed>

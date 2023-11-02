@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ffffff">
 
-    <title>Flashback TiKV Chinese</title>
+    <title>Flashback TiKV</title>
     <style>
      .main {
        padding: 20px 10px;
@@ -38,18 +38,18 @@
      }
     </style>
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Flashback TiKV Chinese</title>
+<title>Flashback TiKV</title>
 <meta name="generator" content="Jekyll v4.3.2" />
-<meta property="og:title" content="Flashback TiKV Chinese" />
+<meta property="og:title" content="Flashback TiKV" />
 <meta property="og:locale" content="en_US" />
-<link rel="canonical" href="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html" />
-<meta property="og:url" content="http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html" />
+<link rel="canonical" href="http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en.html" />
+<meta property="og:url" content="http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en.html" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2023-05-20T17:43:28+08:00" />
+<meta property="article:published_time" content="2023-10-25T19:43:28+08:00" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Flashback TiKV Chinese" />
+<meta property="twitter:title" content="Flashback TiKV" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-05-20T17:43:28+08:00","datePublished":"2023-05-20T17:43:28+08:00","headline":"Flashback TiKV Chinese","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html"},"url":"http://localhost:4000/distributed/2023/05/20/Flashback-in-TiKV.html"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-10-25T19:43:28+08:00","datePublished":"2023-10-25T19:43:28+08:00","headline":"Flashback TiKV","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en.html"},"url":"http://localhost:4000/distributed/2023/10/25/Flashback-in-TiKV-en.html"}</script>
 <!-- End Jekyll SEO tag -->
 
   </head>
@@ -74,35 +74,35 @@
 
       <div class="snowframe">
       
-      <h1>Flashback TiKV Chinese</h1>
+      <h1>Flashback TiKV</h1>
       
       
       
       
-      <p class="hidden-text"># distributed, 2023-05-20</p>
+      <p class="hidden-text"># distributed, 2023-10-25</p>
       
       <ul id="markdown-toc">
-  <li><a href="#背景介绍" id="markdown-toc-背景介绍">背景介绍</a>    <ul>
-      <li><a href="#执行与效果" id="markdown-toc-执行与效果">执行与效果</a></li>
-      <li><a href="#具体实现" id="markdown-toc-具体实现">具体实现</a>        <ul>
-          <li><a href="#采用-region-锁停读写调度" id="markdown-toc-采用-region-锁停读写调度">采用 Region 锁停读写调度</a></li>
-          <li><a href="#大致流程" id="markdown-toc-大致流程">大致流程</a></li>
+  <li><a href="#background-introduction" id="markdown-toc-background-introduction">Background Introduction</a>    <ul>
+      <li><a href="#execution-and-effect" id="markdown-toc-execution-and-effect">Execution and effect</a></li>
+      <li><a href="#specific-implementation" id="markdown-toc-specific-implementation">Specific Implementation</a>        <ul>
+          <li><a href="#adopting-region-lock-to-halt-readwrite-scheduling" id="markdown-toc-adopting-region-lock-to-halt-readwrite-scheduling">Adopting Region Lock to Halt Read/Write Scheduling</a></li>
+          <li><a href="#general-process" id="markdown-toc-general-process">General Process</a></li>
         </ul>
       </li>
     </ul>
   </li>
-  <li><a href="#代码分析" id="markdown-toc-代码分析">代码分析</a>    <ul>
-      <li><a href="#流程概览" id="markdown-toc-流程概览">流程概览</a></li>
-      <li><a href="#phase1-1-prepare" id="markdown-toc-phase1-1-prepare">Phase1-1: Prepare</a>        <ul>
+  <li><a href="#code-analysis" id="markdown-toc-code-analysis">Code Analysis</a>    <ul>
+      <li><a href="#overview-of-the-process" id="markdown-toc-overview-of-the-process">Overview of the Process</a></li>
+      <li><a href="#phase-1-1-prepare" id="markdown-toc-phase-1-1-prepare">Phase 1-1: Prepare</a>        <ul>
           <li><a href="#prepare-flashback" id="markdown-toc-prepare-flashback">Prepare Flashback</a></li>
-          <li><a href="#停读" id="markdown-toc-停读">停读</a></li>
+          <li><a href="#halting-reads" id="markdown-toc-halting-reads">Halting Reads</a></li>
           <li><a href="#readlocal--staleread" id="markdown-toc-readlocal--staleread">ReadLocal &amp; StaleRead</a></li>
-          <li><a href="#停写" id="markdown-toc-停写">停写</a></li>
+          <li><a href="#halting-write" id="markdown-toc-halting-write">Halting Write</a></li>
         </ul>
       </li>
-      <li><a href="#phase1-2-prewrite" id="markdown-toc-phase1-2-prewrite">Phase1-2: Prewrite</a>        <ul>
-          <li><a href="#停止-resolved-_ts-的推进" id="markdown-toc-停止-resolved-_ts-的推进">停止 resolved _ts 的推进</a></li>
-          <li><a href="#读写阶段介绍" id="markdown-toc-读写阶段介绍">读写阶段介绍</a></li>
+      <li><a href="#phase1-2-prewrite" id="markdown-toc-phase1-2-prewrite">Phase1-2: Prewrite</a></li>
+      <li><a href="#halting-the-advancement-of-resolved_ts" id="markdown-toc-halting-the-advancement-of-resolved_ts">Halting the Advancement of resolved_ts</a>        <ul>
+          <li><a href="#introduction-to-the-read-and-write-phase" id="markdown-toc-introduction-to-the-read-and-write-phase">Introduction to the Read and Write Phase</a></li>
         </ul>
       </li>
       <li><a href="#phase2-1-exec--commit" id="markdown-toc-phase2-1-exec--commit">Phase2-1: Exec &amp; Commit</a></li>
@@ -110,36 +110,35 @@
     </ul>
   </li>
   <li><a href="#appendix" id="markdown-toc-appendix">Appendix</a>    <ul>
-      <li><a href="#一些踩过的坑" id="markdown-toc-一些踩过的坑">一些踩过的坑</a></li>
-      <li><a href="#改进点" id="markdown-toc-改进点">改进点</a></li>
-      <li><a href="#参考文档" id="markdown-toc-参考文档">参考文档</a></li>
+      <li><a href="#some-potholes" id="markdown-toc-some-potholes">Some potholes</a></li>
+      <li><a href="#improvement-points" id="markdown-toc-improvement-points">Improvement points</a></li>
+      <li><a href="#reference" id="markdown-toc-reference">Reference</a></li>
     </ul>
   </li>
 </ul>
 
-<p>这是一篇原本要作为产品介绍的文章，但种种原因搁置了，最近又在完善相关功能，索性就完善一下发出来。感恩 <a href="https://ipotato.me/">JmPotato</a> 哥哥的带飞~</p>
+<p>This is an article originally intended as a product introduction, but was shelved for various reasons. Recently, as we have been improving related features, we decided to refine it and release it. Very excited to implement this with <a href="https://ipotato.me/">JmPotato</a>~</p>
 
-<p>代码请见：<a href="https://github.com/pingcap/tidb/issues/37197">roadmap</a> &amp; <a href="https://github.com/tikv/tikv/issues/13303">TiKV tracking issue</a></p>
+<p>For the code, please see: <a href="https://github.com/pingcap/tidb/issues/37197">roadmap</a> &amp; <a href="https://github.com/tikv/tikv/issues/13303">TiKV tracking issue</a></p>
 
-<h2 id="背景介绍">背景介绍</h2>
+<h2 id="background-introduction">Background Introduction</h2>
 
-<p>Flashback（通常指 Oracle Flashback）是用于在用户发生误操作的时候，快速回滚至原先版本，避免产生重大损失的特性。</p>
+<p>Flashback (usually referring to Oracle Flashback) is a feature used to quickly revert to a previous version in case of user errors, to avoid significant losses.</p>
 
-<p>游戏行业中会不时出现版本错误等问题，定期的备份只能回滚到备份时间点，且浪费资源。TiDB v6.4.0 引入了 FLASHBACK CLUSTER TO TIMESTAMP 语法，其功能是将集群、数据库、数据表的数据恢复到特定的时间点。</p>
+<p>In the gaming industry, issues like version errors occur from time to time, and regular backups can only revert to the backup point in time, which is also a waste of resources. <a href="https://docs.pingcap.com/tidb/stable/release-6.4.0">TiDB v6.4.0</a> introduced the <code class="language-plaintext highlighter-rouge">FLASHBACK CLUSTER TO TIMESTAMP</code> syntax, which allows the data of a cluster, database, or data table to be restored to a specific point in time.</p>
 
-<p>在 TiDB 中，存在一些相关的功能：</p>
+<p>In TiDB, there are some related features:</p>
 
 <ul>
-  <li>MVCC &amp; GC：数据更新或删除都是增加新版本，历史版本通过 GC 机制进行清理。存储引擎中保存有一定时间内的历史记录，这为之后的各种恢复数据功能提供了可能。</li>
-  <li>通过系统变量 tidb_snapshot 读取历史数据：指定一个 ts（不能早于 GC safepoint），读取对应时间点的数据，并且保证数据是一致的。</li>
-  <li>FLASHBACK TABLE：恢复被 DROP 或 TRUNCATE 删除的表以及数据。</li>
+  <li>MVCC &amp; GC: Data updates or deletions are adding new versions, and the historical versions are cleared through the GC mechanism. The storage engine maintains historical records for a certain period, which makes various data recovery functions possible later.</li>
+  <li>Reading historical data through the system variable tidb_snapshot: Specify a ts (cannot be earlier than the GC safepoint) to read the data at that time point, and ensure the data is consistent.</li>
+  <li>FLASHBACK TABLE: Restores tables and data that have been dropped or truncated.
+Ultimately, we adopted the approach of using Multiversion Concurrency Control (MVCC) to take the latest timestamp data before TIMESTAMP and overwrite the current data.</li>
 </ul>
 
-<p>我们最终采用在多版本并发控制（MVCC）的基础上，取出 TIMESTAMP 之前的最新时间戳数据来覆盖当前的数据。</p>
+<h3 id="execution-and-effect">Execution and effect</h3>
 
-<h3 id="执行与效果">执行与效果</h3>
-
-<p>『详细操作请参考 <a href="https://docs.pingcap.com/zh/tidb/dev/sql-statement-flashback-to-timestamp">用户文档</a>』</p>
+<p>「For details, please refer to <a href="https://docs.pingcap.com/zh/tidb/dev/sql-statement-flashback-to-timestamp">User documentation</a>.」</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mysql</span><span class="o">&gt;</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">t</span><span class="p">(</span><span class="n">a</span> <span class="nb">INT</span><span class="p">);</span>
 <span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">0</span> <span class="k">rows</span> <span class="n">affected</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">09</span> <span class="n">sec</span><span class="p">)</span>
@@ -173,81 +172,80 @@
 <span class="n">Empty</span> <span class="k">set</span> <span class="p">(</span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span> <span class="n">sec</span><span class="p">)</span>
 </code></pre></div></div>
 
-<h3 id="具体实现">具体实现</h3>
+<h3 id="specific-implementation">Specific Implementation</h3>
 
-<h4 id="采用-region-锁停读写调度">采用 Region 锁停读写调度</h4>
+<h4 id="adopting-region-lock-to-halt-readwrite-scheduling">Adopting Region Lock to Halt Read/Write Scheduling</h4>
 
-<p>我们在 Flashback 中采用 Region 锁来阻断 Flashback 过程中的所有读写以及调度，避免产生任何可能导致数据不一致的外部因素。</p>
+<p>In Flashback, we use Region locks to block all read/write operations and scheduling during the Flashback process to avoid any external factors that might cause data inconsistencies.</p>
 
-<p><strong>通过给 Region 先上锁再 Flashback，我们可以获得以下好处：</strong></p>
-
-<ul>
-  <li>阻断任何 Flashback 过程中的读写以及调度，避免产生任何可能导致数据不一致的外部因素；</li>
-  <li>由于上锁后的 Region 不会产生额外的数据写入，便于 Flashback 自由地写入和重试；</li>
-  <li>由于上锁后的 Region 不会产生额外的数据写入，不再需要额外维护集群内不同 Store 和不同 Region 当前的 Flashback 成功失败状态，只需要无脑重试直到成功即可；</li>
-  <li>Region 级别更符合 TiKV 内部数据管理的粒度。</li>
-</ul>
-
-<h4 id="大致流程">大致流程</h4>
-
-<p>TiDB 首先会去判断：</p>
+<p><strong>By locking the Region before performing Flashback, we can gain the following benefits:</strong></p>
 
 <ul>
-  <li>FlashbackTS：是否是未来时间点，是否大于 minSafeTS，是否在 GC Safe time 内</li>
-  <li>是否有非 Flashback ddl job 在时间范围内执行过</li>
-  <li>是否有 DDL 任务正在执行</li>
-  <li>关闭 GC，PD 调度和 auto analyze 然后开始调用 TiKV 的两阶段</li>
-  <li><strong>第一阶段（Region 锁定）</strong>
+  <li>Blocking any read/write operations and scheduling during the Flashback process, avoiding any potential external factors that could cause data inconsistencies;</li>
+  <li>Since locked Regions will not produce additional data writes, it is convenient for Flashback to freely write and retry;</li>
+  <li>Since locked Regions will not produce additional data writes, there is no need to maintain the Flashback success or failure status of different Stores and Regions within the cluster, simply retrying until successful is sufficient;</li>
+  <li>Region-level operations are more in line with the granularity of TiKV’s internal data management.</li>
+</ul>
+
+<h4 id="general-process">General Process</h4>
+
+<p>First, TiDB will determine:</p>
+
+<ul>
+  <li>FlashbackTS: Whether it is a future time point, whether it is greater than minSafeTS, and whether it is within the GC Safe time</li>
+  <li>Whether any non-Flashback ddl jobs have been executed within the time range</li>
+  <li>Whether any DDL tasks are currently being executed</li>
+  <li>Close GC, PD scheduling, and auto analyze, then start calling TiKV’s two-phase process</li>
+  <li><strong>First Phase (Region Locking)</strong>
     <ol>
-      <li>TiDB 来确定执行 Flashback 请求的 key range；</li>
-      <li>TiDB 以 region 为单位，向不同 region 发送 kv_prepare_flashback_to_version 请求，阻止读、写和调度；</li>
-      <li>调用 PD 接口去拿最新的 TSO，作为执行 Flashback 的 startTS。TiDB 会持久化该 startTS，来保证 TiDB 在失败重启后也能使用相同 TS；</li>
-      <li>用 Region 锁来让每个 Region 独立处理自己的 Flashback 进度
+      <li>TiDB determines the key range for the Flashback request;</li>
+      <li>TiDB sends a kv_prepare_flashback_to_version request to different regions on a per-region basis, blocking reads, writes, and scheduling;</li>
+      <li>Call the PD interface to get the latest TSO as the startTS for executing Flashback. TiDB will persist this startTS to ensure that it can use the same TS after a failure and restart;</li>
+      <li>Use Region locks to independently handle each Region’s Flashback progress
         <ul>
-          <li>扫描所有的 MVCC Lock 并进行 rollback；</li>
-          <li>TiKV 会在 CF_WRITE 中选择最新的 user key，并以上面提到的 startTS 先 Prewrite 上一个锁，停止 resolved_ts 的推进，将在第二阶段 Commit 上；</li>
+          <li>Scan all MVCC Locks and perform rollbacks;</li>
+          <li>TiKV will select the latest user key in CF_WRITE and prewrite a previous lock with the aforementioned startTS to halt the advancement of resolved_ts, which will be committed in the second phase;</li>
         </ul>
       </li>
-      <li>TiDB 检查所有请求是否成功返回，并重试失败请求，直到整个锁定阶段完成。</li>
+      <li>TiDB checks if all requests have returned successfully and retries failed requests until the entire locking phase is completed.</li>
     </ol>
   </li>
-  <li><strong>第二阶段（执行 Flashback）</strong>
+  <li><strong>Second Phase (Executing Flashback)</strong>
     <ol>
-      <li>TiDB 取上面提到的 startTS，以及去 PD 拿最新的 TSO 作为 commitTS，TiDB 同样会持久化该 startTS，并向不同 region 发送 kv_flashback_to_version 请求 ；</li>
-      <li>每个 Region 独立处理自己的 Flashback 进度
+      <li>TiDB takes the aforementioned startTS and obtains the latest TSO from PD as the commitTS. TiDB will also persist this commitTS and send kv_flashback_to_version requests to different regions;</li>
+      <li>Each Region independently processes its own Flashback progress
         <ul>
-          <li>扫描出需要 Flashback 到的时间点以后有版本变化的键，为扫描出的键写上旧的 MVCC 版本；</li>
-          <li>Commit 第一阶段中 Prewrite 写入的锁，并在完成后摘掉 Region 锁；</li>
+          <li>Scan for keys that have had version changes after the point in time to which you want to Flashback and write the old MVCC version for the scanned keys;</li>
+          <li>Commit the locks written in the prewrite phase of the first stage and remove the Region locks after completion;</li>
         </ul>
       </li>
-      <li>TiDB 检查所有请求是否成功返回，并以相同的 startTS 和 commitTS 重试那些失败的请求，直到整个 Flashback 执行完成。</li>
+      <li>TiDB checks if all requests have been successfully returned and retries the failed requests with the same startTS and commitTS until the entire Flashback execution is completed.</li>
     </ol>
   </li>
 </ul>
 
-<h2 id="代码分析">代码分析</h2>
+<h2 id="code-analysis">Code Analysis</h2>
 
-<p>让我们从 TiKV 启动开始说起 :)</p>
+<p>Let’s start from the beginning of TiKV startup. :)</p>
 
-<p>从 cmd/tikv-server/main.rs 开始，TiKV 完成配置一系列参数后，main 函数末尾走到 server::run_tikv(config) 运行 TiKV server，通过 main 中所配置的参数选择对应 Engine，调用 run_impl 函数，在 run_server 中进行绑定，并启动 grpc_server.start(); 服务。具体的绑定启动流程可以查看<a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">此文档</a>。</p>
+<p>Beginning with cmd/tikv-server/main.rs, after TiKV finishes configuring a series of parameters, the main function culminates with server::run_tikv(config) to run the TiKV server. The main function selects the corresponding Engine based on the configured parameters and calls the run_impl function. Inside run_server, it performs binding and initiates the grpc_server.start(); service. You can view the specific binding and startup process in this <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">document</a>.</p>
 
-<p>本文关注的 Flashback 位于 <a href="https://github.com/pingcap/kvproto/blob/master/proto/tikvpb.proto#L20">kvproto</a> 对应的此处</p>
+<p>The focus of this article, Flashback, is located at the following place in kvproto:</p>
 
 <div class="language-protobuf highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">rpc</span> <span class="n">KvPrepareFlashbackToVersion</span><span class="p">(</span><span class="n">kvrpcpb.PrepareFlashbackToVersionRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">kvrpcpb.PrepareFlashbackToVersionResponse</span><span class="p">)</span> <span class="p">{}</span>
 <span class="k">rpc</span> <span class="n">KvFlashbackToVersion</span><span class="p">(</span><span class="n">kvrpcpb.FlashbackToVersionRequest</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">kvrpcpb.FlashbackToVersionResponse</span><span class="p">)</span> <span class="p">{}</span>
 </code></pre></div></div>
 
-<p>回到 TiKV 代码，TiKV 包含多个 gRPC service。其中最重要的一个是 KvService，位于 src/server/service/kv.rs 文件中。包括 TiKV 的 kv_get，kv_scan，kv_prewrite，kv_commit 等事务操作的 API。本文 Flashback 由于采用事务模型，很自然地放在此文件中。</p>
+<p>Returning to the TiKV code, TiKV includes multiple gRPC services. One of the most important is the KvService, located in the src/server/service/kv.rs file. It includes the APIs for transaction operations in TiKV, such as kv_get, kv_scan, kv_prewrite, kv_commit, etc. The Flashback feature in this article, since it uses the transaction model, is quite naturally placed in this file.</p>
 
-<h3 id="流程概览">流程概览</h3>
-
-<p>让我们先来纵览一下 Flashback 整体流程，抽出主要代码大致可以看出主要就是四步：</p>
+<h3 id="overview-of-the-process">Overview of the Process</h3>
+<p>Before we delve deeper into the specific code, let’s take a broad look at the overall Flashback process. We can distill it into four main steps based on the key code components:</p>
 
 <ol>
-  <li>在开始正式的覆盖写等操作之前，先通过 raft_router 发送一个 Admin 的 PrepareFlashback 指令，完成 region meta 的持久化；</li>
-  <li>在 region 被标识为 Flashback 状态后，prewrite 第一个 user_key 来阻止 resolved_ts 的推进；</li>
-  <li>执行 Flashback并 commit 第 2 步写入的 key；</li>
-  <li>Flashback 执行结束后通过 raft_router 发送一个 FinishFlashback 指令，进行数据清理。</li>
+  <li>Preparation: Before starting the actual overwrite operations, an Admin PrepareFlashback command is sent via the raft_router. This step accomplishes the persistence of region metadata.</li>
+  <li>Locking: After a region is marked for Flashback, the first prewrite is done on a user_key to prevent the advancement of resolved_ts.</li>
+  <li>Execution: Perform the Flashback and commit the key that was written in step 2.</li>
+  <li>Completion: After the execution of Flashback, a FinishFlashback command is sent through the raft_router to clean up the data.</li>
 </ol>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
@@ -268,27 +266,27 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>那就让我们首先进入第一阶段：prepare 模块！</p>
+<p>Entering the first phase of Flashback operation, the preparation module is critical.</p>
 
-<h3 id="phase1-1-prepare">Phase1-1: Prepare</h3>
+<h3 id="phase-1-1-prepare">Phase 1-1: Prepare</h3>
 
-<p>Prepare 函数的目的可以概况为：停读停写停调度，持久化 Flashback 状态，停止 resolved_ts 的推进。</p>
+<p>The primary goal of the Prepare function is to halt reads and writes, prevent scheduling, and persist the Flashback state, as well as stop the advancement of resolved_ts.</p>
 
-<p>首先介绍“停读写停调度”，具体原因已经在背景介绍小节中解释过。为了实现这个目的，直觉上是在所有读写调度任务执行处进行隔断。由于 TiKV 底层采用 Raft 协议，最终会进行 Propose，Commit 然后 Apply 的流程，那么很自然地在进行 Propose 前隔断掉读写调度。</p>
-
-<blockquote>
-  <p>此处剧透 Flashback 实现为：在 Propose 处快速隔断掉 Flashback 过程中的其他读写，在 Apply 处隔断进行兜底。</p>
-</blockquote>
-
-<p>通过此文章可以了解到在 TiKV 处理 Proposal 的大致流程 <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>
-
-<p>一言以蔽之：TiKV 使用了两个线程池来处理 Proposal，并且将一个 Raft Peer 分成了两部分：PeerFsm和 ApplyFsm。在处理 Proposal 的过程中，首先由 PeerFsm获取日志并驱动 Raft 内部的状态机，由 ApplyFsm根据已提交日志修改对应数据的状态机（region 信息和用户数据）。</p>
+<p>In the “Preparation” phase, the necessity of stopping all reads, writes, and scheduling operations has already been explained in the Background Introduction section. To achieve this, one would intuitively block these operations at the point of execution. With TiKV using the Raft consensus protocol, the operations eventually go through a Propose, Commit, then Apply process, so it makes sense to intercept reads and writes before Propose.</p>
 
 <blockquote>
-  <p>可通过此文章了解 PeerFsm 和  ApplyFsm <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV 源码解析系列文章（十七）raftstore 概览</a></p>
+  <p>Spoiler Alert for Flashback Implementation: The interception is done quickly at the Propose to block other reads and writes during the Flashback process, with the Apply step acting as a safety net.</p>
 </blockquote>
 
-<p>在 “PeerFsm获取日志并驱动 Raft 内部的状态机”时，会走到下面函数：</p>
+<p>To understand the process of handling a proposal in TiKV, you can refer to this <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">article</a>.</p>
+
+<p>In short, TiKV utilizes two thread pools to handle proposals, and a Raft peer is divided into two parts: PeerFsm and ApplyFsm. During the proposal processing, PeerFsm fetches logs and drives the internal state machine of Raft, while ApplyFsm updates the state machine according to the committed logs, which includes both region information and user data.</p>
+
+<blockquote>
+  <p>For more details on PeerFsm and ApplyFsm, you can refer to this <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">article</a></p>
+</blockquote>
+
+<p>During the process where “PeerFsm fetches logs and drives the internal state machine of Raft” it encounters the following function:</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">propose_raft_command_internal</span><span class="p">()</span> <span class="p">{</span>
  <span class="k">match</span> <span class="k">self</span><span class="nf">.pre_propose_raft_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">msg</span><span class="p">)</span> <span class="p">{</span> <span class="o">..</span> <span class="p">}</span>
@@ -299,15 +297,17 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>我们发现 PeerFsmDelegate::pre_propose_raft_command 函数会在 propose request 前进行检查。</p>
+<p>Upon examining the codebase, we find that the PeerFsmDelegate::pre_propose_raft_command function is indeed the checkpoint where a request is examined before a propose is allowed to proceed.</p>
 
-<p>那么很自然地将判断当前 request 是否为 Flashback 的检查放在此处。</p>
+<p>It’s logical to place the check to determine if the current request is related to Flashback right at this stage.</p>
 
-<p>需要关注的一个地方是：</p>
+<p><strong>Key Consideration:</strong></p>
 
-<p>当然不能全盘隔断，Flashback 也需要走 raft 流程，应当给予通行证。</p>
+<p>However, we cannot block all operations indiscriminately. Flashback operations themselves need to pass through the Raft process without hindrance. Thus, we should issue a sort of ‘pass’ for them.</p>
 
-<p>随之我们发现在 RaftCmdRequest 中的 header 里面有个 flags，可以将通行证放在此处。</p>
+<p>Utilizing flags in RaftCmdRequest Header:</p>
+
+<p>We then notice that the RaftCmdRequest structure has a header field that includes flags. This is a suitable place to set flags that can be used as a ‘pass’ for Flashback-related commands, allowing them to be distinguished from regular operations.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">fn</span> <span class="nf">pre_propose_raft_command</span><span class="p">(</span>
      <span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span>
@@ -325,7 +325,7 @@
 
 <h4 id="prepare-flashback">Prepare Flashback</h4>
 
-<p>在完成“隔断点”的安插后，为了让 Flashback 相关操作不受隔断顺利通行，我们会在 header 处加上 flag。</p>
+<p>After implementing the “block points” to prevent non-Flashback operations, to ensure that Flashback-related operations proceed smoothly and are not blocked, we add a flag to the header.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
 <span class="k">fn</span> <span class="n">future_prepare_flashback_to_version</span><span class="p">{</span>
@@ -334,7 +334,7 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>所调用的 start_flashback/end_flashback 函数在加上 flag 后发送 admin req.</p>
+<p>The functions start_flashback/end_flashback that are invoked will send an admin request after the flag is added.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">fn</span> <span class="n">start_flashback</span><span class="o">/</span><span class="n">end_flashback</span> <span class="p">{</span>
  <span class="o">...</span>
@@ -347,16 +347,16 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>Admin request 通过 RaftStoreRouter 构成一条 RaftCommand 发送，会按照 Propose 流程，通过 pre_propose 的检查后到 PeerFsmDelegate.fsm.peer.propose 完成 Propose 一条 Raft Log。</p>
+<p>The Admin request is formed into a RaftCommand via the RaftStoreRouter and sent along. It goes through the proposing process, passing through the pre_propose check, and arrives at PeerFsmDelegate.fsm.peer.propose to complete the proposal of a Raft log.</p>
 
-<p>之后 PeerFsm 会将 Proposal 以及已提交日志发送给对应的 ApplyFsm 来到 apply 流程。</p>
+<p>Subsequently, the PeerFsm will send the Proposal and committed logs to the corresponding ApplyFsm for the apply process.</p>
 
-<p>ApplyFsm 会针对这些日志进行（见 ApplyFsm::handle_apply）：</p>
+<p>The ApplyFsm will, for these logs (see ApplyFsm::handle_apply):</p>
 
 <ol>
-  <li>完成数据的持久化。</li>
-  <li>向 PeerFsm发送 ApplyRes，用于更新 PeerFsm中的 Region 状态。
- 在 exec_raft_cmd 会加上 check_flashback_state，进行 Flashback 持久态的判断。此处 region 将在下面的 exec 函数中设置上，由于为串行 apply，因此在下条 cmd 来之前，便会设置好 region 信息。</li>
+  <li>Ensure the data is durably stored.</li>
+  <li>Communicate ApplyRes to PeerFsm, which is necessary for updating the Region’s status within PeerFsm.
+ In the execution of exec_raft_cmd, a check_flashback_state is incorporated to verify the persistence of the Flashback state. Here, the region is configured in the subsequent exec function, and due to the serial nature of apply operations, the region’s details are established before the arrival of the following command.</li>
 </ol>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">check_flashback_state</span><span class="p">(</span><span class="k">self</span><span class="py">.region</span><span class="nf">.get_is_in_flashback</span><span class="p">());</span>
@@ -372,13 +372,13 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>完成 check 后执行 ApplyDelegate::exec_admin_cmd ，最终识别 Flashback 标识，到达我们的目的地 exec_flashback 函数。</p>
+<p>After the checks are passed, the process executes ApplyDelegate::exec_admin_cmd, which ultimately recognizes the Flashback identifier and reaches our target function exec_flashback.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span> <span class="p">|</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">FinishFlashback</span> <span class="k">=&gt;</span> 
     <span class="k">self</span><span class="nf">.exec_flashback</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">request</span><span class="p">),</span>
 </code></pre></div></div>
 
-<p>exec_flashback 放入 region 的元信息中，并完成持久态 RegionLocalState 的更新。</p>
+<p>When the exec_flashback function is invoked, it performs the necessary operations to alter the Region’s metadata to reflect the state of the system as it should be after the Flashback process. This usually involves the following steps:</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_flashback</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;&gt;</span> <span class="p">{</span>
     <span class="k">let</span> <span class="n">is_in_flashback</span> <span class="o">=</span> <span class="n">req</span><span class="nf">.get_cmd_type</span><span class="p">()</span> <span class="o">==</span> <span class="nn">AdminCmdType</span><span class="p">::</span><span class="n">PrepareFlashback</span><span class="p">;</span>
@@ -391,9 +391,9 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>ApplyFSM 在应用一批日志之后会发送一条 ApplyRes 的消息到 PeerFsm。</p>
+<p>After the ApplyFsm applies a series of Raft logs, it generates an ApplyRes message that encapsulates the outcomes of this apply process. This message is dispatched to the corresponding PeerFsm.</p>
 
-<p>最终又回到 PeerFsm 的PeerFsmDelegate::handle_msgs 函数，走到 PeerMsg::ApplyRes { res } 分支，调用 PeerFsmDelegate::on_apply_res 完成对 Flashback 的持久态更新。</p>
+<p>Once received, the PeerFsm processes the message through the PeerFsmDelegate::handle_msgs function, specifically within the PeerMsg::ApplyRes { res } case. It is here that PeerFsmDelegate::on_apply_res is invoked, thereby updating the durable state to reflect the effects of the Flashback operation, ensuring that the persistent view of the region’s state is consistent with the Flashback’s target historical state.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">fn</span> <span class="nf">on_set_flashback_state</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">is_in_flashback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">{</span>
         <span class="c1">// update flashback state</span>
@@ -403,19 +403,19 @@
     <span class="p">}</span>
 </code></pre></div></div>
 
-<p>梳理完后，很清晰的看到存在两个对非 Flashback 操作的隔断位置，分别位于 propose 和 apply 处。</p>
+<p>After a comprehensive analysis, we observe that there are two critical blocks that act as barriers to non-Flashback operations, located at the propose and apply stages, respectively.</p>
 
-<p>那么随之而来的问题便是：在何处加入对 Flashback req 的“通行证”呢？</p>
+<p>This leads to the ensuing inquiry: where should we integrate the ‘pass’ that permits Flashback requests to proceed unhindered?</p>
 
-<p>Flashback 既然可以理解为基于 MVCC 进行实现，那么便也需要通过 MVCC 的读写接口流程。因此溯源一下 MVCC 的读写流程，便能更好地找到“通行证”的放置位置。</p>
+<p>Considering that Flashback is conceptually an operation built upon Multi-Version Concurrency Control (MVCC) mechanisms, it inherently requires traversal through the established read-write interfaces of MVCC. By retracing the MVCC read-write process, we can better ascertain the strategic location to embed this ‘pass’, ensuring that Flashback requests are granted seamless continuity through the system.</p>
 
-<h4 id="停读">停读</h4>
+<h4 id="halting-reads">Halting Reads</h4>
 
-<p>让我们首先来梳理一下读流程，可结合 <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV 源码阅读三部曲（二）读流程 来阅读详细读过程</a>。</p>
+<p>Firstly, let’s comb through the read process, which can be studied in detail in conjunction with <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV Source Code Reading Part Two: The Read Process</a>.</p>
 
-<p>在调用到 LocalReader::propose_raft_command 时，发现是通过 LocalReader::pre_propose_raft_command 进行判断 req。</p>
+<p>When LocalReader::propose_raft_command is invoked, it’s discerned that the request is judged through LocalReader::pre_propose_raft_command.</p>
 
-<p>会对 ReadLocal 和 StaleRead 进行特定逻辑处理，其余信息将转发给 RaftStore 来执行，即由 ProposalRouter::send 转发后走到我们之前所提到的 Propose 流程。</p>
+<p>Specific logic is applied to ReadLocal and StaleRead, while other requests are forwarded to RaftStore for execution. This forwarding is done via ProposalRouter::send, after which the process enters the Propose flow we previously mentioned.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">propose_raft_command</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">match</span> <span class="k">self</span><span class="nf">.pre_propose_raft_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">req</span><span class="p">)</span> <span class="p">{</span> 
@@ -427,9 +427,9 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>这样很自然地对于除 ReadLocal 和 StaleRead 外的 req，都可以做出以下隔断：</p>
+<p>Thus, for requests other than ReadLocal and StaleRead, the following interruption can be naturally implemented:</p>
 
-<p>在进入 read 之前，判断一下 req 中是否有 Flashback flag，便实现了在开启 Flashback 之后，只能让 Flashback 相关的读指令通行。</p>
+<p>Before entering the read process, check whether the request contains the Flashback flag. This achieves the goal that after Flashback is initiated, only read commands related to Flashback are allowed to pass through.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -442,17 +442,17 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>Flashback 执行时将对 exec_snapshot 进行 ctx.for_flashback 的设置，其中 for_flashback 从哪获取的将在下文 「Phase2-1: Exec - 读取阶段」 解释。</p>
+<p>When Flashback is executed, the exec_snapshot is set with ctx.for_flashback, where for_flashback is obtained will be explained in the following section 「Phase2-1: Exec - Read Stage」.</p>
 
 <h4 id="readlocal--staleread">ReadLocal &amp; StaleRead</h4>
 
-<p>正如上小节提到会对 ReadLocal 和 StaleRead 存在着特定逻辑处理，可以作为扩展阅读资料了解 <a href="https://cn.pingcap.com/blog/lease-read">TiKV 功能介绍 - Lease Read</a> &amp;&amp; <a href="https://docs.pingcap.com/zh/tidb/dev/stale-read">Stale Read 功能的使用场景</a>。</p>
+<p>As mentioned in the previous section, ReadLocal and StaleRead have specific logic that can be understood further through the reading materials about <a href="https://cn.pingcap.com/blog/lease-read">TiKV’s Lease Read feature</a> &amp;&amp; <a href="https://docs.pingcap.com/zh/tidb/dev/stale-read">use cases for Stale Read functionality</a>.</p>
 
-<p>首先看看ReadLocal 的特殊处理即对 Peer 中的 leader_lease 进行检查。当发现不在租期内时，便会转发到正常 Propose 流程中。</p>
+<p>The special handling for ReadLocal involves checking the leader_lease in the Peer. If it is found to be outside of the lease period, it will be forwarded to the regular Propose process.</p>
 
-<p>因此我们采取：在 prepare Flashback 时，对 lease 手动设置超时，来确保 local read 不会执行。</p>
+<p>Therefore, our approach is: during the preparation of Flashback, to manually set the lease to expire to ensure that local reads will not execute.</p>
 
-<p>这便是对之前完成 apply res 之后与更新 region 同时所做的事。</p>
+<p>This is what is done simultaneously with the lease update after completing the apply res and updating the region.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">fn</span> <span class="nf">on_set_flashback_state</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">is_in_flashback</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">{</span>
         <span class="c1">// Update the region meta.</span>
@@ -462,15 +462,17 @@
     <span class="p">}</span>
 </code></pre></div></div>
 
-<p>而对于 StaleRead 的运行前提是需要不停推进 safe ts（即 resolved_ts）。会在 TiDB 检查 resolved_ts，保证 Flashback 的版本不会超过 resolved_ts，因此也完成隔断。</p>
+<p>Regarding StaleRead, its prerequisite for operation is the continuous advancement of safe ts (also known as resolved_ts). This check is performed in TiDB to ensure that the version used by Flashback will not exceed resolved_ts, therefore providing a cutoff.</p>
 
-<p>至此对于读的隔断介绍完毕。</p>
+<p>With this, the explanation for the interruption of read operations during Flashback is complete.</p>
 
-<h4 id="停写">停写</h4>
+<h4 id="halting-write">Halting Write</h4>
 
-<p>可参考 <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV 源码阅读三部曲（三）写流程</a> 阅读写请求全链路的执行流程。</p>
+<p>For further details on the execution process of write requests in TiKV, one can refer to <a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV Source Code Reading (Part III) Write Process</a>.</p>
 
-<p>在写的过程中 RaftKv::exec_write_requests 内部将会走向 router 进行 Propose 流程，因此在此处加上类似上文「读请求」的判断，只能让 Flashback 相关的写指令通行。</p>
+<p>During the write process, the RaftKv::exec_write_requests internally moves towards the router to initiate the Propose process. Therefore, similar to the “read request” discussed previously, a checkpoint is added at this stage to only allow Flashback-related write commands to pass through.</p>
+
+<p>This ensures that during the execution of Flashback, only write operations associated with it can proceed, and all other write requests are effectively halted, preserving the integrity of the Flashback operation.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_write_requests</span><span class="p">()</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -485,31 +487,31 @@
 
 <h3 id="phase1-2-prewrite">Phase1-2: Prewrite</h3>
 
-<p>完成停读写调度后，我们遇到了一个新的问题，那就是持续推进的 resolved ts 会导致 CDC 的 Panic.</p>
+<p>After halting read and write operations, we are faced with a new issue: the continuously advancing resolved timestamp (resolved_ts) could cause a panic in Change Data Capture (CDC).</p>
 
-<h4 id="停止-resolved-_ts-的推进">停止 resolved _ts 的推进</h4>
+<h3 id="halting-the-advancement-of-resolved_ts">Halting the Advancement of resolved_ts</h3>
 
-<p>一言蔽之 Resolved TS（TODO: 介绍 Resolved TS），由于以下原因：</p>
+<p>In short, resolved_ts is an internal mechanism of TiKV (TODO: introduce resolved_ts). It’s maintained due to the following reasons:</p>
 
 <ul>
   <li>
-    <p>Resolved TS 组件通过观察 LockCF 的修改，维护一个 StartTS 的最小堆，有 ResolvedTS = max(ResolvedTS, min(StartTS))；</p>
+    <p>The Resolved TS component maintains a minimum heap of StartTS by observing changes in the LockCF, with the rule ResolvedTS = max(ResolvedTS, min(StartTS)).</p>
   </li>
   <li>
-    <p>Flashback 将以 Region 为单位移除掉所有的锁；</p>
+    <p>Flashback will remove all locks at the granularity of a Region.</p>
   </li>
   <li>
-    <p>正在进行 Flashback 的 Region 上将不再存在任何的锁，此时 ResolvedTS 将会正常向前推进，无论是否有数据写入。</p>
+    <p>For a Region undergoing Flashback, there will no longer be any locks, meaning the ResolvedTS will continue to advance as normal, regardless of whether data is being written.</p>
   </li>
 </ul>
 
-<p>那么将会带来：改动的 CommitTS &lt;  ResolvedTS 的情况（Flashback 的改动自始至终都使用同一个 CommitTS，ResolvedTS 随着推进迟早会超过它）。</p>
+<p>This would lead to a scenario where the CommitTS of the changes is less than the ResolvedTS (since Flashback uses the same CommitTS for all changes, and eventually, the ResolvedTS would surpass it).</p>
 
-<p>为防止 resolved_ts 在我们后续执行 Flashback 前被推进，我们采用：TiDB 请求中带上一个 start_ts，TiKV 会在 CF_WRITE 中选择最新的 user key，以此 start_ts prewrite 上一个锁，将在执行完 Flashback 后 commit 清除掉。</p>
+<p>To prevent resolved_ts from advancing before we execute Flashback, we employ the following strategy: TiDB includes a start_ts with its requests, and TiKV selects the latest user key in the CF_WRITE. A lock is prewritten with this start_ts, which will be committed and cleared after Flashback execution is complete.</p>
 
-<h4 id="读写阶段介绍">读写阶段介绍</h4>
+<h4 id="introduction-to-the-read-and-write-phase">Introduction to the Read and Write Phase</h4>
 
-<p>回到最开始的 future_prepare_flashback_to_version 中，首先内部将 req.into。</p>
+<p>Returning to the initial future_prepare_flashback_to_version function, it begins by internally converting the request using req.into.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First Phase</span>
 <span class="k">fn</span> <span class="n">future_prepare_flashback_to_version</span><span class="p">{</span>
@@ -519,7 +521,7 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>在此文件中实现了 PrepareFlashbackToVersionRequest 到 FlashbackToVersionReadPhase 的 from。</p>
+<p>The from of PrepareFlashbackToVersionRequest to FlashbackToVersionReadPhase is implemented here.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">impl</span> <span class="nb">From</span><span class="o">&lt;</span><span class="n">PrepareFlashbackToVersionRequest</span><span class="o">&gt;</span> <span class="k">for</span> <span class="n">TypedCommand</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span> <span class="p">{</span>
     <span class="k">fn</span> <span class="nf">from</span><span class="p">(</span><span class="k">mut</span> <span class="n">req</span><span class="p">:</span> <span class="n">PrepareFlashbackToVersionRequest</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
@@ -528,7 +530,7 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>因此此处调度的实则是 FlashbackToVersionReadPhase，也即对于 sched_txn_command 将会走到由 FlashbackToVersionReadPhase 提供的 process_read 处，在执行完该函数后会触发 FlashbackToVersion 的 process_write。</p>
+<p>Therefore, what is actually being scheduled here is FlashbackToVersionReadPhase, which means that for sched_txn_command, the process will proceed to the process_read provided by FlashbackToVersionReadPhase. After this function is executed, it will trigger the process_write of FlashbackToVersion.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">process_read</span><span class="p">(</span><span class="k">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">statistics</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">Statistics</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="n">ProcessResult</span><span class="o">&gt;</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -541,11 +543,11 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>大致流程按照如此往复读写读写，直到没有读为止。</p>
+<p>The general process follows a repetitive read-write-read-write sequence until there are no more reads to perform.</p>
 
-<p>由于都是属于 Flashback 操作，需要加上「通行证」后才能被 raftstore 执行。</p>
+<p>Since all these operations are part of the Flashback process, they must be marked with a “pass” to be executed by raftstore.</p>
 
-<p>因此也很合理地在 process_write 加上 Write 的通行证。</p>
+<p>Therefore, it is also quite reasonable to add a Write “pass” during the process_write.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">process_write</span><span class="p">(</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">WriteContext</span><span class="o">&lt;</span><span class="nv">'_</span><span class="p">,</span> <span class="n">L</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Result</span><span class="o">&lt;</span><span class="n">WriteResult</span><span class="o">&gt;</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -561,7 +563,7 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>而对于 process_read，由于是从 snapshot 中读取，因此会在读取 snapshot 时加上 Read 的通行证。</p>
+<p>For process_read, since it is reading from a snapshot, a Read pass is added when reading the snapshot.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">exec_snapshot</span><span class="p">()</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -573,73 +575,74 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>这也便实现了在「停读停写」后能顺利执行 flashback 相关操作。</p>
+<p>This also ensures that after the “read and write suspension,” Flashback-related operations can be smoothly executed.</p>
 
-<p>具体到往复读写的过程，代码位于此处。为了流程更加清晰，我们标识出当前状态：</p>
+<p>Specifically, the process of repetitive reading and writing’s code is here. To make the process clearer, we have marked the current status:</p>
 
 <ol>
-  <li><strong>RollbackLock</strong>：需要删除所有 start_ts 大于 Flashback version 的锁记录；
+  <li><strong>RollbackLock</strong>: It is necessary to delete all lock records where the start_ts is greater than the Flashback version;
     <ul>
-      <li>由于 Flashback 会把悲观锁清掉，但是清掉之后事务 commit 还是会成功的，阻止的方法是在 Flashback 删掉锁的时候，原地写 Rollback ；</li>
-      <li>Rollback lock ：采用 lock 的 start_ts 写 Rollback 记录，确保时间戳会在 Flashback 之前。</li>
+      <li>Since Flashback will clear pessimistic locks, but the transaction commit will still succeed after that, one way to prevent this is to write a Rollback at the same place where the lock is deleted during Flashback;</li>
+      <li>Rollback lock: Use the lock’s start_ts to write a Rollback record, ensuring the timestamp is before Flashback.</li>
     </ul>
   </li>
-  <li><strong>Prewrite</strong>：
+  <li><strong>Prewrite</strong>:
     <ul>
-      <li>TiDB 请求中会带上一个 start_ts， TiKV 会在需要 Flashback 的 key 中选择第一个 key，以此 start_ts 写入一个锁，以防止 resolved_ts 在我们后续进行 Flashback 前被推进。</li>
+      <li>The TiDB request will carry a start_ts, and TiKV will choose the first key that needs Flashback, writing a lock with this start_ts to prevent the resolved_ts from being advanced before we perform Flashback.</li>
     </ul>
   </li>
-  <li><strong>FlashbackWrite</strong>：
+  <li><strong>FlashbackWrite</strong>:
     <ul>
-      <li>采用攒够一整个 batch 的方式扫描一批（256个）的 CF_WRITE；</li>
-      <li>为了 Flashback 数据，我们需要从 CF_WRITE 中扫描每一个最新且独特的 key，来获得 Flashback timestamp 所对应的旧 MVCC 写记录。具体代码在此处；</li>
-      <li>需要覆写一份 MvccTxn 对象的 Modify 记录，取出读取阶段的数据进行判断：</li>
-    </ul>
-    <ul>
-      <li>如果 key 不存在对应的 version，将放置一个 Delete 标识；</li>
-      <li>如果 key 存在对应的 version，且如果「不是采用 short_val，并为 LockType::Put」 ，那么将：
+      <li>The method of accumulating a whole batch to scan a batch(256) of CF_WRITE;</li>
+      <li>To Flashback the data, we need to scan each latest and unique key from CF_WRITE to obtain the old MVCC write record corresponding to the Flashback timestamp. The specific code is here;</li>
+      <li>It is necessary to overwrite a copy of the MvccTxn object’s Modify record, taking out the data from the reading stage for judgment:
         <ul>
-          <li>通过 load_data 获取 old version value，以 start_ts 构建 Modify，放在 CF_DEFAULT 中；</li>
-          <li>通过 commit_ts 构建 Modify，放在 CF_WRITE 中。</li>
+          <li>If the key does not have a corresponding version, a Delete flag will be placed;</li>
+          <li>If the key has a corresponding version, and if “it does not use short_val, and is of LockType::Put”, then it will:
+            <ul>
+              <li>Obtain the old version value through load_data, build Modify with start_ts, and place it in CF_DEFAULT;</li>
+              <li>Build Modify with commit_ts, and place it in CF_WRITE.</li>
+            </ul>
+          </li>
         </ul>
       </li>
     </ul>
   </li>
-  <li><strong>Commit</strong>：
+  <li><strong>Commit</strong>:
     <ul>
-      <li>当发现已经完成所有 Write 的写入后，进入 Commit 阶段，通过 commit_flashback_key Commit first user key。</li>
+      <li>When it is found that all Writes have been written, enter the Commit phase, commit the first user key through commit_flashback_key.</li>
     </ul>
   </li>
 </ol>
 
 <h3 id="phase2-1-exec--commit">Phase2-1: Exec &amp; Commit</h3>
 
-<p>正如 「停止 resolved _ts 的推进」小节中描述的一样，大致流程如下：</p>
+<p>Just as described in the section 「Halting the Advancement of resolved_ts」 the general process is as follows:</p>
 
 <ol>
-  <li>Prepare Flashback 时：
+  <li>During Flashback Preparation:
     <ol>
       <li>Scan &amp; Rollback all locks.</li>
-      <li>TiDB 请求中会带上一个 start_ts， TiKV 会在需要 Flashback 的 key 中选择第一个 key，以此 start_ts 写入一个锁，以防止 resolved_ts 在我们后续进行 Flashback 前被推进。</li>
+      <li>A start_ts is included in the TiDB request, and TiKV selects the first key that needs Flashback, writing a lock with this start_ts to prevent the advancement of resolved_ts before Flashback is performed.</li>
     </ol>
   </li>
-  <li>执行 Flashback 时：
+  <li>During Flashback Execution:
     <ol>
-      <li>Scan &amp; flashback the writes.
+      <li>Scan &amp; Flashback the writes.
         <ul>
-          <li>这部分的改动会带上 1PC 的 flag，让 CDC 等工具将其视为一阶段事务的修改</li>
+          <li>Modifications in this part will carry a 1PC flag, making tools such as CDC treat it as a modification of a one-phase commit transaction.</li>
         </ul>
       </li>
-      <li>commit 在 1.b 中写入的锁，完成 Flashback</li>
+      <li>Commit the lock written in 1.b to complete the Flashback.</li>
     </ol>
   </li>
 </ol>
 
-<p>回到最开始的 future_flashback_to_version 中，也会内部进行 req.into 后走到 FlashbackToVersionReadPhase 和 FlashbackToVersion 进行读写，大致流程在「读写阶段介绍」小节已经详细介绍，就不再赘述。</p>
+<p>Returning to the initial future_flashback_to_version, the process also internally goes through req.into and proceeds to FlashbackToVersionReadPhase and FlashbackToVersion for reading and writing. The detailed process has been introduced in the section 「Introduction to the Read and Write Phase」 so it is not repeated here.</p>
 
 <h3 id="phase2-2-finish">Phase2-2: Finish</h3>
 
-<p>在执行完成 Flashback 后，最后需要做的便是 unset 掉所有为 Flashback 服务的配置。那么便回到了经典 future_flashback_to_version 函数。</p>
+<p>After the Flashback is executed, the last thing we need to do is to unset all the configurations for the Flashback service. This brings us back to the classic future_flashback_to_version function.</p>
 
 <div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">future_flashback_to_version</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="k">impl</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Output</span> <span class="o">=</span> <span class="n">ServerResult</span><span class="o">&lt;</span><span class="n">FlashbackToVersionResponse</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
     <span class="o">...</span>
@@ -648,41 +651,41 @@
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>流程与 Prepare 大致相同，发送 Admin 指令，完成持久态的取缔。</p>
+<p>The process is similar to that of Prepare, and the Admin command is sent to complete the persistence takedown.</p>
 
-<p>至此，完成整个 Flashback！</p>
+<p>At this point, the entire Flashback is complete!</p>
 
 <h2 id="appendix">Appendix</h2>
 
-<h3 id="一些踩过的坑">一些踩过的坑</h3>
+<h3 id="some-potholes">Some potholes</h3>
 
 <p><code class="language-plaintext highlighter-rouge">TODO</code></p>
 
-<h3 id="改进点">改进点</h3>
+<h3 id="improvement-points">Improvement points</h3>
 
-<p>现有机制在可用性和易用性上有一些不足：</p>
+<p>The existing mechanism has some shortcomings in terms of usability and ease of use:</p>
 
 <ul>
-  <li>相关操作仅限于数据被 GC 回收之前，这个窗口期可能比较小，一旦 safepoint 更新过了之后就不能用了；</li>
-  <li>如果把 GC lifetime 调长，历史数据将占用大量的存储空间；</li>
-  <li>GC lifetime 是全局配置，不能针对某些 database 或 table 调整；</li>
+  <li>The operations are limited to the time before the data is recovered by GC, which may be a small window, and once the safepoint has been updated, it will not be usable.</li>
+  <li>If the GC lifetime is extended, historical data will take up a lot of storage space.</li>
+  <li>GC lifetime is a global configuration and cannot be adjusted for certain database or table.</li>
 </ul>
 
-<h3 id="参考文档">参考文档</h3>
+<h3 id="reference">Reference</h3>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV 源码阅读三部曲（二）读流程 来阅读详细读过程</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-read">TiKV Source Code reading</a></p>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV 源码阅读三部曲（三）写流程</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-write">TiKV Source Code writing</a></p>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">TiKV 源码解析系列文章（七）gRPC Server 的初始化和启动流程</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-7">TiKV Source Code startup grpc</a></p>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-12/">TiKV 源码解析系列文章（十二）分布式事务</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-12/">TiKV Source Code distributed transaction</a></p>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-13">TiKV 源码解析系列文章（十三）MVCC 数据读取</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-13">TiKV Source Code MVCC</a></p>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV 源码解析系列文章（十七）raftstore 概览</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-17">TiKV Source Code raftstore</a></p>
 
-<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>
+<p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV Source Code raft propose apply&amp;commit</a></p>
 
       
       </div>

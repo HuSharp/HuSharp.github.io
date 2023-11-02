@@ -1,6 +1,6 @@
 ---
 layout: blog
-title:  "Flashback TiKV"
+title:  "Flashback TiKV Chinese"
 date:   2023-05-20 17:43:28 +0800
 category: distributed
 ---
@@ -223,13 +223,13 @@ async fn start_flashback/end_flashback {
 
 Admin request 通过 RaftStoreRouter 构成一条 RaftCommand 发送，会按照 Propose 流程，通过 pre_propose 的检查后到 PeerFsmDelegate.fsm.peer.propose 完成 Propose 一条 Raft Log。
 
-之后PeerFsm会将 Proposal 以及已提交日志发送给对应的 ApplyFsm来到 apply 流程。
+之后 PeerFsm 会将 Proposal 以及已提交日志发送给对应的 ApplyFsm 来到 apply 流程。
 
-ApplyFsm会针对这些日志进行（见 ApplyFsm::handle_apply）：
+ApplyFsm 会针对这些日志进行（见 ApplyFsm::handle_apply）：
 
 1. 完成数据的持久化。
 2. 向 PeerFsm发送 ApplyRes，用于更新 PeerFsm中的 Region 状态。
-  在 exec_raft_cmd 会加上 check_flashback_state，进行 Flashback 持久态的判断。此处 region 将在下面的 exec 函数中设置上，由于为串行 apply，因此在下条 cmd 来之前，便会设置好 region 信息。
+    在 exec_raft_cmd 会加上 check_flashback_state，进行 Flashback 持久态的判断。此处 region 将在下面的 exec 函数中设置上，由于为串行 apply，因此在下条 cmd 来之前，便会设置好 region 信息。
 
 ```rust
 check_flashback_state(self.region.get_is_in_flashback());
@@ -266,7 +266,7 @@ fn exec_flashback() -> Result<> {
 }
 ```
 
- ApplyFSM 在应用一批日志之后会发送一条 ApplyRes 的消息到 PeerFsm。
+ApplyFSM 在应用一批日志之后会发送一条 ApplyRes 的消息到 PeerFsm。
 
 最终又回到 PeerFsm 的PeerFsmDelegate::handle_msgs 函数，走到 PeerMsg::ApplyRes { res } 分支，调用 PeerFsmDelegate::on_apply_res 完成对 Flashback 的持久态更新。
 
@@ -306,7 +306,7 @@ fn propose_raft_command() {
 
 这样很自然地对于除 ReadLocal 和 StaleRead 外的 req，都可以做出以下隔断：
 
-在进入 read 之前，判断一下 req 中是否有 Flashback 参数，便实现了在开启 Flashback 之后，只能让 Flashback 相关的读指令通行。
+在进入 read 之前，判断一下 req 中是否有 Flashback flag，便实现了在开启 Flashback 之后，只能让 Flashback 相关的读指令通行。
 
 ```rust
 fn exec_snapshot() {
@@ -484,7 +484,7 @@ fn exec_snapshot() {
         - 这部分的改动会带上 1PC 的 flag，让 CDC 等工具将其视为一阶段事务的修改
     2. commit 在 1.b 中写入的锁，完成 Flashback
 
-回到最开始的 future_flashback_to_version 中，也会内部进行 req.into 后走到 FlashbackToVersionReadPhase 和 FlashbackToVersion 进行读写，大致流程在「读写阶段介绍」小节已经详细介绍，就不再赘述。 
+回到最开始的 future_flashback_to_version 中，也会内部进行 req.into 后走到 FlashbackToVersionReadPhase 和 FlashbackToVersion 进行读写，大致流程在「读写阶段介绍」小节已经详细介绍，就不再赘述。
 
 ### Phase2-2: Finish
 

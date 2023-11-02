@@ -6,23 +6,27 @@ override_title: true
 
 # Jinhao Hu (`胡锦浩`)
 
-## Skills
-
-- **Programming Language**: **multilingual**(not limited to any specific language) experienced in Golang/Rust/C&C++/Java/Python.
-- **Distributed System/Database**: contribute to TiKV/PD/TiDB, taken course MIT 6.824 and PingCAP's Talent Plan.
-- **Developing Tool**: familiar with Linux-based programming, have experience with team tools like Git.
-
 ## Experience
-
-**ByteDance Inc.** (Developer Intern; Mar, 2021 ~ Sept, 2021)
-
-- Participate in the main process of building a publishing platform (bits platform) for the whole company's business line mobile.
-- Using KiteX + Ginex service framework and Thrift multi-messaging protocol to build a set of RPC services, providing RESTful interfaces for Feishu, including: package upload, publishing policy, channel management, user group management.
 
 **PingCAP – Storage Team** (Database Engineer; Jul, 2022 ~ till now)
 
-- Resource Control: Achieve the isolation of multiple applications deployed on the same cluster. The TiDB layer will perform traffic control on users' read and write requests based on quotas, while the TiKV layer will schedule requests based on priorities. By implementing control and scheduling through these two layers, resource isolation for applications can be achieved.
-- Flashback: Enable fast rollback of data to a specified time when users make mistakes. Based on the Multiversion concurrency control(MVCC), the data with the latest timestamp before the TIMESTAMP will be retrieved to overwrite the current data.
+- *Resource Control*. Achieved isolation of multiple applications deployed on a shared cluster. Incorporated Quota Control Layer and Scheduling Control Layer for flow control and priority scheduling.
+- *Flashback Cluster*. Developed a fast rollback feature to revert cluster data to a specific timestamp in cases of user errors. Based on Multi-version Concurrency Control (MVCC) to retrieve timestamped data and overwrite current data using the Two-phase Commit protocol (2PC).
+
+**ByteDance Inc.** (Developer Intern; Mar, 2021 ~ Sept, 2021)
+
+- *Release Platform Development*. Contributed to the build of a Release Platform for the company's applications, including TikTok. Implemented a message queue with priority scheduling support to facilitate uploads to various stores, minimizing cross-platform operational overhead for users and refining status visualization.
+- *RPC Service Construction*: Used the KiteX service framework and the Thrift cross-language protocol to develop RPC services for the Lark application. Delivered RESTful interfaces encompassing: Package uploads, Publishing policies, User group management.
+
+## Skills
+
+- *Programming Language*: Golang, Rust, C&C++, Java and Python.
+- *Tech Skills*: Distributed Systems, Database Systems, Key-Value Storage, Cloud Computing, Kubernetes, etc.
+- *Developing Tool*: Experienced with Linux-based development and team collaboration tools, including Git.
+
+## Projects
+
+detailed in [HuSharp's toy projects](https://github.com/ihusharp)
 
 ## Education
 
