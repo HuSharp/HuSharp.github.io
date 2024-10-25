@@ -9,7 +9,7 @@ category: life
 
 \# 汉语中因形似 "井"，通常读作井号，真正的含义是数字符号(Number  sign)，如在一些国家 `#1` 代表 No.1 的意思。在美式英语中一般称作pound sign，电话上的（#）叫做 `pound key`，而加拿大英语则称之为 `number sign key`; 北美以外的其他英语国家一般称（#）为 hash，相应的电话键叫做 hashkey。
 
-![musiceol](http://www.musiceol.com/news/html/2016-2/images/20162151237399513.png)
+![musiceol](/assets/blog_image/2020-07-18-HuSharp-origin/musical_sharp.png)
 
 注意：数字符号（#）极易和乐谱中的升音符（♯ 读作 sharp /ʃɑrp/）相混淆。但是，乐谱和数字符号的字形不完全一样。标准数字符号（#）横线水平，而竖线向右倾斜；而乐谱的升号（♯）为了在五线谱中容易识别，横线改为斜向上但竖线垂直。
 

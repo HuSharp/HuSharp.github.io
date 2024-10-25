@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/assets/css/hack.css">
+    <link rel="stylesheet" href="/assets/css/checkbox-container.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <script type="text/javascript" src="/assets/js/jquery-3.1.1.min.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+
+    <title>自己动手画 CPU《计算机组织与结构实验》（二）</title>
+    <style>
+     .main {
+       padding: 20px 10px;
+     }
+
+     .hack h1 {
+       padding-top: 0;
+     }
+
+     footer.footer {
+       border-top: 1px solid #ccc;
+       margin-top: 80px;
+       margin-top: 5rem;
+       padding: 48px 0;
+       padding: 3rem 0;
+     }
+
+     img {
+       max-width: 100%;
+       padding: 1em;
+     }
+    </style>
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>自己动手画 CPU《计算机组织与结构实验》（二）</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="自己动手画 CPU《计算机组织与结构实验》（二）" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="http://localhost:4000/cpu/2020/10/05/hust-cpu-study_2.html" />
+<meta property="og:url" content="http://localhost:4000/cpu/2020/10/05/hust-cpu-study_2.html" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-10-05T01:16:34+02:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="自己动手画 CPU《计算机组织与结构实验》（二）" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2020-10-05T01:16:34+02:00","datePublished":"2020-10-05T01:16:34+02:00","headline":"自己动手画 CPU《计算机组织与结构实验》（二）","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/cpu/2020/10/05/hust-cpu-study_2.html"},"url":"http://localhost:4000/cpu/2020/10/05/hust-cpu-study_2.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+  <body class="snow hack">
+    <script data-goatcounter="https://husharp.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+    <div class="container">
+      <header>
+    <p>
+        <a href="/">HuSharp</a>
+        | <a href="/blogs.html">Blog</a>
+        - <a href="/topics.html">Topic</a>
+        - <a href="/resume.html">Résumé</a>
+        <!-- <a href="/collections.html">Collections</a> -->
+        | <a href="/feed.xml">RSS</a>
+        <!-- | <label class="checkbox-container"><input type="checkbox" id="lightSelected">
+            <b>[<span class="indicator">Light</span>]</b>
+          </label> -->
+    </p> 
+</header>
+
+
+      <div class="snowframe">
+      
+      <h1>自己动手画 CPU《计算机组织与结构实验》（二）</h1>
+      
+      
+      
+      
+      <p class="hidden-text"># cpu, 2020-10-05</p>
+      
+      <ul id="markdown-toc">
+  <li><a href="#二运算器组成实验" id="markdown-toc-二运算器组成实验">二、运算器组成实验</a>    <ul>
+      <li><a href="#1-可控加减法电路设计实验" id="markdown-toc-1-可控加减法电路设计实验">1. 可控加减法电路设计实验</a></li>
+      <li><a href="#2-4-位先行进位74182" id="markdown-toc-2-4-位先行进位74182">2. 4 位先行进位74182</a></li>
+      <li><a href="#3-4-位快速加法器设计" id="markdown-toc-3-4-位快速加法器设计">3. 4 位快速加法器设计</a></li>
+      <li><a href="#4-16-位快速加法器设计" id="markdown-toc-4-16-位快速加法器设计">4. 16 位快速加法器设计</a></li>
+      <li><a href="#5--32-位快速加法器设计" id="markdown-toc-5--32-位快速加法器设计">5.  32 位快速加法器设计</a></li>
+      <li><a href="#6-32-位-alu设计实验" id="markdown-toc-6-32-位-alu设计实验">6. 32 位 ALU设计实验</a></li>
+      <li><a href="#7-5-位阵列乘法器" id="markdown-toc-7-5-位阵列乘法器">7. 5 位阵列乘法器</a>        <ul>
+          <li><a href="#1前置背景" id="markdown-toc-1前置背景">1）前置背景</a></li>
+          <li><a href="#2横向进位阵列乘法器" id="markdown-toc-2横向进位阵列乘法器">2）横向进位阵列乘法器</a></li>
+          <li><a href="#3斜向进位阵列乘法器" id="markdown-toc-3斜向进位阵列乘法器">3）斜向进位阵列乘法器</a></li>
+        </ul>
+      </li>
+      <li><a href="#8-6-位补码阵列乘法器" id="markdown-toc-8-6-位补码阵列乘法器">8. 6 位补码阵列乘法器</a></li>
+      <li><a href="#9-5-位无符号乘法流水线" id="markdown-toc-9-5-位无符号乘法流水线">9. 5 位无符号乘法流水线</a></li>
+      <li><a href="#10原码-1-位乘法器设计实验" id="markdown-toc-10原码-1-位乘法器设计实验">10.原码 1 位乘法器设计实验</a></li>
+      <li><a href="#11补码-1-位乘法器设计实验" id="markdown-toc-11补码-1-位乘法器设计实验">11.补码 1 位乘法器设计实验</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p><a href="https://www.icourse163.org/course/HUST-1205809816">配套慕课</a></p>
+
+<h2 id="二运算器组成实验">二、运算器组成实验</h2>
+
+<h3 id="1-可控加减法电路设计实验">1. 可控加减法电路设计实验</h3>
+
+<p>1、背景知识</p>
+
+<p>0）一位加法逻辑电路实现</p>
+
+<ul>
+  <li>0＋1=1  1＋0=1</li>
+  <li>1＋1=0  0＋0=0</li>
+  <li>因此：一个异或门即可实现 <strong>自动</strong> 一位加法</li>
+</ul>
+
+<p><strong>1）一位全加器的实现。</strong></p>
+
+<p>一位全加器的表达式如下：</p>
+
+<ol>
+  <li>
+    <p>Si = Xi ⊕ Yi ⊕ Cin</p>
+  </li>
+  <li>
+    <p>Cout = XiYi + （Xi ⊕ Yi）Cin</p>
+  </li>
+</ol>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/20200501112325459.png" alt="20200501112325459" /></p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201012162421462.png" alt="image-20201012162421462" style="zoom:67%;" /></p>
+
+<p><strong>2）多位串行加法器</strong></p>
+
+<p>判断溢出方式为：</p>
+
+<ol>
+  <li>
+    <p>无符号数溢出判断：其实很简单，就一句话：</p>
+
+    <p><em>当最高为向更高位有进位（或借位）时产生溢出</em></p>
+  </li>
+</ol>
+
+<p>由于无符号数通常代表内存地址，这种情况下的溢出可以忽略。</p>
+
+<ol>
+  <li>
+    <p>溢出只可能符号数溢出的情况，包括[X]补与[Y]补，[X]补与[-Y]补同号。</p>
+
+    <p><strong>方法一</strong>：对操作数和运算结果的符号位进行检测，如果不相同则发生了溢出。</p>
+
+    <p>设X0，Y0为运算数的符号位，S0为运算结果的符号位。</p>
+
+    <p>逻辑表达式为：<strong>OF = X0Y0~S0 + ~X0~Y0S0</strong></p>
+
+    <p>当OF = 1时发生溢出。</p>
+
+    <p><strong>方法二</strong>：对<strong>最高数据位进位</strong>和<strong>符号位进位</strong>进行检测。</p>
+
+    <p>设最高数据位产生的进位为C1，符号位产生的进位为C0.</p>
+
+    <p>两个正数相加，此时C0 = 0，若C1 = 1，则改变了结果符号位。发生溢出。</p>
+
+    <p>两个负数相加，此时C0 = 1， 若C1 = 0，则改变了结果符号位。发生溢出。</p>
+
+    <p>逻辑表达式为：<strong>OF = C0⊕C1</strong></p>
+
+    <p><strong>方法三</strong>：使用变形补码，给数据加上两位符号位，正常情况，符号位应该相同，如果运算后的结果两位符号位不同，则发生溢出。</p>
+  </li>
+</ol>
+
+<p>电路图中的<strong>第一位全加器的低位进位</strong>默认是<strong>没有进位</strong>的，只有输入位。</p>
+
+<p>本实验采用方法二，对于 <strong>最高数据位进位</strong> 和 <strong>符号位进位</strong> 两个位数进行异或检测</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201012162856622.png" alt="image-20201012162856622" /></p>
+
+<p>3）8位可控加减法器</p>
+
+<p>原理：</p>
+
+<p>[X]补 - [Y]补 = [X - Y]补 = [X]补 + [-Y]补</p>
+
+<p>[-Y]补 = [[Y]补]补</p>
+
+<p>进行减法时，根据减法运算，需要把  [Y]补  转换为  [-Y]补 。转换规则与原码转补码相同，所以直接取反加一即可。</p>
+
+<p>eg：[Y]补 = 10011    [-Y]补 = 01101</p>
+
+<p>设计思路：加上一个 Sub 控制信号输入，输入数 Y 的所有位 Yi 均与 Sub 位进行<strong>异或</strong>后送入 全加器 中。</p>
+
+<ul>
+  <li>当 Sub = 0 时，送入为 Y 本身；</li>
+  <li>当 Sub = 1 时，送入为 Y 的反码；且 Sub 位也连在加法器上，因此 Sub 为 1 时，直接取反码后再加上 1，而 Sub 为 0 时，进位 0 不影响加法结果</li>
+</ul>
+
+<p>最终实现如下</p>
+
+<p>此时 Sub 位 为 0 ，表示加法（下侧运算指示由 LED 点阵表示）</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201012182232160.png" alt="image-20201012182232160" /></p>
+
+<p>此时 Sub 位 为 1 ，表示减法</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201012182207063.png" alt="image-20201012182207063" /></p>
+
+<h3 id="2-4-位先行进位74182">2. 4 位先行进位74182</h3>
+
+<p>由于全加器公式如下，即高位运算取决于低位运算的输入 Ci-1。因此不能进行并行运算</p>
+
+<ol>
+  <li>Si = Xi ⊕ Yi ⊕ Cin</li>
+  <li>Cout = XiYi + （Xi ⊕ Yi）Cin     /    Cout = XiYi + （Xi + Yi）Cin</li>
+</ol>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201012233340803.png" alt="image-20201012233340803" /></p>
+
+<p>即如上图可知，一般采用 4 位一组的先行进位方法。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/v2-8a9142067020bc11d7a679b03c323b70_b.jpg" alt="v2-8a9142067020bc11d7a679b03c323b70_b" /></p>
+
+<p>设 进位生成函数 Gi = XiYi， Pi = Xi  ⊕  Yi</p>
+
+<p>由上图我们可以提取出以下公式</p>
+
+<p>Ci = Gi + Pi*Ci-1</p>
+
+<p>则</p>
+
+<p><strong>C1 = G1 + P1*C0</strong></p>
+
+<p>C2 = G2 + P2*C1</p>
+
+<p>C3 = G3 + P3*C2</p>
+
+<p>C4 = G4 + P4*C3</p>
+
+<p>逐步带入可得</p>
+
+<p><strong>C2 =</strong> G2 + P2*（ G1 + P1 * C0）</p>
+
+<p>= <strong>G2 + P2G1 + P2P1C0</strong></p>
+
+<p><strong>C3 =</strong> G3 + P3 *（G2 + P2G1 + P2P1C0）</p>
+
+<p>= <strong>G3 + P3G2 + P3P2G1 + P3P2P1C0</strong></p>
+
+<p><strong>C4 =</strong> G4 + P4*（G3 + P3G2 + P3P2G1 + P3P2P1C0）</p>
+
+<p>= <strong>G4 + P4G3 + P4P3G2 + P4P3P2G1 + P4P3P2P1C0</strong></p>
+
+<p><strong>这里可以发现各级的进位与其他进位无关</strong></p>
+
+<p>而 所有的 P、G输入后需要 2T 的时间延迟；</p>
+
+<p>又因为P、G输入需要一级门电路延迟，因此总输入为 3T 延迟。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013164402039.png" alt="image-20201013164402039" /></p>
+
+<p>构造电路图如下</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013163358078.png" alt="image-20201013163358078" /></p>
+
+<p>现在已经得到 4 位的加速加法器，若想得到更多位宽电路，如 16 位加法器，最简单的方法便是将 4 个<strong>加法器进位链</strong> 进行串联，但是这样的话只能实现 4 位组内并行计算，组间还是串行。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013164415683.png" alt="image-20201013164415683" /></p>
+
+<p>因此现在希望提高性能：</p>
+
+<p>成组进位生成函数：<strong>G* = G4 + P4G3 + P4P3G2 + P4P3P2G1</strong></p>
+
+<p>成组进位传递函数：<strong>P* = P4P3P2P1</strong></p>
+
+<p>我们发现：<strong>C4 =</strong> <strong>G4 + P4G3 + P4P3G2 + P4P3P2G1 + P4P3P2P1C0</strong> <strong>= G* + P* C0</strong></p>
+
+<p>即与之前提到的先行进位中的 <strong>C1 = G1 + P1*C0</strong> 形式完全一样！即只要提前得到  <strong>成组进位生成函数</strong>  和  <strong>成组进位传递函数</strong>，再复用 4 位先行进位电路即可。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013164443705.png" alt="image-20201013164443705" /></p>
+
+<p>生成电路如下：</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013163050767.png" alt="image-20201013163050767" /></p>
+
+<h3 id="3-4-位快速加法器设计">3. 4 位快速加法器设计</h3>
+
+<p>按照下图 74182 4 位加法器</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013164443705.png" alt="image-20201013164443705" /></p>
+
+<p>通过此处的与门异或门电路得到相应输入值，再输入即可</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013184220192.png" alt="image-20201013184220192" /></p>
+
+<p>实现电路如下</p>
+
+<p>注意 ：C3 只是一个输出位。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013184345847.png" alt="image-20201013184345847" /></p>
+
+<h3 id="4-16-位快速加法器设计">4. 16 位快速加法器设计</h3>
+
+<p>主要思想便为：组内并行，组间并行。</p>
+
+<p>设计思路较为简单，由上层 CLA74182 产生下层所需要的 C4、C8、C12，再并行运算得到各个进位，再输回4位快速加法器,得到 Cout 。</p>
+
+<p>具体步骤是：底层加速加法器首先生成所有 P，G（时间延迟为 1T），接着产生 P*、G*（即输入进CLA的电路端，时间延迟为 2T），上层先行电路 CLA 通过 P、G、C0得到 C4、C8、C12 信号（时间延迟为 2T），此时下层加法器的所有输入信号都已经待续，经过内部的 C0 与其他信号的与门异或门（2T) 以及 S 的求和运算（P 与 C的异或，时间延迟为 1T），因此最终延迟为 8T。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013234414926.png" alt="image-20201013234414926" /></p>
+
+<h3 id="5--32-位快速加法器设计">5.  32 位快速加法器设计</h3>
+
+<p>思路与上面大致一样，不再赘述。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201013235344233.png" alt="image-20201013235344233" /></p>
+
+<h3 id="6-32-位-alu设计实验">6. 32 位 ALU设计实验</h3>
+
+<p>【目标】</p>
+
+<p>​利用前面实验封装好的32位加法器以及 Logisim 平台中现有运算部件，构建一个32位算术逻辑运算单元（禁用 Logisim  系统自带的加法器，减法器），可支持算术加、减、乘、除，逻辑与、或、非、异或运算、逻辑左移、逻辑右移、算术右移运算，支持常用程序状态标志（有符号溢出 OF 、无符号溢出 UOF ，结果相等 Equal ），ALU 功能以及输入输出引脚见下图。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201014223905904.png" alt="image-20201014223905904" /></p>
+
+<p>ALU 功能</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/v2-801bb6008e475f4e2a7fd3280c0e04a9_720w.jpg" alt="v2-801bb6008e475f4e2a7fd3280c0e04a9_720w" /></p>
+
+<p>实现电路如下：</p>
+
+<p>主要注意以下几处：</p>
+
+<ol>
+  <li>移位器采用分线器来得到 Y 的低五位</li>
+  <li>减法的运用 32 位加法器时，需直接判断 X 是否 无符号大于 Y 即可。</li>
+  <li>再就是 <strong>比较器</strong> 的设置！！！</li>
+</ol>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201016202114284.png" alt="image-20201016202114284" /></p>
+
+<p>选择器的运用</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201016195044233.png" alt="image-20201016195044233" /></p>
+
+<p>折磨我一个小时的问题！！！！</p>
+
+<p>比较器无符号的比较！！！</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201016194805245.png" alt="image-20201016194805245" /></p>
+
+<p>最终测试结果</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201016193638163.png" alt="image-20201016193638163" /></p>
+
+<h3 id="7-5-位阵列乘法器">7. 5 位阵列乘法器</h3>
+
+<h4 id="1前置背景">1）前置背景</h4>
+
+<p><strong>乘法实现</strong>类似于现实生活中的乘法方法(如下图)</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018192345643.png" alt="image-20201018192345643" /></p>
+
+<p>而相加数的得到需要考虑一位乘法的实现：</p>
+
+<pre><code class="language-assembly">1×1=1
+1×0=0
+0×1=0
+0x0=0
+</code></pre>
+
+<p>即类似与门</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018192949489.png" alt="image-20201018192949489" /></p>
+
+<p>由上图与门得到相加数，采用 25 个与门并发产生。————一级门延迟</p>
+
+<h4 id="2横向进位阵列乘法器">2）横向进位阵列乘法器</h4>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018192840020.png" alt="image-20201018192840020" /></p>
+
+<p>易知延迟如上图（+T 表示与门的延迟时间）</p>
+
+<p>实现电路如下</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018193105942.png" alt="image-20201018193105942" /></p>
+
+<p>其中加法器的各个接口如下：</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018173828600.png" alt="image-20201018173828600" /></p>
+
+<h4 id="3斜向进位阵列乘法器">3）斜向进位阵列乘法器</h4>
+
+<p>我们发现横向进位加法器过于依赖进位，若改为斜向进位，那么只有最后一行需要依赖横向进位，能较好的提升乘法器性能。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018193220982.png" alt="image-20201018193220982" /></p>
+
+<p>易知延迟如上图（+T 表示与门的延迟时间）</p>
+
+<p>最终电路实现如下：</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018193706273.png" alt="image-20201018193706273" /></p>
+
+<p><code class="language-plaintext highlighter-rouge">注：目前主流CPU 采用更多硬件：利用 Booth 两位乘法 + 华莱士树 的方式构建乘法器</code></p>
+
+<h3 id="8-6-位补码阵列乘法器">8. 6 位补码阵列乘法器</h3>
+
+<p>补码想法便是利用之前的 5 位阵列乘法器。先对 乘数 进行补码（利用求补器和多路选择器），最后对结果进行再次求补后，再加上符号。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018200138792.png" alt="image-20201018200138792" /></p>
+
+<p>至于图中的 -32 * 1 不能得出正确结果。由探针很容易明白原因。</p>
+
+<h3 id="9-5-位无符号乘法流水线">9. 5 位无符号乘法流水线</h3>
+
+<p>1.首先回忆之前的 <strong>五段流水线模拟</strong></p>
+
+<p>同步清零，气泡，高电平有效</p>
+
+<p>使能端，低电平有效，stall，高电平有效</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201005162854350.png" alt="image-20201005162854350" /></p>
+
+<p>观察乘法线流水接口</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018205020703.png" alt="image-20201018205020703" /></p>
+
+<p>阵列乘法器流水线优化</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018212238547.png" alt="image-20201018212238547" /></p>
+
+<p>放大来看其中一个公式的实现，采用扩展器+加法器+移位器</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018212150048.png" alt="image-20201018212150048" /></p>
+
+<p>实现电路如下</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018212034287.png" alt="image-20201018212034287" /></p>
+
+<h3 id="10原码-1-位乘法器设计实验">10.原码 1 位乘法器设计实验</h3>
+
+<p>原理</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020223010992.png" alt="image-20201020223010992" /></p>
+
+<p>提示：无符号1位乘法自动运算可分解为如下步骤。</p>
+
+<ol>
+  <li>
+    <p>初始化时寄存器、X、Y值全为0，电路默认状态就是0；</p>
+  </li>
+  <li>
+    <p>将引脚中的两个乘数X、Y分别载入对应的寄存器，X、Y的值应送到对应寄存器的数据输入端Xa、Ya，由于寄存器的数据载入需要时钟驱动，所以在第一个时钟到来时应该将X、Y的值分别载入对应的寄存器中，此部分逻辑属于时序逻辑。</p>
+  </li>
+  <li>
+    <p>计算部分积<img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018230520622.png" alt="image-20201018230520622" style="zoom:67%;" />其中，是寄存器乏的输出，Adder.
+Result 为加法器的运算结果输出，此部分核心电路是加法器，属于组合逻辑。</p>
+  </li>
+  <li>
+    <p>加法器运算结果Adder.Result 逻辑右移1位送za，同时Adder.Result的最后1位加上寄存器Y的输出Yo.逻辑右移1位送 Yin，由于固定1位移位操作，所以不需要使用移位器，可直接使用Logisim平合中的分线器将对应数据分出，并且在高位补零即可实现逻辑右移，此部分逻辑属于组合逻辑。</p>
+
+    <p>​需要注意的是（即如下图），Yin 在步骤（2）中接入的是Y引脚的值，所以Ya应该增加一个多路选择器进行数据输入选择，同时引入选择控制信号，具体实现时可利用计数器的值生成该选择控制信号，当计数器初始值为0时则多路选择器选择引脚Y的值送入Yin，不为0时则选择移位数据输入。</p>
+
+    <p>​即需要注意 X Y 是分情况载入的。</p>
+
+    <p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018230358332.png" alt="image-20201018230358332" /></p>
+  </li>
+  <li>
+    <p>将移位后的数据载入 E、Y寄存器以便进行下一次运算，载入过程受时钟控制，属时序逻辑。</p>
+  </li>
+  <li>
+    <p>根据时钟计数器的值判断运算是否结束，并生成停机信号（低电平有效），停机信号应用于控制所有寄存器的使能端，使得寄存器忽略时钟输入，保持结果值不变。需要注意的是，切勿采用将时钟信号与停机信号进行逻辑与的方式控制系统停机，对时钟进行任何门级操作都会带来意想不到的潜在错误，这是后续所有实验必须遵守的原则。</p>
+  </li>
+</ol>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018225523447.png" alt="image-20201018225523447" /></p>
+
+<p>移位可采用下面这种方式</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018230724413.png" alt="image-20201018230724413" /></p>
+
+<p>需要注意的是！！！</p>
+
+<p>1、下图将 E 的最后一位移入到 Y’ 中。是有下列两个原因：</p>
+
+<ol>
+  <li>最后是两个寄存器保存最终 2n 长的值（类比 axdx）</li>
+  <li>Y’ 的移位之后，高位不影响结果，因此可以放在高部。</li>
+</ol>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018230744726.png" alt="image-20201018230744726" /></p>
+
+<p>2、Y的最后一位采用分线器读入。</p>
+
+<p>3、引入一个计数器，ct 连接点与寄存器大致相同。</p>
+
+<p>4、停机信号应用于控制所有寄存器的使能端，使得寄存器忽略时钟输入，保持结果值不变。切勿采用将时钟信号与停机信号进行逻辑与的方式控制系统停机，对时钟进行任何门级操作都会带来意想不到的潜在错误，这是后续所有实验必须遵守的原则。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019180227668.png" alt="image-20201019180227668" /></p>
+
+<p>最终电路实现如下。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201018224932971.png" alt="image-20201018224932971" /></p>
+
+<h3 id="11补码-1-位乘法器设计实验">11.补码 1 位乘法器设计实验</h3>
+
+<p>原理的推导</p>
+
+<p>首先探讨补码的一位乘</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020223010992.png" alt="image-20201020223010992" /></p>
+
+<p>1、X 乘上 正数</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019174715802.png" alt="image-20201019174715802" /></p>
+
+<p>由于 Y 为正，所以 [Y]补 = Y</p>
+
+<p>2、X 乘上 负数</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020221531307.png" alt="image-20201020221531307" /></p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020221751091.png" alt="image-20201020221751091" /></p>
+
+<p>现在思考这样一个定理： 一个数向左移动一位后（2倍）  –  自身  =  自身</p>
+
+<p>引入一位 Yn+1，<strong>那么 Yn+1 初始值设为 0</strong>。可以得到下面式子转换。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020222123786.png" alt="image-20201020222123786" /></p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020221736106.png" alt="image-20201020221736106" style="zoom:80%;" /></p>
+
+<p>现在将  2位  看作一个整体，即 YnYn+1、Yn-1Yn、… 1 2。</p>
+
+<p>即   Yn+1-Yn –&gt;  Yn  、Yn-Yn-1 –&gt; Yn-1 …… 那么可以得到以下式子：</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020222333818.png" alt="image-20201020222333818" style="zoom:80%;" /></p>
+
+<p>再由于 当 Y 为 正数 时，符号位则为 0，即可以代入下图 Y0，然后将两个情况统一。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201020223924682.png" alt="image-20201020223924682" /></p>
+
+<p><strong>因此 这也可以解释为什么Booth里末两位为 10 时，要加[-X]补。 为什么 Y(n+1) - Yn = 1 (末两位01)的时候 要加[X]补。</strong></p>
+
+<p>易知以下推导公式（ booth 一位乘法）</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019174838295.png" alt="image-20201019174838295" /></p>
+
+<p>与原码1位乘法不同，booth1位乘法中乘数采用<strong>双符号位</strong>参加运算，符号位也参与运算。利用 ∑ 存放部分积，i 为循环计数器，初始值为零，部分积累加公式为 ∑ =  ∑ +（Yn+1 - Yn ）[x]补，<strong>根据 Yn+1 与 Yn 的差值</strong>决定累加运算的参数是 0 还是 [X]补 或者是 [-X]补，<strong>注意最开始 Yn+1=0</strong>。运算完毕后，先判断循环次数是否达到，如未达到则部分积 ∑ 右移1位，Y 右移 1 位，然后继续循环累加，当乘数符号位参与运算后，运算结束，得到的乘积存放在 ∑ 和 Y 中，<strong>无须单独计算符号位</strong>。如果数值部分为 n 位，需要进行 n+1 次加法运算 和 n 次移位操作。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019175729836.png" alt="image-20201019175729836" /></p>
+
+<p>​补码1位乘法的硬件逻辑结构如上图所示，图中寄存器 R0 存放部分积 ∑ ，寄存器 R1 存放乘数 Yn 以及扩展位 Yn+1（初始值为零），YnYn+1 为判断位(<strong>最低两位</strong>)；寄存器R2：存放被乘数X的补码；加法器实现部分积的累加，运算逻辑为</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019175758692.png" alt="image-20201019175758692" style="zoom: 80%;" /></p>
+
+<p>其中，一个操作数为  ∑ ，另一个操作数由判断位 YnYn+1 对多路选择器进行选择控制； 控制电路负责移位控制和循环计数。受时钟驱动，每运算一次，加法器运算结果与寄存器 R1 的值一起算术右移 1 位后产生的新值载入 R0 和 R1 寄存器中，当运算结束时，乘积的高 n 位数据在 R0 中，低 n 位在 R1 中， R1 中原来的乘数在右移过程中逐位移出寄存器。</p>
+
+<ul>
+  <li>乘数 x 取双符号位参与运算，部分积的初始值为0；</li>
+  <li>乘数 y 取单符号位参与运算。</li>
+</ul>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019180208264.png" alt="image-20201019180208264" /></p>
+
+<p>注意事项如下：</p>
+
+<p>1、Yn+1 初始值为 0 。</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019225303449.png" alt="image-20201019225303449" /></p>
+
+<p>2、最高位与次高位一致</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019225506071.png" alt="image-20201019225506071" /></p>
+
+<p>3、负数取补 = 取反 + 1</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019225543626.png" alt="image-20201019225543626" /></p>
+
+<p>最终电路实现如下：（思路大致与原码 1 位一样）</p>
+
+<p><img src="/assets/blog_image/2020-10-05-hust-cpu-study_2/image-20201019224823463.png" alt="image-20201019224823463" /></p>
+
+      
+      </div>
+
+    <!-- Set Content -->
+    <div style="float: right;">
+      <div class="side-content">
+        <div class="wrap">
+            <!-- Content -->
+            <div class="side content">
+                <ul id="content-side" class="content-ul">
+                </ul>
+            </div>
+        </div>
+      </div>
+    </div>
+
+      <footer>
+  <span class="hidden-text">
+  <blockquote>Copyright 2023 HuSharp. Any and all opinions listed here are my own and not representative of my employers; future, past and present.</blockquote>
+  </span>
+  <br />
+</footer>
+
+    </div>
+    <script src="/assets/js/instantpage-3.0.0.js" defer type="module"> </script>
+    <script src="/assets/js/pageContent.js" charset="utf-8"></script>
+  </body>
+</html>

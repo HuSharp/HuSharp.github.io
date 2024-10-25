@@ -2,7 +2,7 @@
 layout: blog
 title:  "自己动手画 CPU《计算机组织与结构实验》（一）"
 date:   2020-09-28 13:56:10 +0800
-category: principle
+category: cpu
 ---
 
 * toc

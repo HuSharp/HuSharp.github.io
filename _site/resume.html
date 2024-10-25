@@ -62,11 +62,11 @@
         | <a href="/blogs.html">Blog</a>
         - <a href="/topics.html">Topic</a>
         - <a href="/resume.html">Résumé</a>
-        - <a href="/collections.html">Collections</a>
+        <!-- <a href="/collections.html">Collections</a> -->
         | <a href="/feed.xml">RSS</a>
-        | <label class="checkbox-container"><input type="checkbox" id="lightSelected">
+        <!-- | <label class="checkbox-container"><input type="checkbox" id="lightSelected">
             <b>[<span class="indicator">Light</span>]</b>
-          </label>
+          </label> -->
     </p> 
 </header>
 
@@ -78,18 +78,25 @@
 
 <h2 id="experience">Experience</h2>
 
-<p><strong>PingCAP – Storage Team</strong> (Database Engineer; Jul, 2022 ~ till now)</p>
+<p><strong>MPI-SWS</strong> (Doctoral Researcher; Sept, 2024 ~ till now)</p>
+
+<p>I am a first year PhD student at <a href="https://mpi-sws.org/">MPI-SWS</a> under the supervision of <a href="https://binds.ch/">Prof. Laurent Bindschaedler</a>.</p>
+
+<p><strong>PingCAP – Storage Team</strong> (Database Engineer; Jul, 2022 ~ Sept, 2024)</p>
 
 <ul>
-  <li><em>Resource Control</em>. Achieved isolation of multiple applications deployed on a shared cluster. Incorporated Quota Control Layer and Scheduling Control Layer for flow control and priority scheduling.</li>
-  <li><em>Flashback Cluster</em>. Developed a fast rollback feature to revert cluster data to a specific timestamp in cases of user errors. Based on Multi-version Concurrency Control (MVCC) to retrieve timestamped data and overwrite current data using the Two-phase Commit protocol (2PC).</li>
+  <li><a href="https://docs.pingcap.com/tidb/stable/tidb-resource-control">Resource Control</a>. Achieved isolation of multiple applications deployed on a shared cluster. Incorporated Quota Control Layer and Scheduling Control Layer for flow control and priority scheduling.</li>
+  <li><a href="https://docs.pingcap.com/tidb/stable/pd-microservices">Microservices</a>. Supporting <a href="https://github.com/tikv/pd/issues/7519">depolying</a> PD microservice mode, which splits the timestamp allocation and cluster scheduling functions of PD into the following two independently deployed microservices.</li>
+  <li><a href="https://github.com/tikv/pd/issues/7969">Test Improvement</a>. Achieving a 3-6x speedup across different machine environments.</li>
+  <li><a href="https://github.com/tikv/pd/issues/8135">Support 10M regions simulation</a>. Providing pd the same specification machine to deploy the real pd under the big cluster, simulate the request number of TiDB/TiKV + TiKV heartbeat heartbeat report + all kinds of scheduling for the region and so on.</li>
+  <li><a href="https://github.com/tikv/tikv/issues/13303">Flashback Cluster</a>. Developed a fast rollback feature to revert cluster data to a specific timestamp in cases of user errors. Based on Multi-version Concurrency Control (MVCC) to retrieve timestamped data and overwrite current data using the Two-phase Commit protocol (2PC).</li>
 </ul>
 
 <p><strong>ByteDance Inc.</strong> (Developer Intern; Mar, 2021 ~ Sept, 2021)</p>
 
 <ul>
-  <li><em>Release Platform Development</em>. Contributed to the build of a Release Platform for the company’s applications, including TikTok. Implemented a message queue with priority scheduling support to facilitate uploads to various stores, minimizing cross-platform operational overhead for users and refining status visualization.</li>
-  <li><em>RPC Service Construction</em>: Used the KiteX service framework and the Thrift cross-language protocol to develop RPC services for the Lark application. Delivered RESTful interfaces encompassing: Package uploads, Publishing policies, User group management.</li>
+  <li>Release Platform Development. Contributed to the build of a Release Platform for the company’s applications, including TikTok. Implemented a message queue with priority scheduling support to facilitate uploads to various stores, minimizing cross-platform operational overhead for users and refining status visualization.</li>
+  <li>RPC Service Construction: Used the KiteX service framework and the Thrift cross-language protocol to develop RPC services for the Lark application. Delivered RESTful interfaces encompassing: Package uploads, Publishing policies, User group management.</li>
 </ul>
 
 <h2 id="skills">Skills</h2>

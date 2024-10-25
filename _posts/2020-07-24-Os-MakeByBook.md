@@ -2,7 +2,7 @@
 layout: blog
 title:  "《操作系统真象还原》学习笔记"
 date:   2020-07-24 22:15:02 +0800
-category: Linux
+category: linux
 ---
 
 * content

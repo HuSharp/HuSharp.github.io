@@ -7,9 +7,9 @@ avatar_old: /assets/img/vampire.png
 
 I'm Jinhao Hu, aka HuSharp\*, Hu#\*.
 
-I code with joy and I'm interested in various fields including but not limited to: distributed system, database, and operating system.
+I am a first year PhD student at [MPI-SWS](https://mpi-sws.org/) under the supervision of [Prof. Laurent Bindschaedler](https://binds.ch/).
 
-Currently employed at [PingCAP](https://en.pingcap.com).
+I'm interested in various fields including but not limited to: distributed system, database, and operating system. Previously I am employed at [PingCAP](https://en.pingcap.com) as a Distributed Database Engineer.
 
 I'm a lifelong learner. This site exists to document my past and accompany me on the journey forward.
 
@@ -24,7 +24,7 @@ I'm a lifelong learner. This site exists to document my past and accompany me on
 
 -------
 
-\* Pronounced as /huʃɑrp/.
+\* Pronounced as /huʃɑ:rp/.
 
 \* Here is an [introduction](/life/2020/07/18/HuSharp-origin.html) to the origin of the name.
 
