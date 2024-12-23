@@ -1,7 +1,7 @@
 @charset "utf-8";
 :root {
   --color: #101518;
-  --highlight-color: #890900;
+  --highlight-color: #ab5703;
   /*#ff4646 red*/
   /*#f3bf1e yellow*
   /*#ff2e88 pink*/
@@ -25,7 +25,7 @@
   /*6f5f90*/
   /* cb1104 + 101518 / 2*/
   /*D17772*/
-  --selection-color: #890900;
+  --selection-color: #894400;
   /*Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace*/
   --font-family: Menlo, Lucida Console, Consolas, 'CNFont';
   --global-transition: all 0.5s ease-in-out;
