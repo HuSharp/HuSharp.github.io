@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>http://localhost:4000/life/2020/07/06/Rain-at-2-years.html</loc>
-<lastmod>2020-07-06T11:43:28+02:00</lastmod>
-</url>
-<url>
 <loc>http://localhost:4000/life/2020/07/18/HuSharp-origin.html</loc>
 <lastmod>2020-07-18T03:00:00+02:00</lastmod>
 </url>
@@ -38,15 +34,15 @@
 </url>
 <url>
 <loc>http://localhost:4000/subtopics/collections/quote.html</loc>
-<lastmod>2024-12-23T21:59:30+01:00</lastmod>
+<lastmod>2024-12-23T23:20:46+01:00</lastmod>
 </url>
 <url>
 <loc>http://localhost:4000/subtopics/collections/tools.html</loc>
-<lastmod>2024-12-23T21:59:30+01:00</lastmod>
+<lastmod>2024-12-23T23:20:46+01:00</lastmod>
 </url>
 <url>
 <loc>http://localhost:4000/subtopics/os.html</loc>
-<lastmod>2024-12-23T21:59:30+01:00</lastmod>
+<lastmod>2024-12-23T23:20:46+01:00</lastmod>
 </url>
 <url>
 <loc>http://localhost:4000/subtopics/polymorphism.html</loc>
@@ -54,7 +50,7 @@
 </url>
 <url>
 <loc>http://localhost:4000/topics/computer-system.html</loc>
-<lastmod>2024-12-23T21:59:30+01:00</lastmod>
+<lastmod>2024-12-23T23:20:46+01:00</lastmod>
 </url>
 <url>
 <loc>http://localhost:4000/blogs.html</loc>
