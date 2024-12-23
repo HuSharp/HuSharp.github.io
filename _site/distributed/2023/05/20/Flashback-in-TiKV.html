@@ -10,33 +10,29 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
     <link rel="manifest" href="/assets/favicon/site.webmanifest">
+    <link rel="alternate" type="application/rss+xml" title="HuSharp's Site" href="/feed.xml" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ffffff">
 
     <title>Flashback TiKV Chinese</title>
+
     <style>
-     .main {
-       padding: 20px 10px;
-     }
-
-     .hack h1 {
-       padding-top: 0;
-     }
-
-     footer.footer {
-       border-top: 1px solid #ccc;
-       margin-top: 80px;
-       margin-top: 5rem;
-       padding: 48px 0;
-       padding: 3rem 0;
-     }
-
-     img {
-       max-width: 100%;
-       padding: 1em;
-     }
+      .main {
+        padding: 20px 10px;
+      }
+      .hack h1 {
+        padding-top: 0;
+      }
+      img {
+        max-width: 100%;
+        padding: 1em;
+      }
+      .side-content {
+        top: 0;
+      }
     </style>
+    
     <!-- Begin Jekyll SEO tag v2.8.0 -->
 <title>Flashback TiKV Chinese</title>
 <meta name="generator" content="Jekyll v4.3.2" />
@@ -74,14 +70,18 @@
 
       <div class="snowframe">
       
-      <h1>Flashback TiKV Chinese</h1>
       
+
       
+        <h1>Flashback TiKV Chinese</h1>
+        
+          <p class="hidden-text"># distributed, 2023-05-20</p>
+          
+        
       
+
       
-      <p class="hidden-text"># distributed, 2023-05-20</p>
-      
-      <ul id="markdown-toc">
+        <ul id="markdown-toc">
   <li><a href="#背景介绍" id="markdown-toc-背景介绍">背景介绍</a>    <ul>
       <li><a href="#执行与效果" id="markdown-toc-执行与效果">执行与效果</a></li>
       <li><a href="#具体实现" id="markdown-toc-具体实现">具体实现</a>        <ul>
@@ -685,6 +685,8 @@
 <p><a href="https://cn.pingcap.com/blog/tikv-source-code-reading-18">TiKV 源码解析系列文章（十八）Raft Propose 的 Commit 和 Apply 情景分析</a></p>
 
       
+
+      
       </div>
 
     <!-- Set Content -->
@@ -702,7 +704,7 @@
 
       <footer>
   <span class="hidden-text">
-  <blockquote>Copyright 2023 HuSharp. Any and all opinions listed here are my own and not representative of my employers; future, past and present.</blockquote>
+  <blockquote>Copyright 2024 HuSharp. Any and all opinions listed here are my own and not representative of my employers; future, past and present.</blockquote>
   </span>
   <br />
 </footer>

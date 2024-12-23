@@ -1,7 +1,7 @@
 @charset "utf-8";
 :root {
   --color: #101518;
-  --highlight-color: #894400;
+  --highlight-color: #890900;
   /*#ff4646 red*/
   /*#f3bf1e yellow*
   /*#ff2e88 pink*/
@@ -17,15 +17,15 @@
   /*#101518 #0a0f12 blue*/
   /*#282828 gray*/
   /*#1C355E;*/
-  --emphasis-color: #101518;
+  --emphsis-color: #101518;
   /*#98971a dirt yellow*/
   /*#758eb7 light blue*/
   /*#123693;*/
-  --emphasis-link-color: #101518;
+  --emphsis-link-color: #101518;
   /*6f5f90*/
   /* cb1104 + 101518 / 2*/
   /*D17772*/
-  --selection-color: #895200;
+  --selection-color: #890900;
   /*Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace*/
   --font-family: Menlo, Lucida Console, Consolas, 'CNFont';
   --global-transition: all 0.5s ease-in-out;
@@ -33,7 +33,7 @@
   --border-radius: 5px;
   --content-width: 60rem;
   --text-size: 1.07rem;
-  --line-height: 1.60rem;
+  --line-height: 1.65rem;
 }
 
 .dark {
@@ -49,10 +49,10 @@
   --background-color: #22272A;  /* 7% lighter than #101518 */
   /*#101518 #0a0f12 blue*/
   /*#282828 gray*/
-  --emphasis-color: #758eb7;
+  --emphsis-color: #758eb7;
   /*#98971a dirt yellow*/
   /*#758eb7 light blue*/
-  --emphasis-link-color: #b0bec5;
+  --emphsis-link-color: #b0bec5;
   /*6f5f90*/
   /* cb1104 + 101518 / 2*/
   --selection-color: #6D130E;
@@ -133,7 +133,7 @@ body::-webkit-scrollbar-track {
 }
  
 body::-webkit-scrollbar-thumb {
-  background-color: var(--emphasis-color);
+  background-color: var(--emphsis-color);
 }
 
 .wide-spacing {
@@ -158,69 +158,69 @@ html {
 /* Emphsis Color */
 .hack h1,.hack h2,.hack h3,
 .hack h4,.hack h5,.hack h6 {
-  color:var(--emphasis-color);
+  color:var(--emphsis-color);
 }
 .hack code,.hack strong {
-  color:var(--emphasis-link-color);
+  color:var(--emphsis-link-color);
 }
 .hack .progress-bar-filled {
-  background-color:var(--emphasis-color);
+  background-color:var(--emphsis-color);
 }
 .hack .form-control,.hack .form-group label {
   color:#fdf4c1;
-  border-color:var(--emphasis-color);
+  border-color:var(--emphsis-color);
 }
 .hack .card {
-  border-color:var(--emphasis-color);
+  border-color:var(--emphsis-color);
 }
 .hack .card .card-header {
   background-color:transparent;
   color:#fdf4c1;
-  border-bottom:1px solid var(--emphasis-color);
+  border-bottom:1px solid var(--emphsis-color);
 }
 .hack .btn.btn-ghost.btn-success:focus,
 .hack .btn.btn-ghost.btn-success:hover {
-  border-color:var(--emphasis-color);
-  color:var(--emphasis-color);
+  border-color:var(--emphsis-color);
+  color:var(--emphsis-color);
 }
 .hack .menu .menu-item {
   color:#fdf4c1;
-  border-color:var(--emphasis-color);
+  border-color:var(--emphsis-color);
 }
 
 /* Emphsis Link */
 .hack h1 a,.hack h2 a,.hack h3 a,
 .hack h4 a,.hack h5 a,.hack h6 a {
-  color:var(--emphasis-link-color);
-  border-bottom-color:var(--emphasis-link-color);
+  color:var(--emphsis-link-color);
+  border-bottom-color:var(--emphsis-link-color);
 }
 .hack h1 a:hover,.hack h2 a:hover,
 .hack h3 a:hover,.hack h4 a:hover,
 .hack h5 a:hover,.hack h6 a:hover {
-  background-color:var(--emphasis-link-color);
+  background-color:var(--emphsis-link-color);
   color:#fbf1c7;
 }
 
 a {
-  transition: var(--hover-transition);
   -webkit-transition: var(--hover-transition);
   -moz-transition: var(--hover-transition);
   -o-transition: var(--hover-transition);
+  transition: var(--hover-transition);
   /*transition: all .15s cubic-bezier(.4, 0, 0, 1);*/
   /*transition: all .2s cubic-bezier(1, 0, 0, 1);*/
   /*transition:all 1.3s cubic-bezier(0,.5,0,1) 0s*/
 }
 
 /* Table Color */
-.hack table {
-  color:#c7c1fd;
+/*.hack table {
+  color:#fdf4c1;
 }
 .hack table td,.hack table th {
   border-color:#b0bec5;
 }
 .hack table tbody td:first-child {
   color:#b0bec5;
-}
+}*/
 
 * {
   box-sizing: border-box;
@@ -335,7 +335,6 @@ a:hover {
   .cell.\-2of12 {
     -ms-flex: 0 0 16.66667%;
     flex: 0 0 16.66667%;
-    margin-top: 60px;
   }
   .cell.\-3of12 {
     -ms-flex: 0 0 25%;
@@ -616,7 +615,7 @@ p {
   -ms-transform: translateX(50%);
   transform: translateX(50%);
 }
-table {
+/*table {
   width: 100%;
   border-collapse: collapse;
   margin: 1.75rem 0;
@@ -635,7 +634,7 @@ table thead th {
 table tbody td:first-child {
   font-weight: 700;
   color: #333;
-}
+}*/
 .form {
   width: 30rem;
 }
@@ -1050,9 +1049,22 @@ img {
 
 .avatar {
   width: 200px;
-  border-radius: 50%;
 }
 
 .hidden-text {
   color: var(--camouflage-color);
+}
+
+.side-by-side tbody tr td {
+  vertical-align: top;
+  border: none;
+  table-layout: fixed;
+}
+table.side-by-side {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.side-by-side tbody tr td p, .side-by-side tbody tr td blockquote, .side-by-side tbody tr td ul {
+  margin-top: 0;
 }
