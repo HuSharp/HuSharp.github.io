@@ -3,7 +3,6 @@ layout: blog
 title:  "HuSharp 的由来"
 date:   2020-07-18 9:00:00 +0800
 category: life
-side_by_side: comment
 ---
 
 \# 汉语中因形似 "井"，读作井号（Jinghao），通常用于数字符号（Number Sign），如在一些国家 `#1` 代表 No.1。

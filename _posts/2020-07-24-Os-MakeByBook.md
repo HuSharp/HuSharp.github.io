@@ -1,6 +1,6 @@
 ---
 layout: blog
-title:  "《操作系统真象还原》学习笔记"
+title:  "Implementing a Mini OS(Notes)"
 date:   2020-07-24 22:15:02 +0800
 category: linux
 ---
@@ -8,9 +8,7 @@ category: linux
 * content
 {:toc}
 
-[代码详情见](  https://github.com/HuSharp/HuSharp_Os.git)
-
-本项目实现的 mini 操作系统，包含：
+[源码](https://github.com/HuSharp/HuSharp_Os)，本项目基于[《操作系统真象还原》](https://book.douban.com/subject/26745156/)一书，实现了一个 mini 操作系统，包含：
 
 1）内核线程、用户进程、fork和execv、任务调度；
 
