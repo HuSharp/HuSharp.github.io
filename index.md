@@ -4,10 +4,9 @@ title: HuSharp's Page
 avatar: /assets/favicon/android-chrome-512x512.png
 avatar_old: /assets/img/vampire.png
 ---
-
 I'm Jinhao Hu, aka HuSharp\*, Hu#\*.
 
-I am a first year PhD student at [MPI-SWS](https://mpi-sws.org/) under the supervision of [Prof. Laurent Bindschaedler](https://binds.ch/).
+I am a second year PhD student at [MPI-SWS](https://mpi-sws.org/) under the supervision of [Prof. Laurent Bindschaedler](https://binds.ch/).
 
 I'm interested in various fields including but not limited to: distributed system, database, and operating system. Previously I am employed at [PingCAP](https://en.pingcap.com) as a Distributed Database Engineer.
 
@@ -22,7 +21,7 @@ I'm a lifelong learner. This site exists to document my past and accompany me on
 <br />
 <br />
 
--------
+---
 
 \* Pronounced as /huʃɑ:rp/.
 
