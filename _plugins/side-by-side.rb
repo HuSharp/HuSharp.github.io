@@ -2,11 +2,42 @@ require 'nokogiri'
 
 module Jekyll
   module SideBySideFilter
+    def split_list_for_notes(list_node)
+      items = list_node.css('> li')
+      list_type = list_node.name
+
+      # Check if next sibling is a NOTE paragraph
+      next_sibling = list_node.next_element
+      has_note_following = next_sibling && next_sibling.text.strip.start_with?('[NOTE]')
+
+      if has_note_following && items.length > 1
+        # Split: all items except last go in one list, last item in its own list
+        first_items = items[0..-2]
+        last_item = items[-1]
+
+        # Push the first group as one list
+        first_list = "<#{list_type}>#{first_items.map(&:to_s).join}</#{list_type}>"
+        @elements.push(first_list)
+
+        # Push the last item as its own list (will pair with the NOTE)
+        last_list = "<#{list_type}>#{last_item.to_s}</#{list_type}>"
+        @elements.push(last_list)
+      else
+        # No NOTE following, push the entire list as-is
+        @elements.push(list_node.to_s)
+      end
+    end
+
     def side_by_side_with_subtitle(input, mode, subtitle)
       @doc = Nokogiri::HTML::DocumentFragment.parse(input)
       @elements = []
       @doc.children.each do |node|
-        @elements.push(node.to_s)
+        # For lists with footnotes, split before the item with [NOTE] reference
+        if (node.name == 'ul' || node.name == 'ol') && mode == 'comment'
+          split_list_for_notes(node)
+        else
+          @elements.push(node.to_s)
+        end
       end
       @result = '<table class="side-by-side"><tbody>'
       if mode == 'translation'
@@ -17,16 +48,24 @@ module Jekyll
           end
         end
       elsif mode == 'comment'
-        @comments = ''
         @opened = false
         @elements.select { |e| !e.strip.empty? }.each do |e|
           if e.slice! '[NOTE] '
-            @comments << e
-          else
+            # Convert footnote references [^1] to styled markers
+            e = e.gsub(/\[\^(\d+)\]/, '<sup class="note-ref">\1</sup>')
+            # Output note immediately with the currently open row
             if @opened
-              @result << %(<td>#{@comments}</td></tr>)
-              @comments = ''
+              @result << %(<td>#{e}</td></tr>)
+              @opened = false
             end
+          else
+            # Convert footnote references [^1] to styled markers in content
+            e = e.gsub(/\[\^(\d+)\]/, '<sup class="note-ref">\1</sup>')
+            # Close any previously opened row with empty comment
+            if @opened
+              @result << %(<td></td></tr>)
+            end
+            # Open new row with this element
             if e.include? '<h1'
               @result << %(<tr><td>#{e}#{subtitle}</td>)
             else
@@ -34,6 +73,10 @@ module Jekyll
             end
             @opened = true
           end
+        end
+        # Close any remaining open row
+        if @opened
+          @result << %(<td></td></tr>)
         end
       end
       @result << '</table></tbody>'

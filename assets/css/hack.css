@@ -1067,4 +1067,13 @@ table.side-by-side {
 }
 .side-by-side tbody tr td p, .side-by-side tbody tr td blockquote, .side-by-side tbody tr td ul {
   margin-top: 0;
+  margin-bottom: 0;
+}
+.side-by-side tbody td :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: calc(var(--line-height) * 1.2);
+}
+.note-ref {
+  color: #d79921;
+  margin-left: 2px;
+  margin-right: 2px;
 }
