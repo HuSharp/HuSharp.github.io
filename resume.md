@@ -10,7 +10,7 @@ override_title: true
 
 **MPI-SWS** (Doctoral Researcher; Sept, 2024 ~ till now)
 
-I am a first year PhD student at [MPI-SWS](https://mpi-sws.org/) under the supervision of [Prof. Laurent Bindschaedler](https://binds.ch/).
+I am a second year PhD student at [MPI-SWS](https://mpi-sws.org/) under the supervision of [Prof. Laurent Bindschaedler](https://binds.ch/).
 
 **PingCAP – Storage Team** (Database Engineer; Jul, 2022 ~ Sept, 2024)
 
