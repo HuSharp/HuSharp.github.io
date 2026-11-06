@@ -6,6 +6,8 @@ override_title: true
 
 # Jinhao Hu (`胡锦浩`)
 
+PhD student at [MPI-SWS](https://mpi-sws.org/), Saarbrücken, Germany. [jinhaohu@mpi-sws.org](mailto:jinhaohu@mpi-sws.org) · [Google Scholar](https://scholar.google.com/citations?hl=en&user=bZUrRXMAAAAJ)
+
 ## Experience
 
 **MPI-SWS** (Doctoral Researcher; Sept, 2024 ~ till now)
